@@ -1,0 +1,40 @@
+# Dependabot version updates.
+#
+# Nota de gobernanza: pyproject.toml, uv.lock y .github/workflows/** son rutas
+# protegidas (G-META-1), así que cada PR de Dependabot llega con ese gate en
+# rojo HASTA el bless del mantenedor. Es el flujo de consolidación documentado
+# en el README (runbook del mantenedor): una rama con varias actualizaciones +
+# un solo bless resuelve el lote con el coste de una.
+version: 2
+
+updates:
+  # Dependencias Python: pyproject.toml + uv.lock (grupos dev/quality incluidos).
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore"
+    labels: ["dependencies"]
+    groups:
+      python-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 5
+
+  # Actions usadas por los workflows (checkout, setup-python, ...).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore"
+    labels: ["dependencies"]
+    groups:
+      actions-updates:
+        update-types:
+          - "minor"
+          - "patch"

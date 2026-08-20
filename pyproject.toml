@@ -39,7 +39,7 @@ quality = [
   "pre-commit>=4.0",
   "pydoclint>=0.6",
   "semgrep>=1.100",
-  "setuptools<81",
+  "setuptools<85",
   "vulture>=2.14",
   "xenon>=0.9",
 ]

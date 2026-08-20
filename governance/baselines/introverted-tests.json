@@ -1,0 +1,10 @@
+{
+  "metric": "introverted-tests",
+  "recorded_at": "2026-08-11T00:00:00Z",
+  "commit": null,
+  "recorded_by": "seed",
+  "value": 0,
+  "unit": "count",
+  "direction": "lower_is_better",
+  "note": "Solo el veredicto `introverted`. `questionable` NO cuenta: es 'no se', no 'esta mal'."
+}

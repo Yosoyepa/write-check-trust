@@ -1,0 +1,18 @@
+{
+  "name": "write-check-trust",
+  "version": "0.1.0",
+  "description": "Provider-agnostic quality gates, architecture checks, mutation workflows, and hardening skills for agent-generated code.",
+  "author": {
+    "name": "WCT contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "WCT — Write, Check, Trust",
+    "shortDescription": "Harden agent-generated code with executable gates.",
+    "longDescription": "Runs provider-neutral quality gates and guides architecture, mutation, CRAP, DRY, acceptance, security, and independent verification workflows.",
+    "developerName": "WCT contributors",
+    "category": "Productivity",
+    "capabilities": ["skills"],
+    "defaultPrompt": "Use WCT (Write, Check, Trust) to verify this repository without weakening its governance."
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Enforce architecture"
+  short_description: "Check dependency direction and A/I/D"
+  default_prompt: "Use $wct-architecture to inspect dependency rules, cycles, and package stability metrics."

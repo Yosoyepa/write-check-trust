@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit test honesty"
+  short_description: "Trace assertions to production behavior"
+  default_prompt: "Use $wct-test-honesty to identify tests whose assertions do not trace to the system under test."

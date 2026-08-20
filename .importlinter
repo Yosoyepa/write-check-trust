@@ -1,0 +1,30 @@
+[importlinter]
+root_package = example
+
+[importlinter:contract:domain-independence]
+name = Domain has no project dependencies
+type = forbidden
+source_modules = example.domain
+forbidden_modules =
+    example.application
+    example.adapters
+    example.entrypoints
+
+[importlinter:contract:application-independence]
+name = Application does not depend on outer layers
+type = forbidden
+source_modules = example.application
+forbidden_modules =
+    example.adapters
+    example.entrypoints
+
+[importlinter:contract:adapter-independence]
+name = Adapters do not depend on entrypoints
+type = forbidden
+source_modules = example.adapters
+forbidden_modules = example.entrypoints
+
+[importlinter:contract:layer-independence]
+name = Architectural layers are acyclic siblings
+type = acyclic_siblings
+ancestors = example

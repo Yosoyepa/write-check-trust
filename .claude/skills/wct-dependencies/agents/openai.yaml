@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit dependencies"
+  short_description: "Find illegal missing and unused dependencies"
+  default_prompt: "Use $wct-dependencies to enforce declared dependencies and architectural import contracts."

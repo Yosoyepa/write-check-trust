@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run WCT gates"
+  short_description: "Run and interpret quality gate tiers"
+  default_prompt: "Use $wct-gate to run the appropriate quality gate tier and fix blocking findings."

@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.__init__": "1cd58a4cb416d0886d95670f0a494c308647792918bc5e3a04bc80e956c4465a",
+    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.get": "0ee7e15d2bfe27371a5aa9c7b682dbfcb16c858ae4770394e9f3e52f1ad01252",
+    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.save": "f02d0028a0da32e7b30f1398af93215f16fa28535b6f87d55838e123de33666e",
+    "src/example/application/reserve_stock.py::InventoryRepository.get": "7a442887d10135d775b74d96ea15a7946e47d6636f5b7a5c44113cf54675bb5e",
+    "src/example/application/reserve_stock.py::InventoryRepository.save": "21a1a981290d2b0d7f9cae80ea3dc1a6a682494c4b63a00a148b7d136611c269",
+    "src/example/application/reserve_stock.py::ReserveStock.__init__": "1ba67af42e4b39ff398b1f50bbe5bb0fb92a63e15e1f36f3bfd0c4ab9ada2408",
+    "src/example/application/reserve_stock.py::ReserveStock.execute": "eb2a1078b1aef63a51cb74525f8917beb427cacce9d7ece4610d1ba0c13462cb",
+    "src/example/domain/inventory.py::Inventory.reserve": "6333e4afe671e87b198e123ad10fd927d40a422b33a37a659643371a8c437995",
+    "src/example/entrypoints/cli.py::main": "9c7cfd1e82ccbbb67d4bfeff2b66e933c8375ff2d6a3fc913806d491d0ca1953"
+  },
+  "schema_version": 2
+}

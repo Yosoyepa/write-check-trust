@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify acceptance"
+  short_description: "Run Gherkin parsing and mutation"
+  default_prompt: "Use $wct-acceptance to define and verify executable acceptance behavior."

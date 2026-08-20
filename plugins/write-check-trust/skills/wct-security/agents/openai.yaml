@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run security gates"
+  short_description: "Scan code secrets and dependencies"
+  default_prompt: "Use $wct-security to run static security, secret, and vulnerability checks."

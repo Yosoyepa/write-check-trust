@@ -1,0 +1,4 @@
+interface:
+  display_name: "Perform hardening"
+  short_description: "Run the full Uncle Bob-inspired hardening sequence"
+  default_prompt: "Use $wct-hardening to perform mutation, acceptance mutation, CRAP, DRY, and final verification in order."

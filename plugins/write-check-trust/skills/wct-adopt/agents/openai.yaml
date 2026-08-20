@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adopt WCT"
+  short_description: "Install WCT into an existing repository"
+  default_prompt: "Use $wct-adopt to profile an existing repository and introduce strict-on-diff ratchets safely."

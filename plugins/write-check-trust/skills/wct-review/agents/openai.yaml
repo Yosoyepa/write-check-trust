@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review hardened code"
+  short_description: "Review a diff against WCT governance"
+  default_prompt: "Use $wct-review to review this change against architecture, minimalism, testing, and security rules."

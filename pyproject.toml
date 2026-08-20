@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "write-check-trust"
+version = "0.1.0"
+description = "Write, Check, Trust: provider-agnostic hardening harness for agent-generated code"
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+license = {text = "MIT"}
+dependencies = ["PyYAML>=6.0.2"]
+
+[project.scripts]
+wct = "tools.wct.cli:main"
+
+[dependency-groups]
+dev = [
+  "hypothesis>=6.100",
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "pytest-bdd>=8.0",
+  "ruff>=0.11",
+  "mypy>=1.15",
+  "types-PyYAML>=6.0.12",
+]
+quality = [
+  "bandit>=1.8",
+  "commitizen>=4.0",
+  "cyclonedx-bom>=7.0",
+  "crap4py>=0.1.1",
+  "deptry>=0.23",
+  "detect-secrets>=1.5",
+  "diff-cover>=9.0",
+  "import-linter>=2.3",
+  "interrogate>=1.7",
+  "mutmut>=3.2",
+  "pip-audit>=2.8",
+  "pre-commit>=4.0",
+  "pydoclint>=0.6",
+  "semgrep>=1.100",
+  "setuptools<81",
+  "vulture>=2.14",
+  "xenon>=0.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["tools", "src/example"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "integration: tests crossing process or filesystem boundaries",
+  "property: property-based tests",
+  "acceptance: generated acceptance tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/example"]
+omit = ["tests/*", "tools/wct/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["tools.wct", "example"]
+exclude = ["tests/acceptance/generated"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+tag_format = "v$version"
+
+[tool.mutmut]
+source_paths = ["src/example"]
+pytest_add_cli_args_test_selection = [
+  "tests/unit/test_inventory.py",
+  "tests/unit/test_reserve_stock.py",
+  "tests/property/test_inventory_properties.py",
+  "tests/integration/test_cli.py",
+  "tests/acceptance/generated/test_acceptance.py",
+]

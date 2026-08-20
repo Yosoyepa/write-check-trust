@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reduce CRAP risk"
+  short_description: "Measure complexity combined with coverage"
+  default_prompt: "Use $wct-crap to locate and reduce high-risk functions without lowering thresholds."

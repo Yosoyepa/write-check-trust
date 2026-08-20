@@ -1,0 +1,4 @@
+interface:
+  display_name: "Protect quality ratchets"
+  short_description: "Compare and update quality baselines safely"
+  default_prompt: "Use $wct-ratchet to inspect a quality regression without weakening an existing baseline."

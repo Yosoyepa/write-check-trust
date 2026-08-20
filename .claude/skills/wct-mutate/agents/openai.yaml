@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harden with mutation"
+  short_description: "Run differential mutation testing"
+  default_prompt: "Use $wct-mutate to mutation-test changed functions and eliminate surviving mutants."

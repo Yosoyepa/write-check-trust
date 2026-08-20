@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnose WCT"
+  short_description: "Validate installation hooks and rule wiring"
+  default_prompt: "Use $wct-doctor to diagnose why the hardening harness is missing or failing."

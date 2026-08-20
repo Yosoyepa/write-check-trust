@@ -1,0 +1,16 @@
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+.hypothesis/
+__pycache__/
+*.py[cod]
+.coverage
+build/
+htmlcov/
+mutants/
+.mutmut-cache/
+build-ruff.txt
+quality/reports/
+.claude/settings.local.json

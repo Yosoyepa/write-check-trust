@@ -1,0 +1,4 @@
+interface:
+  display_name: "Detect structural DRY"
+  short_description: "Find fuzzy AST-level duplication"
+  default_prompt: "Use $wct-dry to find structural duplication and extract only when pressure justifies it."

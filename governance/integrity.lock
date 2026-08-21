@@ -1,5 +1,5 @@
 {
-  "commit": "7017aabdc36a857ca7bf1c34cfe18059b4cf1b5d",
+  "commit": "59b4e6d2fb6c13a9d484c355c494cc33f7076c80",
   "files": {
     ".claude/agents/architect.md": "6cc0e84aef88676f0a578ad8ffa709dca75b6fb560f4745abf1ffc2b61435345",
     ".claude/agents/cleaner.md": "58e6084e0654b91590a714feeec7aed1db777c5e02ac00952d20d771741c8c22",
@@ -8,8 +8,8 @@
     ".claude/agents/specifier.md": "e3375b11bda126d8c1d1877c6e5f4fdae35a74511f8215eee53729d15d59add0",
     ".claude/agents/verifier.md": "d9f817ea6889c07a348f6952ef7f0175a0ad6f9ecd6f5b3ed3c6459fb5171d1d",
     ".claude/settings.json": "65d457b529af0664cb0d97266ef35ed8fc7469295e9e394299fc190283589f2f",
-    ".github/workflows/full-hardening.yml": "a9dd38031850096404fb6a8293acdaaba6d10ffd4f5dbecf62fc6b64b7e39966",
-    ".github/workflows/quality.yml": "4b818599494ba967d8c26e15fd1c44d099369829b3f17e30befa9b80adafca69",
+    ".github/workflows/full-hardening.yml": "c105d7378a285343c7dcb627c47be9dc8ddba7b1310e5ee8d065984966b73a6d",
+    ".github/workflows/quality.yml": "cf8dec3d6c8b80eddedd116d8cb967c3fac954e38b922f9e98b53e94fcb44776",
     ".importlinter": "0546f9da8afa7efad7b535fb245bf4f241171660433e5943e9267c1f2b21a49b",
     ".pre-commit-config.yaml": "07d4bb04d875b875f154b47ebb9990a4cd5f49701bb74f135ef6d1c884f0c4f5",
     ".secrets.baseline": "c6382fc18dab1123c1f200089ae44e2019d15529d5b3406f710060e70f009907",
@@ -27,7 +27,7 @@
     "governance/decisions/ADR-002-ruff.md": "db1c65720c305b0572482d8fd76311c48b2f52fc8dc900de79c764a21c80d298",
     "governance/decisions/ADR-003-crap-threshold.md": "3c604d392cce1098e943cb2c68198784899cf018b105fe3acb078c1331f5288f",
     "governance/generated/mutation-manifest.json": "3f5c6257bdc5547fc13108c6254cf6b4a304728eb670a4a9bf62be93fd86f216",
-    "governance/integrity-log.md": "9889d78704be853d4b72b400b65990e5abb1ce2469cc16d6b5b6c698160abc18",
+    "governance/integrity-log.md": "434c91bcb4c8a7bcec47466122d29f0a0962b07536aa3c766ad41387df2fc63d",
     "governance/lint/legacy/.flake8": "aabe4353c6dac04f085a8cf44a91b104344ea61f4c49bd1b44a1a26c5b6bea11",
     "governance/lint/legacy/.isort.cfg": "dd606fb2bece67d3ffdd19410cd70c709e904ff7fd385fcbb3a1042274663665",
     "governance/lint/legacy/black.toml": "40b9ad163b0956f87d1d8a30e965ac59b433b28a72a871763c6799cbbb88937c",

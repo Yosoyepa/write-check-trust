@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -24,6 +25,7 @@ from tools.wct.ratchet.engine import (
     suppression_findings,
 )
 from tools.wct.rules.engine import drift, rule_documents
+from tools.wct.util.git import remote_base
 
 Gate = Callable[[Path], GateResult]
 
@@ -123,6 +125,48 @@ def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gat
         )
 
     return run
+
+
+def gate_coverage_diff(root: Path) -> GateResult:
+    """Hard diff-cover: coverage >= 90% on changed lines, CI-faithful base.
+
+    The pilot's phase 25 shipped a 17/17 local run that CI rejected on
+    diff-cover: the gate existed but no tier ran it. Here it blocks (ERROR,
+    not SKIP) because its tier's whole promise is local parity with CI.
+    Requires G-COV-TOTAL to have produced build/coverage/lcov.info first
+    (tier ordering guarantees it).
+    """
+    started = time.monotonic()
+    if shutil.which("diff-cover") is None:
+        return GateResult("G-COV-DIFF", Status.ERROR, "herramienta ausente: diff-cover")
+    base = remote_base(root)
+    if base is None:
+        return GateResult(
+            "G-COV-DIFF",
+            Status.ERROR,
+            "sin rama base resoluble: no encontré origin/main ni main",
+        )
+    command = [
+        "diff-cover",
+        "build/coverage/lcov.info",
+        "--compare-branch",
+        base,
+        "--fail-under",
+        "90",
+        "--include-untracked",
+    ]
+    completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
+    output = (completed.stdout + "\n" + completed.stderr).strip()
+    status = Status.PASS if completed.returncode == 0 else Status.FAIL
+    summary = "ok" if status is Status.PASS else (output.splitlines()[-1] if output else "exit 1")
+    return GateResult(
+        "G-COV-DIFF",
+        status,
+        summary,
+        int((time.monotonic() - started) * 1000),
+        output.splitlines()[-50:],
+        " ".join(command),
+    )
 
 
 def gate_archmetrics(root: Path) -> GateResult:
@@ -406,10 +450,8 @@ REGISTRY: dict[str, Gate] = {
         "G-COV-TOTAL",
         ["pytest", "--cov", "--cov-branch", "--cov-report=lcov:build/coverage/lcov.info", "-q"],
     ),
-    "G-COV-DIFF": external(
-        "G-COV-DIFF", ["diff-cover", "build/coverage/lcov.info", "--fail-under=90"], optional=True
-    ),
-    "G-DOC": external("G-DOC", ["interrogate", "src"], optional=True),
+    "G-COV-DIFF": gate_coverage_diff,
+    "G-DOC": external("G-DOC", ["interrogate", "src", "--fail-under", "34"], optional=True),
     "G-SECRET": gate_secrets,
     "G-PROP": external("G-PROP", ["pytest", "-q", "tests/property"]),
     "G-TEST-RANDOM": external(
@@ -489,6 +531,36 @@ TIERS: dict[str, list[str]] = {
         "G-SECRET",
         "G-AUDIT",
         "G-SBOM",
+        "G-DOC",
+        "G-REDTEAM",
+    ],
+    # Espejo local de quality.yml en PRs: todo lo que CI exige de una PR,
+    # ejecutable con un solo comando antes de pushear.
+    "pr": [
+        *[
+            "G-META-1",
+            "G-META-2",
+            "G-RULES-DRIFT",
+            "G-SUPPRESS",
+            "G-DEBT",
+            "G-LINT",
+            "G-FMT",
+            "G-TYPE",
+            "G-TEST",
+            "G-ARCH",
+            "G-ARCHMETRICS",
+            "G-DEPS",
+            "G-DEAD",
+            "G-SAST-BANDIT",
+            "G-SECRET",
+            "G-MUT-SITES",
+            "G-ACCEPT",
+        ],
+        "G-HOOKS-WIRED",
+        "G-COV-TOTAL",
+        "G-COV-DIFF",
+        "G-PROP",
+        "G-ACCEPT-MUT",
         "G-REDTEAM",
     ],
 }
@@ -496,6 +568,16 @@ TIERS: dict[str, list[str]] = {
 
 def run_tier(root: Path, tier: str) -> list[GateResult]:
     _root, policy, _thresholds = load_config(root)
+    required = policy.get("environment_required", {}).get(tier, [])
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        return [
+            GateResult(
+                "G-ENV",
+                Status.ERROR,
+                f"variables de entorno ausentes para el tier {tier}: {', '.join(missing)}",
+            )
+        ]
     disabled = set(policy.get("gates", {}).get("disabled", []))
     results: list[GateResult] = []
     for gate_id in TIERS[tier]:

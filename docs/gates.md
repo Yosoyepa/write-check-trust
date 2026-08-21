@@ -9,7 +9,10 @@ Cada gate es un verificador ejecutable con código de salida autoritativo.
 > bloqueante).
 
 La composición exacta de cada tier vive en `tools/wct/gate/runner.py` → `TIERS`;
-esta tabla es su espejo documentado.
+esta tabla es su espejo documentado. Un tier con variables de entorno exigidas
+(`governance/policy.yaml` → `environment_required`) falla ANTES de correr
+gates con un `G-ENV` ERROR que nombra las variables ausentes — nunca como
+skips silenciosos.
 
 ## Tiers
 
@@ -17,12 +20,14 @@ esta tabla es su espejo documentado.
 |---|---|---:|---:|
 | `fast` | feedback en edición y PostToolUse | 10 s | 7 |
 | `commit` | pre-commit, Stop y handoff | 120 s | 17 |
-| `full` | release, hardener y CI programada | 30 min | 24 |
+| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 23 |
+| `full` | release, hardener y CI programada | 30 min | 27 |
 
 ```bash
 uv run wct gate --tier fast    # 7/7
 uv run wct gate --tier commit  # 17/17
-uv run wct gate --tier full    # 24/24
+uv run wct gate --tier pr      # 23/23  (o `make pr`)
+uv run wct gate --tier full    # 27/27
 ```
 
 ## fast — 7 gates
@@ -52,7 +57,28 @@ uv run wct gate --tier full    # 24/24
 | `G-MUT-SITES` | archivos fuente dentro del presupuesto de sitios de mutación | `wct` (manifiesto diferencial) |
 | `G-ACCEPT` | Gherkin parseable, sin repetición estructural | `wct accept parse` |
 
-## full — añade 7
+## pr — añade 6 (espejo local de la CI de PR)
+
+Todo lo que `quality.yml` exige de una pull request, ejecutable con un solo
+comando antes de pushear. Nació del piloto (fase 25): una entrega pasó el
+tier commit 17/17 y CI la tumbó por diff-coverage que ningún tier local
+exponía.
+
+| Gate | Qué exige | Verificador |
+|---|---|---|
+| `G-HOOKS-WIRED` | instalación y hooks diagnosticados | `wct doctor` |
+| `G-COV-TOTAL` | suite completa bajo cobertura, artefacto lcov | `pytest --cov --cov-branch` |
+| `G-COV-DIFF` | cobertura ≥ 90 % sobre líneas nuevas/modificadas contra la rama base remota | `diff-cover --compare-branch <base> --fail-under=90 --include-untracked` |
+| `G-PROP` | property tests aislados (fuera del conteo de coverage) | `pytest -q tests/property` |
+| `G-ACCEPT-MUT` | escenarios Gherkin sobreviven mutación | `wct accept mutate` |
+| `G-REDTEAM` | el harness resiste a sus 30 adversarios (F1–F15) | `wct selftest redteam` |
+
+`G-COV-DIFF` es deliberadamente duro: si `diff-cover` falta o no hay rama
+base resoluble, reporta ERROR (no SKIP) porque la promesa del tier es
+paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
+`origin/main` → `origin/master` → `main` → `master`.
+
+## full — añade 10
 
 | Gate | Qué exige | Verificador |
 |---|---|---|
@@ -64,31 +90,28 @@ uv run wct gate --tier full    # 24/24
 | `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` |
 | `G-AUDIT` | cero CVEs críticos/altos en dependencias desplegables | `pip-audit` (export del lock) |
 | `G-SBOM` | SBOM generado | `cyclonedx-py environment` |
+| `G-DOC` | cobertura de docstrings ≥ piso ratchet (34 %) | `interrogate src --fail-under 34` |
 | `G-REDTEAM` | el harness resiste a sus 30 adversarios (F1–F15) | `wct selftest redteam` |
 
 ## Gates de flujos específicos
 
-Registrados pero fuera de los tiers: los invocan pre-commit, el pipeline de
-aceptación o el hardener de forma dirigida.
+Registrados pero fuera de los tiers: los invoca un flujo concreto o quedan
+a la espera de decisión del mantenedor.
 
 | Gate | Flujo | Verificador |
 |---|---|---|
-| `G-COV-DIFF` | cobertura ≥ 90 % sobre líneas nuevas/modificadas | `diff-cover --fail-under=90` |
-| `G-MUT` | cero mutantes sobrevivientes en el changeset | `mutmut run` |
-| `G-ACCEPT-MUT` | escenarios Gherkin sobreviven mutación | `wct accept mutate` |
-| `G-PROP` | property tests (separados, fuera de coverage) | `pytest -q tests/property` |
-| `G-TEST-RANDOM` | tests pasan en orden aleatorio | `pytest --randomly-seed=last` |
-| `G-DRY-TOK` | duplicación léxica por tokens | `jscpd src tools` |
-| `G-DOC` | cobertura de docstrings (ratchet) | `interrogate src` |
-| `G-COMMIT-MSG` | conventional commits | `cz check --commit-msg-file` |
+| `G-MUT` | manual: `make harden` y skills de mutación | `mutmut run` |
+| `G-COMMIT-MSG` | pre-commit (commit-msg hook) | `cz check --commit-msg-file` |
+| `G-TEST-RANDOM` | sin flujo automático: exige el plugin `pytest-randomly` (decisión pendiente) | `pytest --randomly-seed=last` |
+| `G-DRY-TOK` | sin flujo automático: exige `jscpd` de node (decisión pendiente) | `jscpd src tools` |
 
 ## Alias para reglas
 
 Las reglas de `governance/rules/` nombran verificadores con alias que
 resuelven al mismo gate subyacente: `G-ARCH-CYCLE` → `G-ARCHMETRICS`,
 `G-CVE` → `G-AUDIT`, `G-SAST` → `G-SAST-BANDIT`, `G-TEST-FAST` → `G-TEST`,
-`G-TODO` → `G-DEBT`, `G-IMPORT-ORDER` → `G-LINT`, `G-RULES-SYNC` →
-`G-RULES-DRIFT`, `G-HOOKS-WIRED` → `wct doctor`.
+`G-TODO` → `G-DEBT`, `G-IMPORT-ORDER` → `G-LINT` y `G-RULES-SYNC` →
+`G-RULES-DRIFT`.
 
 ## Desactivar un gate
 

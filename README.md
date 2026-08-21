@@ -10,7 +10,7 @@
   <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml/badge.svg" alt="CI de calidad"></a>
   <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml/badge.svg" alt="CI de hardening completo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Yosoyepa/write-check-trust?color=blue" alt="licencia MIT"></a>
-  <img src="https://img.shields.io/badge/gates-24_%C2%B7_3_tiers-2ea44f" alt="24 gates en 3 tiers">
+  <img src="https://img.shields.io/badge/gates-31_%C2%B7_4_tiers-2ea44f" alt="31 gates en 4 tiers">
 </p>
 
 <p align="center">
@@ -92,16 +92,21 @@ uv run wct integrity bless --approved-by "nombre" --reason "aprobado en PR #N: e
 |---|---|---:|---:|
 | `fast` | feedback durante edición y PostToolUse | 10 s | 7 |
 | `commit` | pre-commit, Stop y handoff | 120 s | 17 |
-| `full` | release, hardener y CI programada | 30 min | 24 |
+| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 23 |
+| `full` | release, hardener y CI programada | 30 min | 27 |
 
 ```bash
 uv run wct gate --tier fast
 uv run wct gate --tier commit
+uv run wct gate --tier pr    # o make pr
 uv run wct gate --tier full
 ```
 
 El catálogo completo —qué exige cada gate y con qué herramienta se verifica—
-está en [docs/gates.md](docs/gates.md).
+está en [docs/gates.md](docs/gates.md). El tier `pr` existe para que la
+verificación local sea fiel a CI: todo lo que `quality.yml` exige de una PR,
+en un solo comando (nació de una entrega del piloto que pasó 17/17 local y
+falló en CI por diff-coverage que ningún tier local exponía).
 
 > [!CAUTION]
 > Un gate que crashea retorna exit 2 y **bloquea** (fail-closed): nunca se
@@ -219,7 +224,7 @@ uv run wct gate --tier full
 
 | Documento | Contenido |
 |---|---|
-| [docs/gates.md](docs/gates.md) | Catálogo completo: 24 gates por tier con verificador y comando. |
+| [docs/gates.md](docs/gates.md) | Catálogo completo: 31 gates en 4 tiers con verificador y comando. |
 | [docs/architecture.md](docs/architecture.md) | Persuasión vs prueba, capas, métricas A/I/D, lock de integridad. |
 | [docs/runbook.md](docs/runbook.md) | Bless, manifiesto de mutación, Dependabot, ratchets, webhooks, CI. |
 | [docs/README.md](docs/README.md) | Índice: assets, ADRs y documentación de proyecto. |

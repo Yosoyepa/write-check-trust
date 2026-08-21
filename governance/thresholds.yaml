@@ -207,4 +207,5 @@ budgets_seconds:
   hook_post: 10
   tier_fast: 10
   tier_commit: 120
+  tier_pr: 600
   tier_full: 1800

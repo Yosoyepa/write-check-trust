@@ -92,3 +92,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #8: feedback piloto fases 22-24
 - Commit: 6ea228481e8e9927ac660823ec5bc96519fcc16a
+
+## 2026-08-21T18:01:59.715640+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #9: tier pr + reviviendo gates muertos
+- Commit: 7017aabdc36a857ca7bf1c34cfe18059b4cf1b5d

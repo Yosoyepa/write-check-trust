@@ -80,3 +80,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #7: consolidación dependabot 2026-08
 - Commit: f6fa5e256d44bc9bf6bde70b9ee4d74b900836c5
+
+## 2026-08-21T00:50:33.726059+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #8: feedback piloto fases 22-24
+- Commit: 12665d4264dd5bcd17a1db88b59a3a2d5362a8b8

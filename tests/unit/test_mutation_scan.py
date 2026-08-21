@@ -78,6 +78,38 @@ def test_scan_treats_legacy_manifest_as_pending_migration(
     report = scan(root)
 
     assert report["changed_functions"] == 1
+    assert report["manifest"] == "legacy"
+
+
+def test_scan_reports_missing_manifest_for_fresh_adoption(
+    project_factory: Callable[..., Path],
+) -> None:
+    """Without a manifest every function counts as changed; the report must say why."""
+    root = project_factory()
+    (root / "src/code.py").write_text("def value():\n    return 1\n", encoding="utf-8")
+
+    report = scan(root)
+
+    assert report["changed_functions"] == 1
+    assert report["manifest"] == "missing"
+
+
+def test_scan_reports_current_manifest_as_ok(
+    project_factory: Callable[..., Path],
+) -> None:
+    root = project_factory()
+    (root / "src/code.py").write_text("def value():\n    return 1\n", encoding="utf-8")
+    manifest = root / "governance/generated/mutation-manifest.json"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        json.dumps({"schema_version": 2, "functions": {"src/code.py::value": "dead"}}),
+        encoding="utf-8",
+    )
+
+    report = scan(root)
+
+    assert report["manifest"] == "ok"
+    assert report["changed_functions"] == 1
 
 
 def test_update_manifest_without_approval_leaves_lock_alone(

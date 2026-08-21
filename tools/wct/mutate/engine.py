@@ -69,6 +69,7 @@ def mutation_sites(path: Path) -> int:
 def scan(root: Path) -> dict[str, Any]:
     _root, policy, thresholds = load_config(root)
     previous: dict[str, str] = {}
+    manifest_status = "missing"
     manifest = root / MANIFEST
     if manifest.is_file():
         document = json.loads(manifest.read_text(encoding="utf-8"))
@@ -77,6 +78,9 @@ def scan(root: Path) -> dict[str, Any]:
         # Rojo explícito, nunca silencio.
         if int(document.get("schema_version", 0)) >= MANIFEST_SCHEMA:
             previous = document.get("functions", {})
+            manifest_status = "ok"
+        else:
+            manifest_status = "legacy"
     functions: dict[str, str] = {}
     files: list[dict[str, Any]] = []
     limit = int(thresholds["mutation"]["max_sites_per_file"])
@@ -99,6 +103,7 @@ def scan(root: Path) -> dict[str, Any]:
         "functions": functions,
         "changed_functions": sum(len(item["changed_functions"]) for item in files),
         "over_limit": [item["file"] for item in files if item["over_limit"]],
+        "manifest": manifest_status,
     }
 
 

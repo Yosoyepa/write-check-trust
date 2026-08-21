@@ -1,9 +1,12 @@
 # Catálogo de gates
 
 Cada gate es un verificador ejecutable con código de salida autoritativo.
-Un gate que crashea retorna exit 2 y **bloquea** (fail-closed): un error del
-harness nunca se interpreta como permiso. Los estados son `PASS`, `FAIL`,
-`SKIP` (desactivado por `policy.yaml`) y `ERROR` (guard crash, bloqueante).
+
+> [!NOTE]
+> Un gate que crashea retorna exit 2 y **bloquea** (fail-closed): un error
+> del harness nunca se interpreta como permiso. Los estados son `PASS`,
+> `FAIL`, `SKIP` (desactivado por `policy.yaml`) y `ERROR` (guard crash,
+> bloqueante).
 
 La composición exacta de cada tier vive en `tools/wct/gate/runner.py` → `TIERS`;
 esta tabla es su espejo documentado.

@@ -1,7 +1,8 @@
 # Runbook del mantenedor
 
-Procedimientos que requieren al humano como autoridad de aprobación. Ninguno
-es ejecutable por el agente: el hook PreToolUse los bloquea.
+> [!WARNING]
+> Procedimientos que requieren al humano como autoridad de aprobación. Ninguno
+> es ejecutable por el agente: el hook PreToolUse los bloquea.
 
 ## Bless con baseline incluido
 
@@ -29,9 +30,10 @@ uv run wct mutate update-manifest --approved-by "nombre" --reason "aprobado en P
 
 ## Dependabot en bloque
 
-Para un grupo de PRs de dependencias atascadas: una sola rama con los cambios
-+ `uv lock` + un único bless resuelve todas con el coste de una. Cierra las
-PRs individuales haciendo referencia a la consolidada.
+> [!TIP]
+> Para un grupo de PRs de dependencias atascadas: una sola rama con los
+> cambios + `uv lock` + un único bless resuelve todas con el coste de una.
+> Cierra las PRs individuales haciendo referencia a la consolidada.
 
 Las PRs de Dependabot que toquen `pyproject.toml`, `uv.lock` o
 `.github/workflows/**` llegan con G-META-1 rojo **por diseño** hasta el bless:

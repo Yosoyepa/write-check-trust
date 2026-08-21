@@ -79,11 +79,12 @@ aprobación humana (ver [runbook](docs/runbook.md)), en UNA sola línea:
 uv run wct integrity bless --approved-by "nombre" --reason "aprobado en PR #N: explicación concreta"
 ```
 
-El `--reason` debe citar evidencia de aprobación (URL o `#N`); una frase en
-prosa no prueba nada y el comando la rechaza. `bless` (y `ratchet record`, y
-`mutate update-manifest --approved-by`) es exclusivamente humano: el hook
-PreToolUse bloquea al agente que lo intente, incluida su forma
-`python -m tools.wct ...`.
+> [!IMPORTANT]
+> El `--reason` debe citar evidencia de aprobación (URL o `#N`); una frase en
+> prosa no prueba nada y el comando la rechaza. `bless` (y `ratchet record`, y
+> `mutate update-manifest --approved-by`) es exclusivamente humano: el hook
+> PreToolUse bloquea al agente que lo intente, incluida su forma
+> `python -m tools.wct ...`.
 
 ## Tiers y gates
 
@@ -100,8 +101,11 @@ uv run wct gate --tier full
 ```
 
 El catálogo completo —qué exige cada gate y con qué herramienta se verifica—
-está en [docs/gates.md](docs/gates.md). Un gate que crashea retorna exit 2:
-nunca se interpreta como permiso.
+está en [docs/gates.md](docs/gates.md).
+
+> [!CAUTION]
+> Un gate que crashea retorna exit 2 y **bloquea** (fail-closed): nunca se
+> interpreta como permiso.
 
 ## Comandos propios
 
@@ -123,10 +127,12 @@ uv run wct fmt [--staged]
 ### Formateo acotado al changeset
 
 `wct fmt` formatea SOLO el changeset (diff contra main/master más el árbol de
-trabajo); `wct fmt --staged` se limita a lo staged. En proyectos con G-FMT
-desactivado para adopción gradual, es el único formateo permitido para
-agentes: un `ruff format` global re-formatea archivos legacy intactos y
-detona G-MUT-SITES en archivos ajenos a la tarea.
+trabajo); `wct fmt --staged` se limita a lo staged.
+
+> [!TIP]
+> En proyectos con G-FMT desactivado para adopción gradual, `wct fmt` es el
+> único formateo permitido para agentes: un `ruff format` global re-formatea
+> archivos legacy intactos y detona G-MUT-SITES en archivos ajenos a la tarea.
 
 ### Manifiesto de mutación y bless atómico
 
@@ -173,8 +179,9 @@ configura capas y rutas, mide baselines reales y conserva dos reglas:
 - código cambiado usa el perfil estricto;
 - deuda legacy solo puede mejorar mediante ratchets.
 
-No copies los baselines verdes de este ejemplo a un sistema legacy: medir una
-ficción equivale a desactivar los gates.
+> [!WARNING]
+> No copies los baselines verdes de este ejemplo a un sistema legacy: medir
+> una ficción equivale a desactivar los gates.
 
 ## CI y bypasses
 

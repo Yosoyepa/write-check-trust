@@ -73,10 +73,11 @@ lock. Las rutas del plano de control (`governance/**`, `pyproject.toml`,
    uv run wct integrity bless --approved-by "nombre" --reason "aprobado en PR #N: explicación"
    ```
 
-   El `--reason` debe citar evidencia (URL de PR/comentario o `#N`). El hook
-   PreToolUse bloquea al agente que intente `bless`, `ratchet record` o
-   `mutate update-manifest --approved-by`, incluida la forma
-   `python -m tools.wct ...`.
+> [!IMPORTANT]
+> El `--reason` debe citar evidencia (URL de PR/comentario o `#N`). El hook
+> PreToolUse bloquea al agente que intente `bless`, `ratchet record` o
+> `mutate update-manifest --approved-by`, incluida la forma
+> `python -m tools.wct ...`.
 
 Los ratchets siguen la misma lógica monótona: una métrica puede mejorar,
 nunca retroceder. Subir un umbral requiere

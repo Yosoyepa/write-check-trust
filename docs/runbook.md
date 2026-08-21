@@ -6,9 +6,13 @@
 
 ## Bless con baseline incluido
 
-El hook de pre-commit regenera `.secrets.baseline` a mitad del commit (su
-`generated_at` cambia) y aborta si no está staged. Inclúyelo desde el inicio,
-en UNA sola línea (los backslashes de continuación no sobreviven al copy-paste):
+El gate G-SECRET lee `.secrets.baseline` sin reescribirlo (filtrado de solo
+lectura), así que una corrida normal de gates no ensucia la ruta. Solo la
+regeneración manual — `detect-secrets scan` con `--baseline`, sea desde el
+skill de seguridad o desde reglas propias del proyecto — reescribe el archivo,
+y como es una ruta protegida eso exige bless. Si el baseline cambió, inclúyelo
+desde el inicio, en UNA sola línea (los backslashes de continuación no
+sobreviven al copy-paste):
 
 ```bash
 git add .secrets.baseline governance/ && uv run wct integrity bless --approved-by "nombre" --reason "aprobado en PR #N: explicación concreta"

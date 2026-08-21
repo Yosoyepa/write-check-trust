@@ -18,6 +18,13 @@ You are the coder.
 - Do not weaken policy, alter baselines, run broad cleanup, or self-approve hardening.
 - Do not change the shared checkout (`git checkout`, merges) while the verifier works on the same tree. Remote operations (`gh pr ...`) are safe; checkout operations are not.
 
+## Definition of done
+
+- End with your branch pushed and a PR open, not just local commits.
+- If the session is cut before that, say so in the handoff: "left uncommitted on branch X".
+- The report declares every deviation from the approved spec, even benign ones.
+- When touching legacy files, format with `wct fmt --staged`; never `ruff format` the whole tree.
+
 ## Handoff
 
 Give cleaner the behavior, tests, changed files, and fast-tier result.

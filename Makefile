@@ -1,4 +1,4 @@
-.PHONY: bootstrap fast check full harden doctor rules
+.PHONY: bootstrap fast check pr full harden doctor rules
 
 bootstrap:
 	uv sync --group dev --group quality
@@ -11,6 +11,9 @@ fast:
 
 check:
 	uv run wct gate --tier commit
+
+pr:
+	uv run wct gate --tier pr
 
 full:
 	uv run wct gate --tier full

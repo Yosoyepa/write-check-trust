@@ -74,3 +74,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: Yosoyepa
 - Reason: release público inicial como write-check-trust, ref #1: rename + feedback del piloto aplicado
 - Commit: unborn
+
+## 2026-08-21T00:27:05.568534+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #7: consolidación dependabot 2026-08
+- Commit: f6fa5e256d44bc9bf6bde70b9ee4d74b900836c5

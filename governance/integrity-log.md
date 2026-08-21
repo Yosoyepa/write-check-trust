@@ -86,3 +86,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #8: feedback piloto fases 22-24
 - Commit: 12665d4264dd5bcd17a1db88b59a3a2d5362a8b8
+
+## 2026-08-21T03:33:13.917661+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #8: feedback piloto fases 22-24
+- Commit: 6ea228481e8e9927ac660823ec5bc96519fcc16a

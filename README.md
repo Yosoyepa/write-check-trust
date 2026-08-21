@@ -122,6 +122,7 @@ uv run wct accept parse|ir-dry|generate|run|mutate [feature]
 uv run wct selftest redteam
 uv run wct adopt /ruta/a/repositorio
 uv run wct fmt [--staged]
+uv run wct split-plan <archivo> [--json]
 ```
 
 ### Formateo acotado al changeset
@@ -141,6 +142,14 @@ se identifican por fingerprint semántico `archivo::qualname`, no por línea
 (insertar un import ya no invalida medio archivo). Con aprobación humana
 explícita regenera también el lock en el mismo paso, así G-META-1 nunca
 observa un manifiesto fresco con un lock desfasado.
+
+### Split preventivo propuesto
+
+`wct split-plan <archivo>` propone (nunca ejecuta) la partición fachada de
+TEST-007 para un archivo sobre el presupuesto de sitios de mutación: partes
+con sus funciones y sitios, imports de re-exportación para la fachada, y
+rechazo explícito cuando una función sola excede el límite (entonces toca
+partir la función, no el archivo).
 
 ### Webhooks
 

@@ -168,6 +168,18 @@ def gate_introvert(root: Path) -> GateResult:
     return _result("G-INTROVERT", started, findings, "honestidad de tests no retrocede")
 
 
+MANIFEST_DIAGNOSTICS = {
+    "legacy": (
+        "manifiesto schema 1: toda función cuenta como cambiada; "
+        "regenera con 'wct mutate update-manifest'"
+    ),
+    "missing": (
+        "manifiesto ausente: toda función cuenta como cambiada; "
+        "genera con 'wct mutate update-manifest'"
+    ),
+}
+
+
 def gate_mutation_sites(root: Path) -> GateResult:
     started = time.monotonic()
     report = scan_mutations(root)
@@ -180,6 +192,9 @@ def gate_mutation_sites(root: Path) -> GateResult:
         for item in report["files"]
         if item["over_limit"] and item["changed_functions"]
     ]
+    diagnostic = MANIFEST_DIAGNOSTICS.get(report.get("manifest") or "")
+    if findings and diagnostic:
+        findings.insert(0, diagnostic)
     return _result("G-MUT-SITES", started, findings, "archivos dentro del presupuesto de mutación")
 
 

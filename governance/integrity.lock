@@ -1,5 +1,5 @@
 {
-  "commit": null,
+  "commit": "f6fa5e256d44bc9bf6bde70b9ee4d74b900836c5",
   "files": {
     ".claude/agents/architect.md": "6cc0e84aef88676f0a578ad8ffa709dca75b6fb560f4745abf1ffc2b61435345",
     ".claude/agents/cleaner.md": "58e6084e0654b91590a714feeec7aed1db777c5e02ac00952d20d771741c8c22",
@@ -8,8 +8,8 @@
     ".claude/agents/specifier.md": "e3375b11bda126d8c1d1877c6e5f4fdae35a74511f8215eee53729d15d59add0",
     ".claude/agents/verifier.md": "d9f817ea6889c07a348f6952ef7f0175a0ad6f9ecd6f5b3ed3c6459fb5171d1d",
     ".claude/settings.json": "65d457b529af0664cb0d97266ef35ed8fc7469295e9e394299fc190283589f2f",
-    ".github/workflows/full-hardening.yml": "4cd8a751392877b6fb6aae3657510076f4a2a3dd5f40ad9445b034cbf4268d04",
-    ".github/workflows/quality.yml": "162f9856b32066c7149ada7a41684bf9beee0a803bba53953816c6f8afd6f8a5",
+    ".github/workflows/full-hardening.yml": "a9dd38031850096404fb6a8293acdaaba6d10ffd4f5dbecf62fc6b64b7e39966",
+    ".github/workflows/quality.yml": "4b818599494ba967d8c26e15fd1c44d099369829b3f17e30befa9b80adafca69",
     ".importlinter": "0546f9da8afa7efad7b535fb245bf4f241171660433e5943e9267c1f2b21a49b",
     ".pre-commit-config.yaml": "07d4bb04d875b875f154b47ebb9990a4cd5f49701bb74f135ef6d1c884f0c4f5",
     ".secrets.baseline": "c6382fc18dab1123c1f200089ae44e2019d15529d5b3406f710060e70f009907",
@@ -27,7 +27,7 @@
     "governance/decisions/ADR-002-ruff.md": "db1c65720c305b0572482d8fd76311c48b2f52fc8dc900de79c764a21c80d298",
     "governance/decisions/ADR-003-crap-threshold.md": "3c604d392cce1098e943cb2c68198784899cf018b105fe3acb078c1331f5288f",
     "governance/generated/mutation-manifest.json": "3f5c6257bdc5547fc13108c6254cf6b4a304728eb670a4a9bf62be93fd86f216",
-    "governance/integrity-log.md": "fac211f145db00695a0205cadfe660eb9c5b8dc8cf81aae702c71bf13ba649d0",
+    "governance/integrity-log.md": "1a65a9a25da4022b2372b597313ae589cfdf84404f1821f893e65690f871b017",
     "governance/lint/legacy/.flake8": "aabe4353c6dac04f085a8cf44a91b104344ea61f4c49bd1b44a1a26c5b6bea11",
     "governance/lint/legacy/.isort.cfg": "dd606fb2bece67d3ffdd19410cd70c709e904ff7fd385fcbb3a1042274663665",
     "governance/lint/legacy/black.toml": "40b9ad163b0956f87d1d8a30e965ac59b433b28a72a871763c6799cbbb88937c",
@@ -72,7 +72,7 @@
     "plugins/write-check-trust/skills/wct-security/agents/openai.yaml": "ae07725a308194662a4ea4c8ed44fbfb329b8beb10a2e5b3cdada3e86dadb86e",
     "plugins/write-check-trust/skills/wct-test-honesty/SKILL.md": "a91df9f1ea6cff3d91d86e6ebc67b61f8eec4cdd577d0a92cde6ba1eb139a825",
     "plugins/write-check-trust/skills/wct-test-honesty/agents/openai.yaml": "773778b35403fcb84cb4f484c5378c753e40f885c7416e542992737010603814",
-    "pyproject.toml": "bbdc20f91fd58e25dda2672fafcbd756ca5986f329a75a2c2a71c22fa162c627",
+    "pyproject.toml": "70d35f38790fb255b240f7a35a9a6f543ff590277c4d438cac1b6f4a96c80910",
     "quality/redteam/README.md": "0ef17aa920317fcae4fb7e189dcc3e0f821c093635611d6257c1a6f2ee7bf72f",
     "quality/redteam/cases.yaml": "656ff374e4b4b1d03c52f064e7f18afa45a73f36e5722fee65f33d859a5e310e",
     "skills/wct-acceptance/SKILL.md": "adabdb53e9eaad99241750a28b9962a0d80b9162e7e589de3686c2c94616f146",
@@ -142,7 +142,7 @@
     "tools/wct/util/__init__.py": "01be94ffc05db0b8ed34a4723466fa53af4dcd58d08d6c4c69eecd9af2d26d79",
     "tools/wct/util/git.py": "f1aac9f9ad0a60867cb548f9939d170c0f00d8332f9610e9f5c44ebba2f19d3b",
     "tools/wct/webhook.py": "f89156240bb5734303f98593e950f8faed29a495dcc8ba24334a40c197e7dd84",
-    "uv.lock": "5d0506fe8e3affc2a8b275e4b196fbd324e3268f13e751991aa6411a23b3b073"
+    "uv.lock": "4f572477cdcc2688811568e34444c03daa188d114708456ee2024647dcefd279"
   },
   "hash": "sha256:eol-normalized",
   "schema_version": 1

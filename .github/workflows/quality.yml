@@ -8,14 +8,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   commit-gates:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      # Actions pineadas por SHA completo: un tag comprometido no ejecuta
+      # código en este repo (Dependabot mantiene los SHAs al día).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
       - name: Install uv
@@ -33,7 +40,9 @@ jobs:
         run: uv run pytest --cov --cov-branch --cov-report=lcov:build/coverage/lcov.info -q
       - name: Require 90 percent coverage on the pull-request diff
         if: github.event_name == 'pull_request'
-        run: uv run diff-cover build/coverage/lcov.info --compare-branch "origin/${{ github.base_ref }}" --fail-under=90
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: uv run diff-cover build/coverage/lcov.info --compare-branch "origin/${BASE_REF}" --fail-under=90
       - name: Verify acceptance example wiring
         run: uv run wct accept mutate
       - name: Attack the harness

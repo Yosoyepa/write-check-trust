@@ -6,9 +6,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Yosoyepa/write-check-trust/releases"><img src="https://img.shields.io/github/v/release/Yosoyepa/write-check-trust?include_prereleases" alt="release"></a>
-  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml"><img src="https://img.shields.io/github/actions/workflow/status/Yosoyepa/write-check-trust/quality.yml?branch=main&label=ci" alt="CI de calidad"></a>
-  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml"><img src="https://img.shields.io/github/actions/workflow/status/Yosoyepa/write-check-trust/full-hardening.yml?branch=main&label=full%20tier" alt="CI de hardening completo"></a>
+  <a href="https://github.com/Yosoyepa/write-check-trust/releases"><img src="https://img.shields.io/github/v/release/Yosoyepa/write-check-trust" alt="release"></a>
+  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml/badge.svg" alt="CI de calidad"></a>
+  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml/badge.svg" alt="CI de hardening completo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Yosoyepa/write-check-trust?color=blue" alt="licencia MIT"></a>
   <img src="https://img.shields.io/badge/gates-24_%C2%B7_3_tiers-2ea44f" alt="24 gates en 3 tiers">
 </p>
@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/python-3.11%E2%80%933.14-3776AB?logo=python&logoColor=white" alt="Python 3.11–3.14">
   <a href="https://docs.astral.sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <img src="https://img.shields.io/badge/mypy-strict-2a6db2" alt="mypy estricto">
-  <img src="https://img.shields.io/badge/commits-conventional-1.0.0-FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits">
+  <img src="https://img.shields.io/badge/commits-conventional-FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits">
 </p>
 
 Base de hardening agnóstica al proveedor para código generado por agentes.

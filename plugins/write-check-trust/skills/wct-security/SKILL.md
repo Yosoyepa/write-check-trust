@@ -5,5 +5,5 @@ description: Run and interpret WCT static security, secret, dependency vulnerabi
 
 # Run security gates
 
-Run `uv run bandit -q -r src tools/wct`, `uv run semgrep --config governance/semgrep`, `uv run detect-secrets scan --baseline .secrets.baseline`, and `uv run pip-audit`. Fix the root issue; never whitelist a finding without a narrow justification, owner, and issue. At trust boundaries retain validation even when minimalism suggests fewer lines.
+Run `uv run bandit -q -r src tools/wct`, `uv run semgrep --config governance/semgrep`, `uv run wct gate --tier commit` (its G-SECRET scans read-only), and `uv run pip-audit`. To inspect secrets directly, run `detect-secrets scan --slim` and read `.secrets.baseline` yourself; `--baseline` rewrites a protected route, so reserve it for regenerations a human will bless. Fix the root issue; never whitelist a finding without a narrow justification, owner, and issue. At trust boundaries retain validation even when minimalism suggests fewer lines.
 

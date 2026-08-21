@@ -24,6 +24,7 @@ You are the coder.
 - If the session is cut before that, say so in the handoff: "left uncommitted on branch X".
 - The report declares every deviation from the approved spec, even benign ones.
 - When touching legacy files, format with `wct fmt --staged`; never `ruff format` the whole tree.
+- Your verification checklist mirrors CI: run `make pr` before opening the PR.
 
 ## Handoff
 

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-label="WCT — Write, Check, Trust">
+  <defs>
+    <linearGradient id="wct-shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="wct-sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(48,44) scale(0.45)">
+    <path d="M110 88 H402 Q418 88 418 104 V244 C418 348 352 416 256 468 C160 416 94 348 94 244 V104 Q94 88 110 88 Z"
+          fill="url(#wct-shield)" stroke="#A5B4FC" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M110 88 H402 Q418 88 418 104 V244 C418 348 352 416 256 468 C160 416 94 348 94 244 V104 Q94 88 110 88 Z"
+          fill="url(#wct-sheen)"/>
+    <path d="M256 118 C330 152 388 160 392 160 C392 268 366 344 256 402 C146 344 120 268 120 160 C124 160 182 152 256 118 Z"
+          fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M167 258 L233 326 L349 204" fill="none" stroke="#ffffff" stroke-width="46"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="316" y="168" font-family="ui-sans-serif, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="92" font-weight="800" fill="#e6edf3" letter-spacing="-2">Write, Check, Trust</text>
+  <text x="320" y="226" font-family="ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace"
+        font-size="31" font-weight="500" fill="#94a3b8">wct · hardening harness para código generado por agentes</text>
+</svg>

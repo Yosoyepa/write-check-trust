@@ -104,3 +104,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #10: hardening CI para colaboradores
 - Commit: 59b4e6d2fb6c13a9d484c355c494cc33f7076c80
+
+## 2026-08-21T19:52:15.181328+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #11: release v0.2.0
+- Commit: 052fe97d12b8932836261db2a7b7e72896475ddb

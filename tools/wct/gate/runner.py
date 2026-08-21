@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -567,6 +568,16 @@ TIERS: dict[str, list[str]] = {
 
 def run_tier(root: Path, tier: str) -> list[GateResult]:
     _root, policy, _thresholds = load_config(root)
+    required = policy.get("environment_required", {}).get(tier, [])
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        return [
+            GateResult(
+                "G-ENV",
+                Status.ERROR,
+                f"variables de entorno ausentes para el tier {tier}: {', '.join(missing)}",
+            )
+        ]
     disabled = set(policy.get("gates", {}).get("disabled", []))
     results: list[GateResult] = []
     for gate_id in TIERS[tier]:

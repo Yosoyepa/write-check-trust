@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "write-check-trust"
-version = "0.2.0"
+version = "0.3.0"
 description = "Write, Check, Trust: provider-agnostic hardening harness for agent-generated code"
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
@@ -73,7 +73,7 @@ exclude = ["tests/acceptance/generated"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.2.0"
+version = "0.3.0"
 tag_format = "v$version"
 
 [tool.mutmut]

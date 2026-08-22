@@ -85,6 +85,17 @@ complexity:
   # Límite duro de CC por función, verificado también por wct (independiente de
   # xenon para no depender de una sola herramienta).
   max_cc_per_function: 10
+  # Complejidad cognitiva por función (G-COGNITIVE): castiga la anidación que
+  # la CC perdona. Umbral de SonarSource S3776.
+  max_cognitive_per_function: 15
+
+# ---------------------------------------------------------------------------
+# Tamaño de archivo
+# Techo de Clean Code; el borde superior de la banda de mínima densidad de
+# defectos (Malaiya & Hatton, ~161-400 LOC). Deuda existente: baseline.
+# ---------------------------------------------------------------------------
+size:
+  max_file_loc: 500
 
 # ---------------------------------------------------------------------------
 # Cobertura

@@ -11,6 +11,7 @@ import time
 
 from tools.wct.accept.pipeline import ir_dry, parse_feature
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
+from tools.wct.cognitive.engine import scan as scan_cognitive
 from tools.wct.config import load_config
 from tools.wct.dry.analyzer import analyze as analyze_dry
 from tools.wct.integrity.engine import violations as integrity_violations
@@ -21,10 +22,13 @@ from tools.wct.ratchet.engine import (
     baseline,
     compare,
     debt_findings,
+    ignores_count,
+    ignores_findings,
     suppression_count,
     suppression_findings,
 )
 from tools.wct.rules.engine import drift, rule_documents
+from tools.wct.size.engine import oversized as size_oversized
 from tools.wct.util.git import remote_base
 
 Gate = Callable[[Path], GateResult]
@@ -65,7 +69,10 @@ def gate_meta_rules(root: Path) -> GateResult:
             if unknown:
                 findings.append(f"{rule['id']}: gates desconocidos: {', '.join(unknown)}")
     return _result(
-        "G-META-2", started, findings, "todas las reglas nombran verificadores conocidos"
+        "G-META-2",
+        started,
+        findings,
+        "todas las reglas nombran verificadores conocidos",
     )
 
 
@@ -77,11 +84,15 @@ def gate_rules_drift(root: Path) -> GateResult:
 
 def gate_suppressions(root: Path) -> GateResult:
     started = time.monotonic()
-    findings = suppression_findings(root)
+    findings = suppression_findings(root) + ignores_findings(root)
     current = suppression_count(root)
     base = baseline(root, "suppressions")
     if not compare(current, base):
         findings.append(f"ratchet: {current} > baseline {base['value']}")
+    ignored = ignores_count(root)
+    ignores_base = baseline(root, "per-file-ignores")
+    if not compare(ignored, ignores_base):
+        findings.append(f"ratchet per-file-ignores: {ignored} > baseline {ignores_base['value']}")
     return _result("G-SUPPRESS", started, findings, "sin erosión por supresiones")
 
 
@@ -179,7 +190,10 @@ def gate_archmetrics(root: Path) -> GateResult:
             f"{item['package']}: zone={item['zone']} D={item['distance']:.3f}" for item in zones
         )
     return _result(
-        "G-ARCHMETRICS", started, findings, "dependency graph y métricas A/I/D saludables"
+        "G-ARCHMETRICS",
+        started,
+        findings,
+        "dependency graph y métricas A/I/D saludables",
     )
 
 
@@ -366,6 +380,32 @@ def gate_secrets(root: Path) -> GateResult:
     return _result("G-SECRET", started, findings, "sin secretos nuevos")
 
 
+def gate_size(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = size_oversized(root)
+    base = baseline(root, "file-size")
+    allowed = {str(name) for name in base["files"]}
+    findings = [
+        f"{item['file']}: {item['loc']} LOC > límite {report['limit']}"
+        for item in report["files"]
+        if item["file"] not in allowed
+    ]
+    if not compare(len(report["files"]), base):
+        findings.append(f"ratchet: {len(report['files'])} > baseline {base['value']}")
+    return _result("G-SIZE", started, findings, "archivos dentro del presupuesto de líneas")
+
+
+def gate_cognitive(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = scan_cognitive(root)
+    findings = [
+        f"{item['file']}:{item['line']}: {item['function']}: "
+        f"cognitiva {item['score']} > {report['limit']}"
+        for item in report["functions"]
+    ]
+    return _result("G-COGNITIVE", started, findings, "anidamiento dentro del umbral cognitivo")
+
+
 def alias(gate_id: str, target: Gate) -> Gate:
     def run(root: Path) -> GateResult:
         result = target(root)
@@ -389,7 +429,8 @@ REGISTRY: dict[str, Gate] = {
     "G-DEBT": gate_debt,
     "G-LINT": external("G-LINT", ["ruff", "check", "--config", "governance/lint/ruff.toml", "."]),
     "G-FMT": external(
-        "G-FMT", ["ruff", "format", "--config", "governance/lint/ruff.toml", "--check", "."]
+        "G-FMT",
+        ["ruff", "format", "--config", "governance/lint/ruff.toml", "--check", "."],
     ),
     "G-TYPE": external("G-TYPE", ["mypy", "tools/wct", "src"]),
     "G-TEST": external("G-TEST", ["pytest", "-q", "tests/unit", "tests/integration"]),
@@ -427,6 +468,8 @@ REGISTRY: dict[str, Gate] = {
     "G-INTROVERT": gate_introvert,
     "G-MUT-SITES": gate_mutation_sites,
     "G-ACCEPT": gate_accept,
+    "G-SIZE": gate_size,
+    "G-COGNITIVE": gate_cognitive,
     "G-CRAP": external(
         "G-CRAP",
         ["crap4py", "src", "--lcov", "build/coverage/lcov.info", "--max-crap", "6"],
@@ -448,7 +491,13 @@ REGISTRY: dict[str, Gate] = {
     ),
     "G-COV-TOTAL": external(
         "G-COV-TOTAL",
-        ["pytest", "--cov", "--cov-branch", "--cov-report=lcov:build/coverage/lcov.info", "-q"],
+        [
+            "pytest",
+            "--cov",
+            "--cov-branch",
+            "--cov-report=lcov:build/coverage/lcov.info",
+            "-q",
+        ],
     ),
     "G-COV-DIFF": gate_coverage_diff,
     "G-DOC": external("G-DOC", ["interrogate", "src", "--fail-under", "34"], optional=True),
@@ -457,14 +506,21 @@ REGISTRY: dict[str, Gate] = {
     "G-TEST-RANDOM": external(
         "G-TEST-RANDOM", ["pytest", "-q", "--randomly-seed=last"], optional=True
     ),
-    "G-DRY-TOK": external("G-DRY-TOK", ["jscpd", "src", "tools"], optional=True),
+    # --exit-code 1: sin esa bandera jscpd sale 0 aunque encuentre clones
+    # (verificado empíricamente) y el gate sería vacío. El presupuesto de
+    # detección (min-tokens, threshold) vive en .jscpd.json del repo.
+    "G-DRY-TOK": external(
+        "G-DRY-TOK", ["jscpd", "src", "tools", "--exit-code", "1"], optional=True
+    ),
     "G-SBOM": external(
         "G-SBOM",
         ["cyclonedx-py", "environment", "--output-file", "build/sbom.json"],
         optional=True,
     ),
     "G-COMMIT-MSG": external(
-        "G-COMMIT-MSG", ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"], optional=True
+        "G-COMMIT-MSG",
+        ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"],
+        optional=True,
     ),
     "G-MUT": external("G-MUT", ["mutmut", "run"], optional=True),
     "G-ACCEPT-MUT": external("G-ACCEPT-MUT", ["wct", "accept", "mutate"], optional=True),
@@ -485,7 +541,15 @@ REGISTRY.update(
 )
 
 TIERS: dict[str, list[str]] = {
-    "fast": ["G-META-2", "G-RULES-DRIFT", "G-SUPPRESS", "G-DEBT", "G-LINT", "G-FMT", "G-TYPE"],
+    "fast": [
+        "G-META-2",
+        "G-RULES-DRIFT",
+        "G-SUPPRESS",
+        "G-DEBT",
+        "G-LINT",
+        "G-FMT",
+        "G-TYPE",
+    ],
     "commit": [
         "G-META-1",
         "G-META-2",
@@ -504,6 +568,8 @@ TIERS: dict[str, list[str]] = {
         "G-SECRET",
         "G-MUT-SITES",
         "G-ACCEPT",
+        "G-SIZE",
+        "G-COGNITIVE",
     ],
     "full": [
         "G-META-1",
@@ -526,6 +592,8 @@ TIERS: dict[str, list[str]] = {
         "G-INTROVERT",
         "G-MUT-SITES",
         "G-ACCEPT",
+        "G-SIZE",
+        "G-COGNITIVE",
         "G-SAST-BANDIT",
         "G-SAST-SEMGREP",
         "G-SECRET",
@@ -555,6 +623,8 @@ TIERS: dict[str, list[str]] = {
             "G-SECRET",
             "G-MUT-SITES",
             "G-ACCEPT",
+            "G-SIZE",
+            "G-COGNITIVE",
         ],
         "G-HOOKS-WIRED",
         "G-COV-TOTAL",
@@ -588,6 +658,10 @@ def run_tier(root: Path, tier: str) -> list[GateResult]:
                 results.append(REGISTRY[gate_id](root))
             except Exception as exc:  # fail closed: harness errors are blocking
                 results.append(
-                    GateResult(gate_id, Status.ERROR, f"guard crash: {type(exc).__name__}: {exc}")
+                    GateResult(
+                        gate_id,
+                        Status.ERROR,
+                        f"guard crash: {type(exc).__name__}: {exc}",
+                    )
                 )
     return results

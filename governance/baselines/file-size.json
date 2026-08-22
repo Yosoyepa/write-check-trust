@@ -1,0 +1,6 @@
+{
+  "direction": "lower_is_better",
+  "value": 1,
+  "files": ["tools/wct/gate/runner.py"],
+  "note": "Único archivo sobre 500 LOC. Partición fachada pendiente, trackeada en el issue #12. Archivos NUEVOS sobre el límite bloquean siempre: la baseline solo ampara a los listados."
+}

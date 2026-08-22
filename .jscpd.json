@@ -1,0 +1,7 @@
+{
+  "min-tokens": 70,
+  "threshold": 5,
+  "reporters": ["console"],
+  "output": "build/jscpd",
+  "ignore": ["**/__pycache__/**"]
+}

@@ -131,3 +131,36 @@ rules:
     verified_by: [G-DOC]
     severity: ratchet
     fails: []
+
+  - id: STYLE-011
+    text: >
+      Ningún archivo fuente pasa de 500 líneas de código (sin blancos ni
+      comentarios). La deuda existente vive en governance/baselines/file-size.json
+      y solo puede bajar; un archivo NUEVO sobre el límite bloquea siempre.
+      Tests y código generado quedan fuera: sus tablas son matrices de
+      cobertura (MIN-008).
+    rationale: >
+      Techo de Clean Code y borde superior de la banda de mínima densidad de
+      defectos (Malaiya & Hatton, ~161-400 LOC). La longitud es un proxy débil
+      por sí sola — el foco real está en cohesión y complejidad — pero una
+      mezcla de responsabilidades casi siempre termina quebrando el presupuesto,
+      y partir por fachada (TEST-007) es la salida canónica.
+    verified_by: [G-SIZE]
+    severity: ratchet
+    fails: [F1]
+
+  - id: STYLE-012
+    text: >
+      Complejidad cognitiva ≤ 15 por función en src/. La anidación profunda
+      que la CC ciclómatica perdona — una función con CC 8 y cuatro niveles de
+      if anidados pasa STYLE-004 — aquí cuesta: cada nivel de profundidad
+      encarece el siguiente.
+    rationale: >
+      Umbral de SonarSource S3776 (regla por defecto para todos los lenguajes).
+      Walker AST propio inspirado en Campbell; la dependencia de referencia
+      (cognitive_complexity) lleva dormita desde 2022 y la escalera MIN-001
+      prefiere stdlib. Divergencias documentadas en el módulo: assert, with y
+      comprehensions no incrementan.
+    verified_by: [G-COGNITIVE]
+    severity: hard
+    fails: [F9]

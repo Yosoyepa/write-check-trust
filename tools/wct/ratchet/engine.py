@@ -19,6 +19,16 @@ DEBT_FORMAT = re.compile(
     r"(?:TODO|FIXME|HACK|XXX)\(owner=[^,]+,\s*issue=(?:#\d+|https?://[^)]+)\):|ponytail:\s*owner=[^,]+,\s*issue=(?:#\d+|https?://\S+)",
     re.I,
 )
+PROFILE = "governance/lint/ruff.toml"
+IGNORES_SECTION = "[lint.per-file-ignores]"
+IGNORES_ENTRY = re.compile(r'^\s*"(?P<glob>[^"]+)"\s*=\s*\[(?P<rules>[^\]]*)\]')
+# La detección de deuda en comentarios del perfil es case-sensitive a
+# propósito: la palabra española "todo" no debe leerse como marcador.
+DEBT_STRICT = re.compile(r"\b(?:ponytail:|TODO|FIXME|HACK|XXX)\b")
+DEBT_STRICT_FORMAT = re.compile(
+    r"(?:TODO|FIXME|HACK|XXX)\(owner=[^,]+,\s*issue=(?:#\d+|https?://[^)]+)\):"
+    r"|ponytail:\s*owner=[^,]+,\s*issue=(?:#\d+|https?://\S+)"
+)
 
 
 def source_files(root: Path) -> list[Path]:
@@ -92,3 +102,71 @@ def compare(current: float, base: dict[str, Any]) -> bool:
     direction = base["direction"]
     value = float(base["value"])
     return current <= value if direction == "lower_is_better" else current >= value
+
+
+def per_file_ignores(root: Path) -> list[dict[str, Any]]:
+    """Entries of the canonical ruff profile's [lint.per-file-ignores].
+
+    tomllib drops comments, so the raw text is parsed: each entry carries the
+    contiguous comment block above it plus any trailing comment on its line.
+    """
+    profile = root / PROFILE
+    if not profile.is_file():
+        return []
+    lines = profile.read_text(encoding="utf-8").splitlines()
+    entries: list[dict[str, Any]] = []
+    section = ""
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]") and "=" not in stripped:
+            section = stripped
+            continue
+        if section != IGNORES_SECTION:
+            continue
+        match = IGNORES_ENTRY.match(line)
+        if not match:
+            continue
+        comment_parts: list[str] = []
+        trailing = line[match.end() :]
+        if "#" in trailing:
+            comment_parts.append(trailing.split("#", 1)[1])
+        above = index - 1
+        while above >= 0 and lines[above].strip().startswith("#"):
+            comment_parts.append(lines[above].strip().lstrip("#"))
+            above -= 1
+        entries.append(
+            {
+                "glob": match.group("glob"),
+                "line": index + 1,
+                "rules": [
+                    rule.strip().strip('"')
+                    for rule in match.group("rules").split(",")
+                    if rule.strip()
+                ],
+                "comment": " ".join(part.strip() for part in comment_parts).strip(),
+            }
+        )
+    return entries
+
+
+def ignores_findings(root: Path) -> list[str]:
+    """Every per-file-ignores entry needs justification; debt needs owner+issue."""
+    _root, _policy, thresholds = load_config(root)
+    minimum = int(thresholds["suppressions"]["min_justification_chars"])
+    findings: list[str] = []
+    for entry in per_file_ignores(root):
+        if len(entry["comment"]) < minimum:
+            findings.append(
+                f"{PROFILE}:{entry['line']}: {entry['glob']}: "
+                f"exención sin justificación de al menos {minimum} caracteres"
+            )
+            continue
+        comment = str(entry["comment"])
+        if DEBT_STRICT.search(comment) and not DEBT_STRICT_FORMAT.search(comment):
+            findings.append(f"{PROFILE}:{entry['line']}: {entry['glob']}: deuda sin owner + issue")
+    return findings
+
+
+def ignores_count(root: Path) -> int:
+    """Exempt rule codes across all entries ("ALL" counts as one)."""
+    return sum(len(entry["rules"]) for entry in per_file_ignores(root))

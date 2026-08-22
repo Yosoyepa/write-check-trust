@@ -116,14 +116,23 @@ mark-parentheses = false
 # El proyecto ejemplo mantiene el estándar completo: es la demostración.
 # Los __init__.py pueden estar vacíos sin docstring de módulo.
 "**/__init__.py" = ["D104"]
+# Escenarios de aceptación generados por la pipeline: líneas largas y paths.
 "tests/acceptance/generated/**" = ["E501", "PTH123", "D"]
+# Constante-nombre para el gate de secretos, no una credencial real.
 "tools/wct/model.py" = ["S105"]
+# TODO(owner=yosoyepa, issue=#12): particionar ir_dry en subfunciones puras.
 "tools/wct/accept/pipeline.py" = ["C901", "PLR0912", "PLR0915"]
+# TODO(owner=yosoyepa, issue=#12): extraer el walker de imports del analizador.
 "tools/wct/archmetrics/analyzer.py" = ["C901", "PLR0911", "PLR0912", "PLR0915"]
+# TODO(owner=yosoyepa, issue=#12): despachar subcomandos a módulos propios.
 "tools/wct/cli.py" = ["C901", "PLR0911", "PLR0912", "PLR0915"]
+# TODO(owner=yosoyepa, issue=#12): separar comparación de forma de extracción.
 "tools/wct/dry/analyzer.py" = ["C901", "PLR0912"]
+# TODO(owner=yosoyepa, issue=#12): tabular los patrones del guard por evento.
 "tools/wct/hooks/guard.py" = ["PLR0911"]
+# TODO(owner=yosoyepa, issue=#12): extraer el veredicto por test del walker.
 "tools/wct/introvert/analyzer.py" = ["C901", "PLR0912", "PLR0915"]
+# TODO(owner=yosoyepa, issue=#12): data-driven de los 30 casos del red team.
 "tools/wct/selftest/redteam.py" = ["C901", "PLR0911", "PLR0912"]
 
 [format]

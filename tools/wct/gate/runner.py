@@ -21,6 +21,8 @@ from tools.wct.ratchet.engine import (
     baseline,
     compare,
     debt_findings,
+    ignores_count,
+    ignores_findings,
     suppression_count,
     suppression_findings,
 )
@@ -80,11 +82,15 @@ def gate_rules_drift(root: Path) -> GateResult:
 
 def gate_suppressions(root: Path) -> GateResult:
     started = time.monotonic()
-    findings = suppression_findings(root)
+    findings = suppression_findings(root) + ignores_findings(root)
     current = suppression_count(root)
     base = baseline(root, "suppressions")
     if not compare(current, base):
         findings.append(f"ratchet: {current} > baseline {base['value']}")
+    ignored = ignores_count(root)
+    ignores_base = baseline(root, "per-file-ignores")
+    if not compare(ignored, ignores_base):
+        findings.append(f"ratchet per-file-ignores: {ignored} > baseline {ignores_base['value']}")
     return _result("G-SUPPRESS", started, findings, "sin erosión por supresiones")
 
 

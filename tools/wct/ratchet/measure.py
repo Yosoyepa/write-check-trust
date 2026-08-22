@@ -7,7 +7,13 @@ from pathlib import Path
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.integrity.engine import require_approval_evidence
 from tools.wct.introvert.analyzer import analyze as analyze_tests
-from tools.wct.ratchet.engine import baseline, compare, debt_findings, suppression_count
+from tools.wct.ratchet.engine import (
+    baseline,
+    compare,
+    debt_findings,
+    ignores_count,
+    suppression_count,
+)
 from tools.wct.util.git import head_sha
 
 MIN_APPROVER = 2
@@ -24,6 +30,7 @@ def measurements(root: Path) -> dict[str, float]:
         "archmetrics-zones": float(
             sum(item["zone"] != "healthy" for item in architecture["metrics"])
         ),
+        "per-file-ignores": float(ignores_count(root)),
     }
 
 

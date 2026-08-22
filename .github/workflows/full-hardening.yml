@@ -27,6 +27,11 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --disable-pip-version-check uv
       - run: uv sync --frozen --group dev --group quality
+      # G-DRY-TOK corre con --exit-code 1 y el presupuesto de .jscpd.json;
+      # sin jscpd en PATH el gate reporta SKIP y la duplicación por tokens
+      # queda sin verificar.
+      - name: Install jscpd for G-DRY-TOK
+        run: npm install -g jscpd@5.0.16
       - run: uv run wct gate --tier full
       - run: uv run wct accept mutate
       - run: uv run wct selftest redteam

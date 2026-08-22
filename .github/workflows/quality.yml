@@ -36,6 +36,11 @@ jobs:
           uv run wct doctor
       - name: Run commit tier
         run: uv run wct gate --tier commit
+      - name: Audit deployable dependencies (SEC-003)
+        run: |
+          mkdir -p build
+          uv export --frozen --no-dev --no-emit-project --no-hashes --format requirements.txt > build/requirements-audit.txt
+          uv run pip-audit --requirement build/requirements-audit.txt
       - name: Generate branch coverage
         run: uv run pytest --cov --cov-branch --cov-report=lcov:build/coverage/lcov.info -q
       - name: Require 90 percent coverage on the pull-request diff

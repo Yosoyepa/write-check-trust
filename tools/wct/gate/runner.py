@@ -406,6 +406,31 @@ def gate_cognitive(root: Path) -> GateResult:
     return _result("G-COGNITIVE", started, findings, "anidamiento dentro del umbral cognitivo")
 
 
+def gate_docstrings(root: Path) -> GateResult:
+    """El piso vive en la baseline de ratchet (docstring-coverage), no en el comando."""
+    started = time.monotonic()
+    if shutil.which("interrogate") is None:
+        return GateResult("G-DOC", Status.SKIP, "herramienta ausente: interrogate")
+    floor = int(float(baseline(root, "docstring-coverage")["value"]))
+    command = ["interrogate", "src", "--fail-under", str(floor)]
+    completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
+    output = (completed.stdout + "\n" + completed.stderr).strip()
+    status = Status.PASS if completed.returncode == 0 else Status.FAIL
+    summary = (
+        "ok"
+        if status is Status.PASS
+        else (output.splitlines()[-1] if output else f"exit {completed.returncode}")
+    )
+    return GateResult(
+        "G-DOC",
+        status,
+        summary,
+        int((time.monotonic() - started) * 1000),
+        output.splitlines()[-50:],
+        " ".join(command),
+    )
+
+
 def alias(gate_id: str, target: Gate) -> Gate:
     def run(root: Path) -> GateResult:
         result = target(root)
@@ -500,7 +525,7 @@ REGISTRY: dict[str, Gate] = {
         ],
     ),
     "G-COV-DIFF": gate_coverage_diff,
-    "G-DOC": external("G-DOC", ["interrogate", "src", "--fail-under", "34"], optional=True),
+    "G-DOC": gate_docstrings,
     "G-SECRET": gate_secrets,
     "G-PROP": external("G-PROP", ["pytest", "-q", "tests/property"]),
     "G-TEST-RANDOM": external(

@@ -128,6 +128,7 @@ uv run wct selftest redteam
 uv run wct adopt /ruta/a/repositorio
 uv run wct fmt [--staged]
 uv run wct split-plan <archivo> [--json]
+uv run wct hotspots [--days 90] [--top 10] [--json]
 ```
 
 ### Formateo acotado al changeset

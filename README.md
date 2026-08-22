@@ -131,6 +131,13 @@ uv run wct split-plan <archivo> [--json]
 uv run wct hotspots [--days 90] [--top 10] [--json]
 ```
 
+### Hotspots: dónde refactorizar primero
+
+`wct hotspots` cruza el churn de `git log --numstat` con la complejidad
+cognitiva por archivo (Tornhill): el mejor predictor empírico de defectos
+publicado. Es asesor — exit 0 siempre — porque un umbral de churn castigaría
+a los módulos simplemente activos.
+
 ### Formateo acotado al changeset
 
 `wct fmt` formatea SOLO el changeset (diff contra main/master más el árbol de

@@ -107,12 +107,15 @@ def _dispatch_unsafe(event: str) -> int:
     normalized = event.lower().replace("_", "-")
     if normalized == "pre-tool-use":
         return pre_tool_use(root, payload)
-    if normalized in {"post-tool-use", "post-tool-batch"}:
-        return _run_gate(root, "fast")
-    if normalized in {"stop", "subagent-stop"}:
-        return _run_gate(root, "commit")
-    if normalized == "config-change":
-        return _run_gate(root, "fast")
+    gate_tier = {
+        "post-tool-use": "fast",
+        "post-tool-batch": "fast",
+        "stop": "commit",
+        "subagent-stop": "commit",
+        "config-change": "fast",
+    }.get(normalized)
+    if gate_tier:
+        return _run_gate(root, gate_tier)
     if normalized in {"session-start", "subagent-start", "post-compact"}:
         rules = (
             (root / "CLAUDE.md").read_text(encoding="utf-8")

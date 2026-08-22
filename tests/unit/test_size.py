@@ -1,4 +1,5 @@
 from collections.abc import Callable
+import json
 from pathlib import Path
 
 from tools.wct.gate.runner import REGISTRY, TIERS
@@ -75,7 +76,12 @@ def test_gate_ratchets_the_count_of_oversized_files(
 
 def test_baseline_entry_passes_while_ratchet_holds(project_factory: Callable[..., Path]) -> None:
     root = project_factory()
-    _oversized(root, "tools/wct/gate/runner.py", 593)
+    _oversized(root, "src/legacy.py", 593)
+    path = root / "governance/baselines/file-size.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["value"] = 1
+    document["files"] = ["src/legacy.py"]
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
     result = REGISTRY["G-SIZE"](root)
 

@@ -1,5 +1,5 @@
 {
   "direction": "lower_is_better",
-  "value": 34,
-  "note": "Códigos de regla exentos en [lint.per-file-ignores] del perfil ruff canónico. Solo puede bajar. La deuda de refactor de los 7 archivos del harness se trackea en el issue #12."
+  "value": 33,
+  "note": "Códigos de regla exentos en [lint.per-file-ignores] del perfil ruff canónico. Solo puede bajar. 2026-08-22: 34 → 33, guard.py despacha eventos por tabla y pierde su exención PLR0911. Deuda restante: issue #12."
 }

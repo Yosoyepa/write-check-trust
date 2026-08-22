@@ -14,6 +14,7 @@ from tools.wct.ratchet.engine import (
     ignores_count,
     suppression_count,
 )
+from tools.wct.size.engine import oversized as size_oversized
 from tools.wct.util.git import head_sha
 
 MIN_APPROVER = 2
@@ -31,6 +32,7 @@ def measurements(root: Path) -> dict[str, float]:
             sum(item["zone"] != "healthy" for item in architecture["metrics"])
         ),
         "per-file-ignores": float(ignores_count(root)),
+        "file-size": float(len(size_oversized(root)["files"])),
     }
 
 

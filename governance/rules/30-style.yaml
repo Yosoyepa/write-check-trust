@@ -131,3 +131,20 @@ rules:
     verified_by: [G-DOC]
     severity: ratchet
     fails: []
+
+  - id: STYLE-011
+    text: >
+      Ningún archivo fuente pasa de 500 líneas de código (sin blancos ni
+      comentarios). La deuda existente vive en governance/baselines/file-size.json
+      y solo puede bajar; un archivo NUEVO sobre el límite bloquea siempre.
+      Tests y código generado quedan fuera: sus tablas son matrices de
+      cobertura (MIN-008).
+    rationale: >
+      Techo de Clean Code y borde superior de la banda de mínima densidad de
+      defectos (Malaiya & Hatton, ~161-400 LOC). La longitud es un proxy débil
+      por sí sola — el foco real está en cohesión y complejidad — pero una
+      mezcla de responsabilidades casi siempre termina quebrando el presupuesto,
+      y partir por fachada (TEST-007) es la salida canónica.
+    verified_by: [G-SIZE]
+    severity: ratchet
+    fails: [F1]

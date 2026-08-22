@@ -127,6 +127,9 @@ Profile: `strict`. Run `uv run wct gate --tier fast` before handoff.
 - **STYLE-010** — Docstring en toda función y clase pública, consistente con la firma (parámetros, retorno, excepciones). La cobertura de docstrings es un ratchet.
   Verified by: `G-DOC`.
 
+- **STYLE-011** — Ningún archivo fuente pasa de 500 líneas de código (sin blancos ni comentarios). La deuda existente vive en governance/baselines/file-size.json y solo puede bajar; un archivo NUEVO sobre el límite bloquea siempre. Tests y código generado quedan fuera: sus tablas son matrices de cobertura (MIN-008).
+  Verified by: `G-SIZE`.
+
 ## Seguridad y cadena de suministro
 
 - **SEC-001** — Nunca escribas credenciales, tokens, claves privadas ni cadenas de conexión en el código, ni siquiera como valor de ejemplo o placeholder realista. Usa variables de entorno leídas en la capa de entrypoints.

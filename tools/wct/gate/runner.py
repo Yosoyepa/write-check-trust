@@ -27,6 +27,7 @@ from tools.wct.ratchet.engine import (
     suppression_findings,
 )
 from tools.wct.rules.engine import drift, rule_documents
+from tools.wct.size.engine import oversized as size_oversized
 from tools.wct.util.git import remote_base
 
 Gate = Callable[[Path], GateResult]
@@ -378,6 +379,21 @@ def gate_secrets(root: Path) -> GateResult:
     return _result("G-SECRET", started, findings, "sin secretos nuevos")
 
 
+def gate_size(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = size_oversized(root)
+    base = baseline(root, "file-size")
+    allowed = {str(name) for name in base["files"]}
+    findings = [
+        f"{item['file']}: {item['loc']} LOC > límite {report['limit']}"
+        for item in report["files"]
+        if item["file"] not in allowed
+    ]
+    if not compare(len(report["files"]), base):
+        findings.append(f"ratchet: {len(report['files'])} > baseline {base['value']}")
+    return _result("G-SIZE", started, findings, "archivos dentro del presupuesto de líneas")
+
+
 def alias(gate_id: str, target: Gate) -> Gate:
     def run(root: Path) -> GateResult:
         result = target(root)
@@ -440,6 +456,7 @@ REGISTRY: dict[str, Gate] = {
     "G-INTROVERT": gate_introvert,
     "G-MUT-SITES": gate_mutation_sites,
     "G-ACCEPT": gate_accept,
+    "G-SIZE": gate_size,
     "G-CRAP": external(
         "G-CRAP",
         ["crap4py", "src", "--lcov", "build/coverage/lcov.info", "--max-crap", "6"],
@@ -538,6 +555,7 @@ TIERS: dict[str, list[str]] = {
         "G-SECRET",
         "G-MUT-SITES",
         "G-ACCEPT",
+        "G-SIZE",
     ],
     "full": [
         "G-META-1",
@@ -560,6 +578,7 @@ TIERS: dict[str, list[str]] = {
         "G-INTROVERT",
         "G-MUT-SITES",
         "G-ACCEPT",
+        "G-SIZE",
         "G-SAST-BANDIT",
         "G-SAST-SEMGREP",
         "G-SECRET",
@@ -589,6 +608,7 @@ TIERS: dict[str, list[str]] = {
             "G-SECRET",
             "G-MUT-SITES",
             "G-ACCEPT",
+            "G-SIZE",
         ],
         "G-HOOKS-WIRED",
         "G-COV-TOTAL",

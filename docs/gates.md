@@ -19,15 +19,15 @@ skips silenciosos.
 | Tier | Cuándo corre | Presupuesto | Gates |
 |---|---|---:|---:|
 | `fast` | feedback en edición y PostToolUse | 10 s | 7 |
-| `commit` | pre-commit, Stop y handoff | 120 s | 17 |
-| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 23 |
-| `full` | release, hardener y CI programada | 30 min | 27 |
+| `commit` | pre-commit, Stop y handoff | 120 s | 19 |
+| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 25 |
+| `full` | release, hardener y CI programada | 30 min | 29 |
 
 ```bash
 uv run wct gate --tier fast    # 7/7
-uv run wct gate --tier commit  # 17/17
-uv run wct gate --tier pr      # 23/23  (o `make pr`)
-uv run wct gate --tier full    # 27/27
+uv run wct gate --tier commit  # 19/19
+uv run wct gate --tier pr      # 25/25  (o `make pr`)
+uv run wct gate --tier full    # 29/29
 ```
 
 ## fast — 7 gates
@@ -36,13 +36,13 @@ uv run wct gate --tier full    # 27/27
 |---|---|---|
 | `G-META-2` | toda regla nombra verificadores conocidos | `wct` (análisis de `governance/rules/`) |
 | `G-RULES-DRIFT` | copias por proveedor sincronizadas con la fuente | `wct rules check` |
-| `G-SUPPRESS` | ratchet de supresiones (`# noqa`, `# type: ignore`…): solo baja | `wct` (conteo contra baseline) |
+| `G-SUPPRESS` | ratchet de supresiones (`# noqa`, `# type: ignore`… y `per-file-ignores` del perfil ruff): solo baja | `wct` (conteo contra baseline) |
 | `G-DEBT` | TODOs/ponytail con owner e issue | `wct` (escaneo de marcadores) |
 | `G-LINT` | cero findings de lint | `ruff check --config governance/lint/ruff.toml .` |
 | `G-FMT` | todo el árbol formateado | `ruff format --check` |
 | `G-TYPE` | tipado estricto sin errores | `mypy tools/wct src` |
 
-## commit — añade 10
+## commit — añade 12
 
 | Gate | Qué exige | Verificador |
 |---|---|---|
@@ -56,6 +56,8 @@ uv run wct gate --tier full    # 27/27
 | `G-SECRET` | sin secretos nuevos (baseline de solo lectura) | `detect-secrets scan --slim` |
 | `G-MUT-SITES` | archivos fuente dentro del presupuesto de sitios de mutación | `wct` (manifiesto diferencial) |
 | `G-ACCEPT` | Gherkin parseable, sin repetición estructural | `wct accept parse` |
+| `G-SIZE` | archivos ≤ 500 LOC; deuda legada en baseline que solo baja | `wct` (contador LOC por tokenize) |
+| `G-COGNITIVE` | complejidad cognitiva ≤ 15 por función en src/ | `wct` (walker AST propio, S3776) |
 
 ## pr — añade 6 (espejo local de la CI de PR)
 
@@ -103,7 +105,7 @@ a la espera de decisión del mantenedor.
 | `G-MUT` | manual: `make harden` y skills de mutación | `mutmut run` |
 | `G-COMMIT-MSG` | pre-commit (commit-msg hook) | `cz check --commit-msg-file` |
 | `G-TEST-RANDOM` | sin flujo automático: exige el plugin `pytest-randomly` (decisión pendiente) | `pytest --randomly-seed=last` |
-| `G-DRY-TOK` | sin flujo automático: exige `jscpd` de node (decisión pendiente) | `jscpd src tools` |
+| `G-DRY-TOK` | sin flujo automático: exige `jscpd` de node (decisión pendiente) | `jscpd src tools --exit-code 1` (presupuesto en `.jscpd.json`) |
 
 ## Alias para reglas
 

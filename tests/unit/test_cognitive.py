@@ -7,10 +7,9 @@ from tools.wct.gate.runner import REGISTRY, TIERS
 from tools.wct.model import Status
 
 
-def score_of(source: str) -> int:
-    tree = ast.parse(source)
-    functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
-    return function_score(functions[0])
+def first_function(source: str) -> ast.FunctionDef:
+    """Extrae la primera función del fuente: el SUT la puntúa el assert."""
+    return next(node for node in ast.walk(ast.parse(source)) if isinstance(node, ast.FunctionDef))
 
 
 def test_flat_branches_cost_one_each() -> None:
@@ -25,7 +24,7 @@ def test_flat_branches_cost_one_each() -> None:
         "    return 0\n"
     )
 
-    assert score_of(source) == 3
+    assert function_score(first_function(source)) == 3
 
 
 def test_nesting_multiplies_the_cost() -> None:
@@ -38,7 +37,7 @@ def test_nesting_multiplies_the_cost() -> None:
         "    return 0\n"
     )
 
-    assert score_of(source) == 6
+    assert function_score(first_function(source)) == 6
 
 
 def test_elif_chain_stays_flat() -> None:
@@ -52,7 +51,7 @@ def test_elif_chain_stays_flat() -> None:
         "        return 3\n"
     )
 
-    assert score_of(source) == 3
+    assert function_score(first_function(source)) == 3
 
 
 def test_deep_nesting_exceeds_where_same_cc_passes() -> None:
@@ -63,15 +62,15 @@ def test_deep_nesting_exceeds_where_same_cc_passes() -> None:
     lines.append("    " * 7 + "return 1")
     lines.append("    return 0")
 
-    assert score_of("\n".join(lines) + "\n") == 21
+    assert function_score(first_function("\n".join(lines) + "\n")) == 21
 
 
 def test_boolean_sequences_count_once_each() -> None:
     one = "def f(a, b, c):\n    if a and b and c:\n        return 1\n"
     two = "def f(a, b, c):\n    if (a and b) or c:\n        return 1\n"
 
-    assert score_of(one) == 2
-    assert score_of(two) == 3
+    assert function_score(first_function(one)) == 2
+    assert function_score(first_function(two)) == 3
 
 
 def test_ternary_loop_and_handler_increment() -> None:
@@ -86,19 +85,19 @@ def test_ternary_loop_and_handler_increment() -> None:
         "    return value\n"
     )
 
-    assert score_of(source) == 4
+    assert function_score(first_function(source)) == 4
 
 
 def test_lambda_nests_for_its_contents() -> None:
     source = "def f(g):\n    pick = lambda x: 1 if x else 0\n    return pick(g)\n"
 
-    assert score_of(source) == 2
+    assert function_score(first_function(source)) == 2
 
 
 def test_recursion_adds_one() -> None:
     source = "def f(n):\n    return 1 if n <= 0 else f(n - 1)\n"
 
-    assert score_of(source) == 2
+    assert function_score(first_function(source)) == 2
 
 
 def test_scan_reports_only_functions_over_limit(project_factory: Callable[..., Path]) -> None:

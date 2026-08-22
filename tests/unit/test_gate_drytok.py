@@ -20,10 +20,13 @@ def test_gate_makes_jscpd_fail_on_clones(monkeypatch: pytest.MonkeyPatch, tmp_pa
     monkeypatch.setattr("tools.wct.gate.runner.subprocess.run", fake_run)
 
     result = REGISTRY["G-DRY-TOK"](tmp_path)
+    config = json.loads((REPO / ".jscpd.json").read_text(encoding="utf-8"))
 
     assert result.status is Status.FAIL
     assert "--exit-code" in result.command.split()
     assert result.command.split()[result.command.split().index("--exit-code") + 1] == "1"
+    assert config["min-tokens"] >= 70
+    assert 0 < config["threshold"] <= 5
 
 
 def test_gate_passes_when_clean(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -36,11 +39,3 @@ def test_gate_passes_when_clean(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     result = REGISTRY["G-DRY-TOK"](tmp_path)
 
     assert result.status is Status.PASS
-
-
-def test_repo_config_bounds_the_detection_budget() -> None:
-    """La config del repo fija min-tokens 70 y un presupuesto del 5 %."""
-    config = json.loads((REPO / ".jscpd.json").read_text(encoding="utf-8"))
-
-    assert config["min-tokens"] >= 70
-    assert 0 < config["threshold"] <= 5

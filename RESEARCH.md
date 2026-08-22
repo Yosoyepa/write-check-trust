@@ -450,3 +450,68 @@ Restricción decisiva: **los agentes provistos por un plugin NO pueden declarar 
 ⇒ **El enforcement tiene que vivir en `.claude/settings.json` del proyecto, no en los agentes del plugin.** El plugin puede distribuir skills, agentes y su propio `hooks/hooks.json`, pero un agente empaquetado no puede armarse sus propios hooks.
 
 Otros: `defaultEnabled: false` para plugins que se opt-in. `claude plugin validate ./plugin --strict` trata warnings como errores (útil en CI). Campos top-level no reconocidos se ignoran → un mismo `plugin.json` puede doblar como manifest de otro ecosistema.
+
+---
+
+## Parte 5 — Longitud, tamaño y principios (DRY / KISS / SOLID / Clean Code)
+
+> Investigación del 2026-08-22. Pregunta disparadora: "wct no está viendo por la longitud del código producido… veo archivos de más de 300 líneas, ¿eso aplica DRY? ¿KISS, SOLID, Clean Code?".
+> Método: 6 subagentes de investigación web en paralelo (uno por práctica/métrica) + inventario local del código real + verificación empírica de tools.
+
+### 5.1 Inventario local (qué mide WCT hoy)
+
+Presupuesto de tamaño/complejidad ya activo en `governance/lint/ruff.toml` (reglas PL seleccionadas) y `governance/thresholds.yaml`:
+
+| Límite | Valor WCT | Referencia industria (ruff/pylint default) | Veredicto |
+|---|---|---|---|
+| Statements por función (PLR0915) | **40** | 50 | WCT más estricto |
+| Argumentos (PLR0913) | **5** | 5 | igual |
+| Ramas (PLR0912) | **10** | 12 | WCT más estricto |
+| Returns (PLR0911) | **4** | 6 | WCT más estricto |
+| CC por función (C901 + xenon `--max-absolute B`) | **10** | 10 | igual |
+| CRAP cambiado/legacy | **6 / 30** | — | propio |
+| Boolean traps (FBT), defaults mutables (B006/B008) | prohibidos | prohibidos | igual |
+| Código muerto | vulture `--min-confidence 80` | recomendado 100 | WCT más estricto |
+| DRY estructural (G-DRY) | analyzer propio (extraction_pressure de unclebob/scrap) | jscpd/pylint R0801 | más profundo que tokens |
+| **Longitud de archivo** | **no existe** | pylint C0302 = 1000; Sonar S104 = 1000 | **hueco** |
+| **Complejidad cognitiva** | **no existe** | Sonar S3776 = 15 | **hueco** |
+| **Cohesión (LCOM)** | **no existe** | LCOM4 > 1 = clase doble | **hueco** |
+
+Realidad medida del repo (2026-08-22): en `src/` + `tools/` **solo un archivo pasa de 300 líneas** — `tools/wct/gate/runner.py` (593; el siguiente es archmetrics/analyzer.py con 270). El máximo en tests es 203.
+
+### 5.2 Evidencia web — tamaño de archivo y función
+
+- **Ningún estándar respalda fallar a las 300 líneas.** Clean Code (Martin): ~200 típico, ~500 techo. Google Python Style Guide: sin límite duro de archivo; "si una función pasa de ~40 líneas, considera partirla" (y su propio pylintrc desactiva toda la categoría R). Linux kernel: reglas de función (1-2 pantallas, ≤3 niveles de indentación) pero ninguna de archivo. pylint C0302 y SonarSource S104: **1000** por defecto. ESLint `max-lines` (JS): 300.
+- **Empírica**: la densidad de defectos por tamaño es en U (mínimo ~161-400 LOC, Malaiya & Hatton); el tamaño predice el *conteo* de fallas, no la densidad (Ostrand/Weyuker/Bell ISSTA'04); y **churn × complejidad supera al tamaño como predictor** (Nagappan & Ball; Tornhill "Code Red": 39 codebases, el código de baja calidad concentra 15× más defectos).
+- Función: Sonar S138 falla a **80** líneas; Code Complete sitúa la zona de comfort hasta ~100-200; el estudio de 450 rutinas citado da 41% menos errores ≤32 LOC.
+
+⇒ 300+ líneas es una **bandera de revisión**, no un fallo de CI. El techo defendible para WCT: **500 LOC (sin blancos/comentarios) con ratchet** — coincide con el techo de Clean Code y el borde superior de la banda de mínima densidad.
+
+### 5.3 Evidencia web — por principio
+
+- **DRY**: taxonomía Type-1/2/3/4; los detectores cubren 1-2 y parte de 3; la duplicación semántica (Type-4) sigue sin solución práctica (survey arXiv 2026). Consenso moderno: duplicación de *conocimiento*, no de texto (Sandi Metz: "duplication is cheaper than the wrong abstraction"; regla de tres; AHA). Ruff **no tiene** regla de duplicación (issues #18432/#17724 abiertos). Recetas: pylint R0801 con `min-similarity-lines=10` + ignore imports/docstrings/signatures; jscpd con `min-tokens 70`, presupuesto ~5%, `--exitCode`. WCT ya va mejor por camino propio (G-DRY estructural con LEAVE_ALONE para tablas de test = MIN-008 coincide con el mejor consejo encontrado).
+- **KISS/YAGNI**: los proxies medibles ya están todos cableados en WCT (tabla 5.1); nesting no tiene regla en ruff (R1702 es preview; pylint-only) — la vía correcta es complejidad cognitiva (castiga anidamiento). YAGNI se cubre con F401/F841/ARG + vulture; no existe gate de "genericidad especulativa" más allá de MIN-007.
+- **SOLID**: S → parcial (próxies: cohesión LCOM4, R0904); O → human-only (consenso); L → nivel firma (mypy estricto ya lo hace); I → human-only con próxy débil (tamaño de Protocol); D → **lo más automatizable** (import-linter + secuencia principal) — WCT ya tiene ambos (G-ARCH + G-ARCHMETRICS), adelantado al ecosistema Python (no hay tool turnkey de C&K). La comunidad conscientemente deja O/I y LSP comportamental a review (Goodhart).
+- **Métricas**: cognitiva validada y con umbral publicados (Sonar S3776 = **15**, porque castiga nesting sin recompensar extracción); MI **no gateable** (fórmula contestada, Teamscale la rechaza, inputs redundantes); LCOM4 (>1 componente = dos clases), tool Python `cohesion` (GPL-3.0 — conflicto potencial con licencia MIT para dependencia); coupling Ca/Ce/I ya implementado en archmetrics propio.
+
+### 5.4 Hallazgos concretos (verificados)
+
+1. **G-DRY-TOK es un gate vacío cuando jscpd está instalado.** Verificado empíricamente (2026-08-22, fixture con 44% de líneas duplicadas): `jscpd <files>` sale **0** aunque encuentre clones; solo con `--exit-code 1` sale no-cero (nota: el flag es kebab-case; `--exitCode` es error de parseo). El wiring actual (`runner.py:460`) no pasa la bandera → siempre PASS. Arreglo: añadir `--exit-code 1` + config `.jscpd.json` (min-tokens 70, ignore tests/generated/`__init__`, reporte a `build/`). Medición del repo al momento del fix: **0 clones** en `src` + `tools` a min-tokens 70.
+2. **Las 7 exenciones `per-file-ignores` del harness son deuda invisible.** `governance/lint/ruff.toml:121-127` suprime C901/PLR0911/0912/0915 para accept/pipeline.py, archmetrics/analyzer.py, cli.py, dry/analyzer.py, hooks/guard.py, introvert/analyzer.py, selftest/redteam.py — sin justificación por entrada (STYLE-008 solo audita supresiones inline `# noqa`, no config) y sin ratchet que las cuente. Esta es la deuda real de "boilerplate/complexidad" del harness — no la longitud de archivo.
+3. **`tools/wct/gate/runner.py` (593 LOC)** es el único violador de un techo de 500. Contiene registro de gates + funciones gate + TIERS + preflight: candidato natural a partición fachada (mismo patrón que TEST-007 / `wct split-plan`).
+4. Falta gate de longitud de archivo, falta complejidad cognitiva, falta métrica de cohesión (ver tabla 5.1).
+
+### 5.5 Propuesta (priorizada, aún no implementada)
+
+- **P1 — G-SIZE**: longitud de archivo en LOC real (sin blancos/comentarios), techo **500**, analyzer AST propio (~60 líneas, patrón de dry/analyzer), tier `commit`, arranque como ratchet con baseline actual (=1: runner.py) y regla nueva STYLE-011. Excluye tests/generated (tablas = matriz de cobertura, MIN-008).
+- **P2 — G-COGNITIVE**: complejidad cognitiva por función, umbral **15** (Sonar S3776), walker AST propio (algoritmo publicado de Campbell; la dep `cognitive_complexity` está dormida desde 2022 — escalera MIN-001 peldaño 3: stdlib/propio). Es la única métrica que castiga el anidamiento que CC≤10 deja pasar — patrón típico de código generado por agentes. Regla nueva STYLE-012.
+- **P3 — Cerrar el agujero de `per-file-ignores`**: extender `wct check suppressions` (G-SUPPRESS) para que audite el bloque `[lint.per-file-ignores]` del perfil ruff: exigir comentario con código de regla + owner/issue (PROC-009) por entrada y contar el total como ratchet que solo baja.
+- **P4 — Arreglar G-DRY-TOK** (hallazgo 1): bandera + config; opcional subirlo de `optional_tools` cuando quede demostrado en CI.
+- **P5 — `wct hotspots`** (reporte, no gate): churn × CC de los últimos 90 días (Tornhill). El mejor predictor empírico de defectos; encaja con la filosofía de tendencias sobre umbrales.
+- **P6 — Cohesión LCOM4** (opcional, después): analyzer propio, clases con >1 componente = bandera. Falsos positivos conocidos (dataclasses, orquestadores) → advisory primero.
+
+**Descartado explícitamente**: MI como gate (fórmula contestada, inputs redundantes); hard-fail a 300 líneas (ninguna evidencia lo respalda); pylint completo (rompe el motor único de ADR-002/STYLE-001); gates de OCP/ISP (no estáticamente verificables — review humano, como hoy); duplicación Type-4 (sin tool práctica).
+
+### 5.6 Fuentes principales (selección)
+
+SonarSource Cognitive Complexity + regla S3776 (default 15) y S104 (1000 líneas); Campbell 2018 (ACM TechDebt); pylint C0302/symilar defaults; ruff issues #18432/#17724 (sin regla de duplicación) y docs PLR091x; Google Python Style Guide §3.18; Linux kernel coding style; Clean Code caps. 3-5; Code Complete §7.4; Malaiya & Denton 2000; Ostrand/Weyuker/Bell ISSTA 2004; Tornhill & Borg "Code Red" 2022; Sandi Metz "The Wrong Abstraction"; jscpd docs (verificación empírica propia del exit code); hynek.me y realpython.com para SOLID-Python; mschwager/cohesion (LCOM, GPL-3.0); radon/xenon/lizard (estado 2026: lizard activo, radon en mantenimiento).

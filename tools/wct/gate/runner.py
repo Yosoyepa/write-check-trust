@@ -65,7 +65,10 @@ def gate_meta_rules(root: Path) -> GateResult:
             if unknown:
                 findings.append(f"{rule['id']}: gates desconocidos: {', '.join(unknown)}")
     return _result(
-        "G-META-2", started, findings, "todas las reglas nombran verificadores conocidos"
+        "G-META-2",
+        started,
+        findings,
+        "todas las reglas nombran verificadores conocidos",
     )
 
 
@@ -179,7 +182,10 @@ def gate_archmetrics(root: Path) -> GateResult:
             f"{item['package']}: zone={item['zone']} D={item['distance']:.3f}" for item in zones
         )
     return _result(
-        "G-ARCHMETRICS", started, findings, "dependency graph y métricas A/I/D saludables"
+        "G-ARCHMETRICS",
+        started,
+        findings,
+        "dependency graph y métricas A/I/D saludables",
     )
 
 
@@ -389,7 +395,8 @@ REGISTRY: dict[str, Gate] = {
     "G-DEBT": gate_debt,
     "G-LINT": external("G-LINT", ["ruff", "check", "--config", "governance/lint/ruff.toml", "."]),
     "G-FMT": external(
-        "G-FMT", ["ruff", "format", "--config", "governance/lint/ruff.toml", "--check", "."]
+        "G-FMT",
+        ["ruff", "format", "--config", "governance/lint/ruff.toml", "--check", "."],
     ),
     "G-TYPE": external("G-TYPE", ["mypy", "tools/wct", "src"]),
     "G-TEST": external("G-TEST", ["pytest", "-q", "tests/unit", "tests/integration"]),
@@ -448,7 +455,13 @@ REGISTRY: dict[str, Gate] = {
     ),
     "G-COV-TOTAL": external(
         "G-COV-TOTAL",
-        ["pytest", "--cov", "--cov-branch", "--cov-report=lcov:build/coverage/lcov.info", "-q"],
+        [
+            "pytest",
+            "--cov",
+            "--cov-branch",
+            "--cov-report=lcov:build/coverage/lcov.info",
+            "-q",
+        ],
     ),
     "G-COV-DIFF": gate_coverage_diff,
     "G-DOC": external("G-DOC", ["interrogate", "src", "--fail-under", "34"], optional=True),
@@ -457,14 +470,21 @@ REGISTRY: dict[str, Gate] = {
     "G-TEST-RANDOM": external(
         "G-TEST-RANDOM", ["pytest", "-q", "--randomly-seed=last"], optional=True
     ),
-    "G-DRY-TOK": external("G-DRY-TOK", ["jscpd", "src", "tools"], optional=True),
+    # --exit-code 1: sin esa bandera jscpd sale 0 aunque encuentre clones
+    # (verificado empíricamente) y el gate sería vacío. El presupuesto de
+    # detección (min-tokens, threshold) vive en .jscpd.json del repo.
+    "G-DRY-TOK": external(
+        "G-DRY-TOK", ["jscpd", "src", "tools", "--exit-code", "1"], optional=True
+    ),
     "G-SBOM": external(
         "G-SBOM",
         ["cyclonedx-py", "environment", "--output-file", "build/sbom.json"],
         optional=True,
     ),
     "G-COMMIT-MSG": external(
-        "G-COMMIT-MSG", ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"], optional=True
+        "G-COMMIT-MSG",
+        ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"],
+        optional=True,
     ),
     "G-MUT": external("G-MUT", ["mutmut", "run"], optional=True),
     "G-ACCEPT-MUT": external("G-ACCEPT-MUT", ["wct", "accept", "mutate"], optional=True),
@@ -485,7 +505,15 @@ REGISTRY.update(
 )
 
 TIERS: dict[str, list[str]] = {
-    "fast": ["G-META-2", "G-RULES-DRIFT", "G-SUPPRESS", "G-DEBT", "G-LINT", "G-FMT", "G-TYPE"],
+    "fast": [
+        "G-META-2",
+        "G-RULES-DRIFT",
+        "G-SUPPRESS",
+        "G-DEBT",
+        "G-LINT",
+        "G-FMT",
+        "G-TYPE",
+    ],
     "commit": [
         "G-META-1",
         "G-META-2",
@@ -588,6 +616,10 @@ def run_tier(root: Path, tier: str) -> list[GateResult]:
                 results.append(REGISTRY[gate_id](root))
             except Exception as exc:  # fail closed: harness errors are blocking
                 results.append(
-                    GateResult(gate_id, Status.ERROR, f"guard crash: {type(exc).__name__}: {exc}")
+                    GateResult(
+                        gate_id,
+                        Status.ERROR,
+                        f"guard crash: {type(exc).__name__}: {exc}",
+                    )
                 )
     return results

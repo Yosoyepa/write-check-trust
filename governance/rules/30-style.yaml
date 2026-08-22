@@ -148,3 +148,19 @@ rules:
     verified_by: [G-SIZE]
     severity: ratchet
     fails: [F1]
+
+  - id: STYLE-012
+    text: >
+      Complejidad cognitiva ≤ 15 por función en src/. La anidación profunda
+      que la CC ciclómatica perdona — una función con CC 8 y cuatro niveles de
+      if anidados pasa STYLE-004 — aquí cuesta: cada nivel de profundidad
+      encarece el siguiente.
+    rationale: >
+      Umbral de SonarSource S3776 (regla por defecto para todos los lenguajes).
+      Walker AST propio inspirado en Campbell; la dependencia de referencia
+      (cognitive_complexity) lleva dormita desde 2022 y la escalera MIN-001
+      prefiere stdlib. Divergencias documentadas en el módulo: assert, with y
+      comprehensions no incrementan.
+    verified_by: [G-COGNITIVE]
+    severity: hard
+    fails: [F9]

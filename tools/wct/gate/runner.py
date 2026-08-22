@@ -11,6 +11,7 @@ import time
 
 from tools.wct.accept.pipeline import ir_dry, parse_feature
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
+from tools.wct.cognitive.engine import scan as scan_cognitive
 from tools.wct.config import load_config
 from tools.wct.dry.analyzer import analyze as analyze_dry
 from tools.wct.integrity.engine import violations as integrity_violations
@@ -394,6 +395,17 @@ def gate_size(root: Path) -> GateResult:
     return _result("G-SIZE", started, findings, "archivos dentro del presupuesto de líneas")
 
 
+def gate_cognitive(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = scan_cognitive(root)
+    findings = [
+        f"{item['file']}:{item['line']}: {item['function']}: "
+        f"cognitiva {item['score']} > {report['limit']}"
+        for item in report["functions"]
+    ]
+    return _result("G-COGNITIVE", started, findings, "anidamiento dentro del umbral cognitivo")
+
+
 def alias(gate_id: str, target: Gate) -> Gate:
     def run(root: Path) -> GateResult:
         result = target(root)
@@ -457,6 +469,7 @@ REGISTRY: dict[str, Gate] = {
     "G-MUT-SITES": gate_mutation_sites,
     "G-ACCEPT": gate_accept,
     "G-SIZE": gate_size,
+    "G-COGNITIVE": gate_cognitive,
     "G-CRAP": external(
         "G-CRAP",
         ["crap4py", "src", "--lcov", "build/coverage/lcov.info", "--max-crap", "6"],
@@ -556,6 +569,7 @@ TIERS: dict[str, list[str]] = {
         "G-MUT-SITES",
         "G-ACCEPT",
         "G-SIZE",
+        "G-COGNITIVE",
     ],
     "full": [
         "G-META-1",
@@ -579,6 +593,7 @@ TIERS: dict[str, list[str]] = {
         "G-MUT-SITES",
         "G-ACCEPT",
         "G-SIZE",
+        "G-COGNITIVE",
         "G-SAST-BANDIT",
         "G-SAST-SEMGREP",
         "G-SECRET",
@@ -609,6 +624,7 @@ TIERS: dict[str, list[str]] = {
             "G-MUT-SITES",
             "G-ACCEPT",
             "G-SIZE",
+            "G-COGNITIVE",
         ],
         "G-HOOKS-WIRED",
         "G-COV-TOTAL",

@@ -21,3 +21,18 @@ Feature: Size and cognitive budgets
     Given un archivo listado en la baseline con 593 líneas
     When corre el gate de tamaño sobre el legado
     Then pasa mientras el conteo legado no suba
+
+  Scenario Outline: La anidación profunda cuesta más que la ramificación plana
+    Given una función con <shape> y seis condiciones
+    When corre el gate de complejidad cognitiva con límite 15
+    Then la función <verdict>
+
+    Examples:
+      | shape              | verdict  |
+      | seis ifs planos    | pasa     |
+      | seis ifs anidados  | bloquea  |
+
+  Scenario: Una función con complejidad cognitiva sobre el umbral bloquea
+    Given una función con anidamiento que supera el umbral cognitivo
+    When corre el gate de complejidad cognitiva sobre src
+    Then el finding nombra archivo, línea y función

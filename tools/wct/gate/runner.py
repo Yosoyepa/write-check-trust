@@ -1,3 +1,10 @@
+"""Registro de gates, tiers y orquestación.
+
+Partición fachada (TEST-007): los gates puros de analyzer viven en
+checks.py; aquí quedan el registro, los gates que disparan procesos
+externos y los que los tests parchean por ruta de módulo.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -9,50 +16,27 @@ import subprocess
 import tempfile
 import time
 
-from tools.wct.accept.pipeline import ir_dry, parse_feature
-from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
-from tools.wct.cognitive.engine import scan as scan_cognitive
 from tools.wct.config import load_config
-from tools.wct.dry.analyzer import analyze as analyze_dry
-from tools.wct.integrity.engine import violations as integrity_violations
-from tools.wct.introvert.analyzer import analyze as analyze_tests
+from tools.wct.gate.checks import (
+    _result,
+    gate_accept,
+    gate_archmetrics,
+    gate_cognitive,
+    gate_debt,
+    gate_dry,
+    gate_introvert,
+    gate_meta_integrity,
+    gate_rules_drift,
+    gate_size,
+    gate_suppressions,
+)
 from tools.wct.model import GateResult, Status
 from tools.wct.mutate.engine import scan as scan_mutations
-from tools.wct.ratchet.engine import (
-    baseline,
-    compare,
-    debt_findings,
-    ignores_count,
-    ignores_findings,
-    suppression_count,
-    suppression_findings,
-)
-from tools.wct.rules.engine import drift, rule_documents
-from tools.wct.size.engine import oversized as size_oversized
+from tools.wct.ratchet.engine import baseline
+from tools.wct.rules.engine import rule_documents
 from tools.wct.util.git import remote_base
 
 Gate = Callable[[Path], GateResult]
-
-
-def _result(gate_id: str, started: float, findings: list[str], ok: str) -> GateResult:
-    status = Status.FAIL if findings else Status.PASS
-    return GateResult(
-        gate_id,
-        status,
-        findings[0] if findings else ok,
-        int((time.monotonic() - started) * 1000),
-        findings[:50],
-    )
-
-
-def gate_meta_integrity(root: Path) -> GateResult:
-    started = time.monotonic()
-    return _result(
-        "G-META-1",
-        started,
-        integrity_violations(root),
-        "configuración protegida coincide con integrity.lock",
-    )
 
 
 def gate_meta_rules(root: Path) -> GateResult:
@@ -74,35 +58,6 @@ def gate_meta_rules(root: Path) -> GateResult:
         findings,
         "todas las reglas nombran verificadores conocidos",
     )
-
-
-def gate_rules_drift(root: Path) -> GateResult:
-    started = time.monotonic()
-    findings = [f"regla generada ausente o divergente: {p.relative_to(root)}" for p in drift(root)]
-    return _result("G-RULES-DRIFT", started, findings, "copias por proveedor sincronizadas")
-
-
-def gate_suppressions(root: Path) -> GateResult:
-    started = time.monotonic()
-    findings = suppression_findings(root) + ignores_findings(root)
-    current = suppression_count(root)
-    base = baseline(root, "suppressions")
-    if not compare(current, base):
-        findings.append(f"ratchet: {current} > baseline {base['value']}")
-    ignored = ignores_count(root)
-    ignores_base = baseline(root, "per-file-ignores")
-    if not compare(ignored, ignores_base):
-        findings.append(f"ratchet per-file-ignores: {ignored} > baseline {ignores_base['value']}")
-    return _result("G-SUPPRESS", started, findings, "sin erosión por supresiones")
-
-
-def gate_debt(root: Path) -> GateResult:
-    started = time.monotonic()
-    findings = debt_findings(root)
-    base = baseline(root, "debt-markers")
-    if not compare(len(findings), base):
-        findings.append(f"ratchet: {len(findings)} > baseline {base['value']}")
-    return _result("G-DEBT", started, findings, "deuda diferida trazable")
 
 
 def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gate:
@@ -180,52 +135,6 @@ def gate_coverage_diff(root: Path) -> GateResult:
     )
 
 
-def gate_archmetrics(root: Path) -> GateResult:
-    started = time.monotonic()
-    report = analyze_architecture(root)
-    findings = list(report["violations"])
-    zones = [item for item in report["metrics"] if item["zone"] != "healthy"]
-    if not compare(len(zones), baseline(root, "archmetrics-zones")):
-        findings.extend(
-            f"{item['package']}: zone={item['zone']} D={item['distance']:.3f}" for item in zones
-        )
-    return _result(
-        "G-ARCHMETRICS",
-        started,
-        findings,
-        "dependency graph y métricas A/I/D saludables",
-    )
-
-
-def gate_dry(root: Path) -> GateResult:
-    started = time.monotonic()
-    report = analyze_dry(root)
-    findings = list(report["errors"])
-    for item in report["candidates"]:
-        if item["ai_actionability"] == "EXTRACT":
-            findings.append(
-                f"{item['left']['file']}:{item['left']['start']} ~ "
-                f"{item['right']['file']}:{item['right']['start']} "
-                f"score={item['score']} pressure={item['extraction_pressure']}"
-            )
-    return _result("G-DRY", started, findings, "sin duplicación estructural accionable")
-
-
-def gate_introvert(root: Path) -> GateResult:
-    started = time.monotonic()
-    report = analyze_tests(root)
-    current = int(report["counts"].get("introverted", 0))
-    base = baseline(root, "introverted-tests")
-    findings = [
-        f"{item['file']}:{item['line']}: {item['test']}: {item['reason']}"
-        for item in report["tests"]
-        if item["verdict"] == "introverted"
-    ]
-    if compare(current, base):
-        findings = []
-    return _result("G-INTROVERT", started, findings, "honestidad de tests no retrocede")
-
-
 MANIFEST_DIAGNOSTICS = {
     "legacy": (
         "manifiesto schema 1: toda función cuenta como cambiada; "
@@ -254,21 +163,6 @@ def gate_mutation_sites(root: Path) -> GateResult:
     if findings and diagnostic:
         findings.insert(0, diagnostic)
     return _result("G-MUT-SITES", started, findings, "archivos dentro del presupuesto de mutación")
-
-
-def gate_accept(root: Path) -> GateResult:
-    started = time.monotonic()
-    findings: list[str] = []
-    for path in sorted((root / "features").glob("*.feature")):
-        try:
-            report = ir_dry(parse_feature(path))
-            findings.extend(
-                f"{path.relative_to(root)}:{item['line']}: {item['kind']}: {item['message']}"
-                for item in report["findings"]
-            )
-        except ValueError as exc:
-            findings.append(str(exc))
-    return _result("G-ACCEPT", started, findings, "Gherkin parseable y sin repetición estructural")
 
 
 def gate_audit(root: Path) -> GateResult:
@@ -318,10 +212,10 @@ def _audited_secrets(root: Path) -> set[tuple[str, str]]:
     baseline lives on a G-META-1 protected route, so the gate must never
     dirty it.
     """
-    baseline = root / ".secrets.baseline"
-    if not baseline.is_file():
+    secrets_baseline = root / ".secrets.baseline"
+    if not secrets_baseline.is_file():
         return set()
-    document = json.loads(baseline.read_text(encoding="utf-8"))
+    document = json.loads(secrets_baseline.read_text(encoding="utf-8"))
     return {
         (filename, str(item.get("hashed_secret", "")))
         for filename, items in document.get("results", {}).items()
@@ -378,32 +272,6 @@ def gate_secrets(root: Path) -> GateResult:
         if (filename, str(item.get("hashed_secret", ""))) not in audited
     ]
     return _result("G-SECRET", started, findings, "sin secretos nuevos")
-
-
-def gate_size(root: Path) -> GateResult:
-    started = time.monotonic()
-    report = size_oversized(root)
-    base = baseline(root, "file-size")
-    allowed = {str(name) for name in base["files"]}
-    findings = [
-        f"{item['file']}: {item['loc']} LOC > límite {report['limit']}"
-        for item in report["files"]
-        if item["file"] not in allowed
-    ]
-    if not compare(len(report["files"]), base):
-        findings.append(f"ratchet: {len(report['files'])} > baseline {base['value']}")
-    return _result("G-SIZE", started, findings, "archivos dentro del presupuesto de líneas")
-
-
-def gate_cognitive(root: Path) -> GateResult:
-    started = time.monotonic()
-    report = scan_cognitive(root)
-    findings = [
-        f"{item['file']}:{item['line']}: {item['function']}: "
-        f"cognitiva {item['score']} > {report['limit']}"
-        for item in report["functions"]
-    ]
-    return _result("G-COGNITIVE", started, findings, "anidamiento dentro del umbral cognitivo")
 
 
 def gate_docstrings(root: Path) -> GateResult:
@@ -565,6 +433,28 @@ REGISTRY.update(
     }
 )
 
+_COMMIT_GATES = [
+    "G-META-1",
+    "G-META-2",
+    "G-RULES-DRIFT",
+    "G-SUPPRESS",
+    "G-DEBT",
+    "G-LINT",
+    "G-FMT",
+    "G-TYPE",
+    "G-TEST",
+    "G-ARCH",
+    "G-ARCHMETRICS",
+    "G-DEPS",
+    "G-DEAD",
+    "G-SAST-BANDIT",
+    "G-SECRET",
+    "G-MUT-SITES",
+    "G-ACCEPT",
+    "G-SIZE",
+    "G-COGNITIVE",
+]
+
 TIERS: dict[str, list[str]] = {
     "fast": [
         "G-META-2",
@@ -575,27 +465,7 @@ TIERS: dict[str, list[str]] = {
         "G-FMT",
         "G-TYPE",
     ],
-    "commit": [
-        "G-META-1",
-        "G-META-2",
-        "G-RULES-DRIFT",
-        "G-SUPPRESS",
-        "G-DEBT",
-        "G-LINT",
-        "G-FMT",
-        "G-TYPE",
-        "G-TEST",
-        "G-ARCH",
-        "G-ARCHMETRICS",
-        "G-DEPS",
-        "G-DEAD",
-        "G-SAST-BANDIT",
-        "G-SECRET",
-        "G-MUT-SITES",
-        "G-ACCEPT",
-        "G-SIZE",
-        "G-COGNITIVE",
-    ],
+    "commit": list(_COMMIT_GATES),
     "full": [
         "G-META-1",
         "G-META-2",
@@ -630,27 +500,7 @@ TIERS: dict[str, list[str]] = {
     # Espejo local de quality.yml en PRs: todo lo que CI exige de una PR,
     # ejecutable con un solo comando antes de pushear.
     "pr": [
-        *[
-            "G-META-1",
-            "G-META-2",
-            "G-RULES-DRIFT",
-            "G-SUPPRESS",
-            "G-DEBT",
-            "G-LINT",
-            "G-FMT",
-            "G-TYPE",
-            "G-TEST",
-            "G-ARCH",
-            "G-ARCHMETRICS",
-            "G-DEPS",
-            "G-DEAD",
-            "G-SAST-BANDIT",
-            "G-SECRET",
-            "G-MUT-SITES",
-            "G-ACCEPT",
-            "G-SIZE",
-            "G-COGNITIVE",
-        ],
+        *_COMMIT_GATES,
         "G-HOOKS-WIRED",
         "G-COV-TOTAL",
         "G-COV-DIFF",

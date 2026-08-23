@@ -161,7 +161,7 @@ Profile: `strict`. Run `uv run wct gate --tier fast` before handoff.
 
 ## Proceso, entrega y roles
 
-- **PROC-001** — No termines un turno con el árbol en rojo. Corre `wct gate --tier fast` antes de entregar; el hook de Stop lo corre de todas formas y te devolverá el fallo.
+- **PROC-001** — No termines un turno con el árbol en rojo. Corre `wct gate --tier fast` antes de entregar; el hook de Stop lo corre de todas formas y te devolverá el fallo. Si el DEADLOCK GUARD te deja pasar tras bloqueos repetidos, el árbol sigue rojo: decláralo así en el handoff; pasar la válvula no es pasar el gate.
   Verified by: `G-LINT, G-TYPE, G-TEST-FAST`.
 
 - **PROC-002** — Trabaja en incrementos pequeños y revisables. Prefiere el diseño más simple que soporte el comportamiento actual y deje opciones claras para el siguiente paso.

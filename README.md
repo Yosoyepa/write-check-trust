@@ -216,6 +216,12 @@ configura capas y rutas, mide baselines reales y conserva dos reglas:
   SubagentStart/Stop, ConfigChange y PostCompact.
 - `git commit --no-verify`, ediciones directas de archivos protegidos y
   comandos indirectos contra el plano de control se bloquean.
+- El Stop hook tiene dos válvulas anti-deadlock: con `WCT_HOOK_ROLE=observer`
+  los roles de solo lectura (verificador, resumidor) advierten en vez de
+  bloquear; y la tercera bloqueada consecutiva pasa con advertencia
+  `DEADLOCK GUARD` y la obligación de declarar el árbol rojo en el handoff.
+  Pasar por una válvula no verdea el árbol: la CI de PR sigue siendo la
+  frontera dura.
 
 El runbook del mantenedor (bless con baseline, Dependabot en bloque, ratchets,
 flaky tests) está en [docs/runbook.md](docs/runbook.md).

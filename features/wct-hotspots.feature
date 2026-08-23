@@ -13,5 +13,5 @@ Feature: Hotspot report
 
   Scenario: El reporte es asesor, no bloqueante
     Given un repositorio con hotspots evidentes
-    When pido el reporte de hotspots
+    When pido el reporte de hotspots sobre el repositorio completo
     Then el comando termina con exit cero aunque el top esté poblado

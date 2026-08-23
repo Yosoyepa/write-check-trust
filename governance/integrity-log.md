@@ -122,3 +122,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #14: release 0.3.0 (hotspots, CI hardening, split runner, ratchets)
 - Commit: 8b70814c119f6464510eec948dd88aa38814a7a9
+
+## 2026-08-23T18:48:09.768277+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #15: G-DRY-TOK entra al tier full
+- Commit: 23455ffcec5d529aabdc23cd2abb89e1624fb9cc

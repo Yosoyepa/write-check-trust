@@ -471,6 +471,11 @@ Otros: `defaultEnabled: false` para plugins que se opt-in. `claude plugin valida
 
 ### 5.1 Inventario local (qué mide WCT hoy)
 
+> **Estado (v0.4.0)**: de los tres "huecos" de esta tabla, **longitud de
+> archivo y complejidad cognitiva ya existen** (G-SIZE y G-COGNITIVE,
+> v0.3.0/PR #13 — visibles en `wct gate --tier commit`). Solo LCOM queda
+> abierto (P6, advisory). La tabla se conserva como snapshot del 2026-08-22.
+
 Presupuesto de tamaño/complejidad ya activo en `governance/lint/ruff.toml` (reglas PL seleccionadas) y `governance/thresholds.yaml`:
 
 | Límite | Valor WCT | Referencia industria (ruff/pylint default) | Veredicto |
@@ -484,11 +489,11 @@ Presupuesto de tamaño/complejidad ya activo en `governance/lint/ruff.toml` (reg
 | Boolean traps (FBT), defaults mutables (B006/B008) | prohibidos | prohibidos | igual |
 | Código muerto | vulture `--min-confidence 80` | recomendado 100 | WCT más estricto |
 | DRY estructural (G-DRY) | analyzer propio (extraction_pressure de unclebob/scrap) | jscpd/pylint R0801 | más profundo que tokens |
-| **Longitud de archivo** | **no existe** | pylint C0302 = 1000; Sonar S104 = 1000 | **hueco** |
-| **Complejidad cognitiva** | **no existe** | Sonar S3776 = 15 | **hueco** |
-| **Cohesión (LCOM)** | **no existe** | LCOM4 > 1 = clase doble | **hueco** |
+| Longitud de archivo | ~~no existe~~ → **G-SIZE (500 LOC, v0.3.0)** | pylint C0302 = 1000; Sonar S104 = 1000 | ~~hueco~~ cerrado |
+| Complejidad cognitiva | ~~no existe~~ → **G-COGNITIVE (≤15, v0.3.0)** | Sonar S3776 = 15 | ~~hueco~~ cerrado |
+| Cohesión (LCOM) | **no existe** | LCOM4 > 1 = clase doble | **hueco (P6, abierto por diseño)** |
 
-Realidad medida del repo (2026-08-22): en `src/` + `tools/` **solo un archivo pasa de 300 líneas** — `tools/wct/gate/runner.py` (593; el siguiente es archmetrics/analyzer.py con 270). El máximo en tests es 203.
+Realidad medida del repo (snapshot 2026-08-22; runner.py se partió en v0.3.0 y hoy está en 488 LOC, dentro del techo): en `src/` + `tools/` **solo un archivo pasaba de 300 líneas** — `tools/wct/gate/runner.py` (593; el siguiente era archmetrics/analyzer.py con 270). El máximo en tests era 203.
 
 ### 5.2 Evidencia web — tamaño de archivo y función
 
@@ -517,10 +522,10 @@ Realidad medida del repo (2026-08-22): en `src/` + `tools/` **solo un archivo pa
 > PR #13; LCOM4 (P6) sigue abierto por diseño. Esta sección se conserva
 > como registro del diagnóstico original.
 
-1. **G-DRY-TOK es un gate vacío cuando jscpd está instalado.** Verificado empíricamente (2026-08-22, fixture con 44% de líneas duplicadas): `jscpd <files>` sale **0** aunque encuentre clones; solo con `--exit-code 1` sale no-cero (nota: el flag es kebab-case; `--exitCode` es error de parseo). El wiring actual (`runner.py:460`) no pasa la bandera → siempre PASS. Arreglo: añadir `--exit-code 1` + config `.jscpd.json` (min-tokens 70, ignore tests/generated/`__init__`, reporte a `build/`). Medición del repo al momento del fix: **0 clones** en `src` + `tools` a min-tokens 70.
-2. **Las 7 exenciones `per-file-ignores` del harness son deuda invisible.** `governance/lint/ruff.toml:121-127` suprime C901/PLR0911/0912/0915 para accept/pipeline.py, archmetrics/analyzer.py, cli.py, dry/analyzer.py, hooks/guard.py, introvert/analyzer.py, selftest/redteam.py — sin justificación por entrada (STYLE-008 solo audita supresiones inline `# noqa`, no config) y sin ratchet que las cuente. Esta es la deuda real de "boilerplate/complexidad" del harness — no la longitud de archivo.
-3. **`tools/wct/gate/runner.py` (593 LOC)** es el único violador de un techo de 500. Contiene registro de gates + funciones gate + TIERS + preflight: candidato natural a partición fachada (mismo patrón que TEST-007 / `wct split-plan`).
-4. Falta gate de longitud de archivo, falta complejidad cognitiva, falta métrica de cohesión (ver tabla 5.1).
+1. **[RESUELTO v0.3.0 — PR #15/#16]** G-DRY-TOK es un gate vacío cuando jscpd está instalado. Verificado empíricamente (2026-08-22, fixture con 44% de líneas duplicadas): `jscpd <files>` sale **0** aunque encuentre clones; solo con `--exit-code 1` sale no-cero (nota: el flag es kebab-case; `--exitCode` es error de parseo). El wiring actual (`runner.py:460`) no pasa la bandera → siempre PASS. Arreglo: añadir `--exit-code 1` + config `.jscpd.json` (min-tokens 70, ignore tests/generated/`__init__`, reporte a `build/`). Medición del repo al momento del fix: **0 clones** en `src` + `tools` a min-tokens 70.
+2. **[RESUELTO v0.3.0 — PR #13: hoy exigen justificación por entrada y son ratchet (issue #12)]** Las 7 exenciones `per-file-ignores` del harness eran deuda invisible.  `governance/lint/ruff.toml:121-127` suprime C901/PLR0911/0912/0915 para accept/pipeline.py, archmetrics/analyzer.py, cli.py, dry/analyzer.py, hooks/guard.py, introvert/analyzer.py, selftest/redteam.py — sin justificación por entrada (STYLE-008 solo audita supresiones inline `# noqa`, no config) y sin ratchet que las cuente. Esta es la deuda real de "boilerplate/complexidad" del harness — no la longitud de archivo.
+3. **[RESUELTO v0.3.0 — PR #14: partição fachada; hoy 488 LOC]** `tools/wct/gate/runner.py` (593 LOC) era el único violador de un techo de 500. Contiene registro de gates + funciones gate + TIERS + preflight: candidato natural a partición fachada (mismo patrón que TEST-007 / `wct split-plan`).
+4. **[RESUELTO v0.3.0 — PR #13: G-SIZE y G-COGNITIVE existen; solo LCOM queda abierto (P6)]** Faltaba gate de longitud de archivo, complejidad cognitiva y métrica de cohesión (ver tabla 5.1).
 
 ### 5.5 Propuesta priorizada (RESUELTA: P1–P5 implementadas en v0.3.0; P6 sigue abierta por diseño)
 

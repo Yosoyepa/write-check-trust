@@ -37,6 +37,12 @@ def test_full_tier_enforces_docstrings() -> None:
     assert "G-DOC" in TIERS["full"]
 
 
+def test_full_tier_runs_token_duplication_after_structural() -> None:
+    """G-DRY-TOK sin tier = CI instala jscpd y nunca lo usa (hueco real v0.3.0)."""
+    assert "G-DRY-TOK" in TIERS["full"]
+    assert TIERS["full"].index("G-DRY") < TIERS["full"].index("G-DRY-TOK")
+
+
 def test_cli_accepts_pr_tier() -> None:
     args = parser().parse_args(["gate", "--tier", "pr"])
 

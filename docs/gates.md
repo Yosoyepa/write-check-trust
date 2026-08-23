@@ -21,13 +21,13 @@ skips silenciosos.
 | `fast` | feedback en edición y PostToolUse | 10 s | 7 |
 | `commit` | pre-commit, Stop y handoff | 120 s | 19 |
 | `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 25 |
-| `full` | release, hardener y CI programada | 30 min | 29 |
+| `full` | release, hardener y CI programada | 30 min | 30 |
 
 ```bash
 uv run wct gate --tier fast    # 7/7
 uv run wct gate --tier commit  # 19/19
 uv run wct gate --tier pr      # 25/25  (o `make pr`)
-uv run wct gate --tier full    # 29/29
+uv run wct gate --tier full    # 30/30
 ```
 
 ## fast — 7 gates
@@ -80,7 +80,7 @@ base resoluble, reporta ERROR (no SKIP) porque la promesa del tier es
 paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 `origin/main` → `origin/master` → `main` → `master`.
 
-## full — añade 10
+## full — añade 11
 
 | Gate | Qué exige | Verificador |
 |---|---|---|
@@ -88,6 +88,7 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 | `G-CRAP` | CRAP ≤ 6 por función | `crap4py --max-crap 6` |
 | `G-CC` | complejidad ciclomática ≤ 10 | `xenon --max-absolute B` |
 | `G-DRY` | sin duplicación estructural accionable | `wct dry` |
+| `G-DRY-TOK` | duplicación por tokens bajo presupuesto (5 % a 70+ tokens) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
 | `G-INTROVERT` | honestidad de tests: aserciones sobre el SUT | `wct introvert` |
 | `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` |
 | `G-AUDIT` | cero CVEs críticos/altos en dependencias desplegables | `pip-audit` (export del lock) |
@@ -105,7 +106,6 @@ a la espera de decisión del mantenedor.
 | `G-MUT` | manual: `make harden` y skills de mutación | `mutmut run` |
 | `G-COMMIT-MSG` | pre-commit (commit-msg hook) | `cz check --commit-msg-file` |
 | `G-TEST-RANDOM` | sin flujo automático: exige el plugin `pytest-randomly` (decisión pendiente) | `pytest --randomly-seed=last` |
-| `G-DRY-TOK` | duplicación por tokens bajo presupuesto (5 % a 70+ tokens) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
 
 ## Alias para reglas
 

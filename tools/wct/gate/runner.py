@@ -484,6 +484,7 @@ TIERS: dict[str, list[str]] = {
         "G-DEPS",
         "G-DEAD",
         "G-DRY",
+        "G-DRY-TOK",
         "G-INTROVERT",
         "G-MUT-SITES",
         "G-ACCEPT",

@@ -2,6 +2,7 @@
 
 | Documento | Contenido |
 |---|---|
+| [Estado (léelo primero)](STATUS.md) | Qué existe, qué falta y los comandos para verificarlo por tu cuenta — si un comando y un documento discrepan, gana el comando. |
 | [Catálogo de gates](gates.md) | Los 34 gates en 4 tiers (fast/commit/pr/full): qué exige cada uno y con qué herramienta se verifica. |
 | [Arquitectura](architecture.md) | Modelo de confianza (persuasión vs prueba), capas, métricas A/I/D y plano de control con lock de integridad. |
 | [Runbook del mantenedor](runbook.md) | Bless, manifiesto de mutación, Dependabot en bloque, ratchets, flaky tests, webhooks y CI. |

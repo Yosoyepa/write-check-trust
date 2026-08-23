@@ -238,6 +238,7 @@ uv run wct gate --tier full
 
 | Documento | Contenido |
 |---|---|
+| [docs/STATUS.md](docs/STATUS.md) | Estado real del proyecto, verificable por comando — léelo primero: distingue implementado de pendiente. |
 | [docs/gates.md](docs/gates.md) | Catálogo completo: 34 gates en 4 tiers con verificador y comando. |
 | [docs/architecture.md](docs/architecture.md) | Persuasión vs prueba, capas, métricas A/I/D, lock de integridad. |
 | [docs/runbook.md](docs/runbook.md) | Bless, manifiesto de mutación, Dependabot, ratchets, webhooks, CI. |

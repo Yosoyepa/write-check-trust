@@ -88,7 +88,7 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 | `G-CRAP` | CRAP ≤ 6 por función | `crap4py --max-crap 6` |
 | `G-CC` | complejidad ciclomática ≤ 10 | `xenon --max-absolute B` |
 | `G-DRY` | sin duplicación estructural accionable | `wct dry` |
-| `G-DRY-TOK` | duplicación por tokens bajo presupuesto (5 % a 70+ tokens) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
+| `G-DRY-TOK` | cero clones por tokens a 70+ tokens (tolerancia cero con `--exit-code`) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
 | `G-INTROVERT` | honestidad de tests: aserciones sobre el SUT | `wct introvert` |
 | `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` |
 | `G-AUDIT` | cero CVEs críticos/altos en dependencias desplegables | `pip-audit` (export del lock) |

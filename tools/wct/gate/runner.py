@@ -39,6 +39,19 @@ from tools.wct.util.git import remote_base
 Gate = Callable[[Path], GateResult]
 
 
+def _captured(root: Path, command: list[str]) -> tuple[Status, str, str]:
+    """Ejecuta un comando del gate y resume: status, summary, salida completa."""
+    completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
+    output = (completed.stdout + "\n" + completed.stderr).strip()
+    status = Status.PASS if completed.returncode == 0 else Status.FAIL
+    summary = (
+        "ok"
+        if status is Status.PASS
+        else (output.splitlines()[-1] if output else f"exit {completed.returncode}")
+    )
+    return status, summary, output
+
+
 def gate_meta_rules(root: Path) -> GateResult:
     started = time.monotonic()
     known = set(REGISTRY) | {"human"}
@@ -73,14 +86,7 @@ def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gat
                 int((time.monotonic() - started) * 1000),
                 command=" ".join(command),
             )
-        completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
-        output = (completed.stdout + "\n" + completed.stderr).strip()
-        status = Status.PASS if completed.returncode == 0 else Status.FAIL
-        summary = (
-            "ok"
-            if status is Status.PASS
-            else (output.splitlines()[-1] if output else f"exit {completed.returncode}")
-        )
+        status, summary, output = _captured(root, command)
         return GateResult(
             gate_id,
             status,
@@ -121,10 +127,7 @@ def gate_coverage_diff(root: Path) -> GateResult:
         "90",
         "--include-untracked",
     ]
-    completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
-    output = (completed.stdout + "\n" + completed.stderr).strip()
-    status = Status.PASS if completed.returncode == 0 else Status.FAIL
-    summary = "ok" if status is Status.PASS else (output.splitlines()[-1] if output else "exit 1")
+    status, summary, output = _captured(root, command)
     return GateResult(
         "G-COV-DIFF",
         status,
@@ -281,14 +284,7 @@ def gate_docstrings(root: Path) -> GateResult:
         return GateResult("G-DOC", Status.SKIP, "herramienta ausente: interrogate")
     floor = int(float(baseline(root, "docstring-coverage")["value"]))
     command = ["interrogate", "src", "--fail-under", str(floor)]
-    completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
-    output = (completed.stdout + "\n" + completed.stderr).strip()
-    status = Status.PASS if completed.returncode == 0 else Status.FAIL
-    summary = (
-        "ok"
-        if status is Status.PASS
-        else (output.splitlines()[-1] if output else f"exit {completed.returncode}")
-    )
+    status, summary, output = _captured(root, command)
     return GateResult(
         "G-DOC",
         status,
@@ -400,8 +396,9 @@ REGISTRY: dict[str, Gate] = {
         "G-TEST-RANDOM", ["pytest", "-q", "--randomly-seed=last"], optional=True
     ),
     # --exit-code 1: sin esa bandera jscpd sale 0 aunque encuentre clones
-    # (verificado empíricamente) y el gate sería vacío. El presupuesto de
-    # detección (min-tokens, threshold) vive en .jscpd.json del repo.
+    # (verificado empíricamente) y el gate sería vacío. CON la bandera es
+    # tolerancia cero: cualquier clon a 70+ tokens falla (el "threshold" de
+    # .jscpd.json solo afecta el reporte, no el exit — también verificado).
     "G-DRY-TOK": external(
         "G-DRY-TOK", ["jscpd", "src", "tools", "--exit-code", "1"], optional=True
     ),

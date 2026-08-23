@@ -3,6 +3,12 @@
 > Investigación realizada el 2026-08-11 sobre repositorios reales, no memoria.
 > Todo lo citado aquí fue leído en su fuente (`raw.githubusercontent.com`, GitHub API, PyPI JSON API, docs oficiales).
 > Este documento es la **evidencia**. El plan que se deriva de él está en [`PLAN.md`](PLAN.md).
+>
+> **Advertencia para lectores y agentes**: esto es un registro histórico de
+> investigación — los "huecos" y "propuestas" que describe fueron CERRADOS en
+> v0.2.0–v0.4.0 (cada sección relevante lleva su nota de resolución). El estado
+> actual vive en [`docs/STATUS.md`](docs/STATUS.md) y se verifica con comandos,
+> no con prosa.
 
 ---
 
@@ -377,6 +383,11 @@ Confirmados en la doc oficial: `forbidden`, `protected`, `layers`, `independence
 
 ### 3.4 Los tres huecos confirmados
 
+> **Estado (v0.4.0): RESUELTOS — los tres se construyeron en este repo.**
+> DRY estructural → `tools/wct/dry/` + G-DRY; honestidad de tests →
+> `tools/wct/introvert/` + G-INTROVERT; métricas A/I/D → `tools/wct/archmetrics/`
+> + G-ARCHMETRICS. Esta tabla se conserva como registro del hallazgo original.
+
 Verificado en PyPI que **no existen**: `dry4py`, `pytest-introvert`, `testintrospect`, ni equivalente Python de `dependency-checker` con métricas A/I/D.
 
 | Hueco | Equivalente de Uncle Bob | Qué habría que construir |
@@ -494,14 +505,30 @@ Realidad medida del repo (2026-08-22): en `src/` + `tools/` **solo un archivo pa
 - **SOLID**: S → parcial (próxies: cohesión LCOM4, R0904); O → human-only (consenso); L → nivel firma (mypy estricto ya lo hace); I → human-only con próxy débil (tamaño de Protocol); D → **lo más automatizable** (import-linter + secuencia principal) — WCT ya tiene ambos (G-ARCH + G-ARCHMETRICS), adelantado al ecosistema Python (no hay tool turnkey de C&K). La comunidad conscientemente deja O/I y LSP comportamental a review (Goodhart).
 - **Métricas**: cognitiva validada y con umbral publicados (Sonar S3776 = **15**, porque castiga nesting sin recompensar extracción); MI **no gateable** (fórmula contestada, Teamscale la rechaza, inputs redundantes); LCOM4 (>1 componente = dos clases), tool Python `cohesion` (GPL-3.0 — conflicto potencial con licencia MIT para dependencia); coupling Ca/Ce/I ya implementado en archmetrics propio.
 
-### 5.4 Hallazgos concretos (verificados)
+### 5.4 Hallazgos concretos (verificados — snapshot 2026-08-22)
+
+> **Estado (v0.4.0): los cuatro hallazgos fueron RESUELTOS en v0.3.0.**
+> (1) G-DRY-TOK lleva `--exit-code 1` (PR #15) y corre en el tier full —
+> en su primera corrida real en CI cazó duplicación genuina (PR #16).
+> (2) per-file-ignores ahora exige justificación por entrada y es ratchet
+> que solo baja (`governance/baselines/per-file-ignores.json`, PR #13);
+> la deuda restante vive en el issue #12. (3) runner.py se partió (PR #14):
+> hoy 488 LOC, dentro del techo. (4) G-SIZE y G-COGNITIVE existen desde
+> PR #13; LCOM4 (P6) sigue abierto por diseño. Esta sección se conserva
+> como registro del diagnóstico original.
 
 1. **G-DRY-TOK es un gate vacío cuando jscpd está instalado.** Verificado empíricamente (2026-08-22, fixture con 44% de líneas duplicadas): `jscpd <files>` sale **0** aunque encuentre clones; solo con `--exit-code 1` sale no-cero (nota: el flag es kebab-case; `--exitCode` es error de parseo). El wiring actual (`runner.py:460`) no pasa la bandera → siempre PASS. Arreglo: añadir `--exit-code 1` + config `.jscpd.json` (min-tokens 70, ignore tests/generated/`__init__`, reporte a `build/`). Medición del repo al momento del fix: **0 clones** en `src` + `tools` a min-tokens 70.
 2. **Las 7 exenciones `per-file-ignores` del harness son deuda invisible.** `governance/lint/ruff.toml:121-127` suprime C901/PLR0911/0912/0915 para accept/pipeline.py, archmetrics/analyzer.py, cli.py, dry/analyzer.py, hooks/guard.py, introvert/analyzer.py, selftest/redteam.py — sin justificación por entrada (STYLE-008 solo audita supresiones inline `# noqa`, no config) y sin ratchet que las cuente. Esta es la deuda real de "boilerplate/complexidad" del harness — no la longitud de archivo.
 3. **`tools/wct/gate/runner.py` (593 LOC)** es el único violador de un techo de 500. Contiene registro de gates + funciones gate + TIERS + preflight: candidato natural a partición fachada (mismo patrón que TEST-007 / `wct split-plan`).
 4. Falta gate de longitud de archivo, falta complejidad cognitiva, falta métrica de cohesión (ver tabla 5.1).
 
-### 5.5 Propuesta (priorizada, aún no implementada)
+### 5.5 Propuesta priorizada (RESUELTA: P1–P5 implementadas en v0.3.0; P6 sigue abierta por diseño)
+
+> **Estado por ítem**: P1 → G-SIZE (PR #13). P2 → G-COGNITIVE (PR #13).
+> P3 → auditoría per-file-ignores (PR #13). P4 → G-DRY-TOK con diente
+> (PR #15, probado en CI en #16). P5 → `wct hotspots` (PR #14). P6 (LCOM4,
+> advisory) permanece como candidato futuro. El texto de abajo es la
+> propuesta original, conservada como registro.
 
 - **P1 — G-SIZE**: longitud de archivo en LOC real (sin blancos/comentarios), techo **500**, analyzer AST propio (~60 líneas, patrón de dry/analyzer), tier `commit`, arranque como ratchet con baseline actual (=1: runner.py) y regla nueva STYLE-011. Excluye tests/generated (tablas = matriz de cobertura, MIN-008).
 - **P2 — G-COGNITIVE**: complejidad cognitiva por función, umbral **15** (Sonar S3776), walker AST propio (algoritmo publicado de Campbell; la dep `cognitive_complexity` está dormida desde 2022 — escalera MIN-001 peldaño 3: stdlib/propio). Es la única métrica que castiga el anidamiento que CC≤10 deja pasar — patrón típico de código generado por agentes. Regla nueva STYLE-012.

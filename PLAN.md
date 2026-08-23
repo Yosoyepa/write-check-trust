@@ -4,7 +4,10 @@
 >
 > **Nombre del proyecto**: `well_code_template` · **CLI**: `wct`
 > **Evidencia de esta investigación**: [`RESEARCH.md`](RESEARCH.md)
-> **Estado**: plan. Nada implementado todavía.
+> **Estado (v0.4.0)**: implementado y verificado — fases 0–4 completas,
+> full tier 30/30 en CI. El estado real y verificable vive en
+> [`docs/STATUS.md`](docs/STATUS.md); este documento es el registro de
+> decisiones y diseño, no una lista de pendientes.
 
 ---
 
@@ -831,6 +834,12 @@ Para otros proveedores con mecanismos equivalentes (Codex `AGENTS.md`, Cursor ru
 ---
 
 ## 15. Roadmap por fases
+
+> **Estado (v0.4.0): Fases 0–4 implementadas y verificadas** (v0.2.0–v0.4.0;
+> full tier 30/30 en CI, red team 30/30). Lo que sigue abajo es el roadmap
+> histórico, conservado como registro — **no** es una lista de pendientes.
+> El estado real, con comandos para verificarlo por tu cuenta, vive en
+> [docs/STATUS.md](docs/STATUS.md).
 
 Cada fase entrega valor por sí sola y tiene criterio de aceptación verificable.
 

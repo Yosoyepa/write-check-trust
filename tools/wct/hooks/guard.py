@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import fnmatch
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -92,13 +94,79 @@ def pre_tool_use(root: Path, payload: dict[str, Any]) -> int:
     return 0
 
 
-def _run_gate(root: Path, tier: str) -> int:
+def _gate(root: Path, tier: str) -> tuple[bool, str]:
+    """Ejecuta un tier del gate; retorna (pasó, salida recortada)."""
     command = [sys.executable, "-m", "tools.wct", "gate", "--tier", tier, "--quiet"]
     completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
-    if completed.returncode:
-        output = (completed.stdout + "\n" + completed.stderr).strip()
-        return _block(output[-8000:] or f"tier {tier} falló")
+    output = (completed.stdout + "\n" + completed.stderr).strip()
+    return completed.returncode == 0, output[-8000:]
+
+
+def _run_gate(root: Path, tier: str) -> int:
+    passed, output = _gate(root, tier)
+    if not passed:
+        return _block(output or f"tier {tier} falló")
     return 0
+
+
+MAX_CONSECUTIVE_BLOCKS = 2
+
+
+def _streak_path(root: Path) -> Path:
+    return root / "build" / "hooks" / "guard-streak.json"
+
+
+def _load_streak(root: Path) -> dict[str, int]:
+    try:
+        streak = json.loads(_streak_path(root).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return streak if isinstance(streak, dict) else {}
+
+
+def _save_streak(root: Path, streak: dict[str, int]) -> None:
+    path = _streak_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(streak), encoding="utf-8")
+
+
+def _wants_observer(environ: Mapping[str, str] | None) -> bool:
+    env = os.environ if environ is None else environ
+    return env.get("WCT_HOOK_ROLE", "").strip().lower() == "observer"
+
+
+def stop_gate(root: Path, event: str, environ: Mapping[str, str] | None = None) -> int:
+    """Gate de Stop con las dos válvulas anti-deadlock.
+
+    - WCT_HOOK_ROLE=observer: los roles de solo lectura (verificador,
+      resumidor) advierten en vez de bloquear; no pueden reparar un árbol
+      rojo que no escribieron.
+    - Cortacircuitos: la tercera bloqueada consecutiva del mismo evento pasa
+      con advertencia para que el agente pueda entregar el handoff. Un stop
+      verde resetea la racha.
+    """
+    passed, output = _gate(root, "commit")
+    if passed:
+        _save_streak(root, {})
+        return 0
+    summary = output or "tier commit falló"
+    if _wants_observer(environ):
+        print(f"WCT WARN (observer): {summary}", file=sys.stderr)
+        return 0
+    streak = _load_streak(root)
+    if streak.get(event, 0) >= MAX_CONSECUTIVE_BLOCKS:
+        _save_streak(root, {})
+        print(
+            "WCT WARN (DEADLOCK GUARD): stop bloqueado "
+            f"{MAX_CONSECUTIVE_BLOCKS + 1} veces seguidas con el tier commit en rojo; "
+            "paso para no deadlockear al agente. El árbol SIGUE rojo: "
+            "decláralo así en el handoff, no lo reportes como verde.",
+            file=sys.stderr,
+        )
+        return 0
+    streak[event] = streak.get(event, 0) + 1
+    _save_streak(root, streak)
+    return _block(summary)
 
 
 def _dispatch_unsafe(event: str) -> int:
@@ -107,11 +175,11 @@ def _dispatch_unsafe(event: str) -> int:
     normalized = event.lower().replace("_", "-")
     if normalized == "pre-tool-use":
         return pre_tool_use(root, payload)
+    if normalized in {"stop", "subagent-stop"}:
+        return stop_gate(root, normalized)
     gate_tier = {
         "post-tool-use": "fast",
         "post-tool-batch": "fast",
-        "stop": "commit",
-        "subagent-stop": "commit",
         "config-change": "fast",
     }.get(normalized)
     if gate_tier:

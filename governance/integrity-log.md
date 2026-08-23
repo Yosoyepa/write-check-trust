@@ -128,3 +128,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #15: G-DRY-TOK entra al tier full
 - Commit: 23455ffcec5d529aabdc23cd2abb89e1624fb9cc
+
+## 2026-08-23T18:55:43.586742+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #16: dedup del patrón subprocess que G-DRY-TOK cazó en CI
+- Commit: 191f83198a51bfea12dfbc11d008cd202dc12600

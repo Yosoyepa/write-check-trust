@@ -21,6 +21,12 @@
 | `uv run wct hotspots` | Deuda priorizada por churn × complejidad (advisory) |
 | `gh issue list --repo Yosoyepa/write-check-trust` | Deuda trackeada con owner |
 
+> **Colisión de nombre en PATH**: en Fedora, `wct` a secas resuelve a
+> `/usr/sbin/wct` — paquete `ncid-gateways`, el cliente "Whozz Calling" de
+> NCID, no este harness. Invoca siempre `uv run wct` (o
+> `uv run python -m tools.wct`): el harness vive en el venv del proyecto,
+> nunca en el PATH del sistema.
+
 ## Implementado — con dónde se cerró
 
 | Capacidad | Cerrada en | Evidencia rápida |

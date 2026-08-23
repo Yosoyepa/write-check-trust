@@ -872,6 +872,12 @@ Más: los meta-gates (`G-META-1`, `G-META-2`, `G-SUPPRESS`, `G-HOOKS-WIRED`) y e
 
 ### Fase 3 — DRY estructural y aceptación
 
+> **Estado: implementada (pre-0.2.0).** `wct accept` tiene `parse / ir-dry /
+> generate / run / mutate` en Python puro — no existe dependencia de un
+> upstream `bb`/Go; esa referencia era el diseño original, y el port nativo
+> ya reemplazó cualquier fallback. Ambos criterios de aceptación se cumplen
+> y corren en CI (G-DRY, G-ACCEPT-MUT).
+
 - `wct dry` (§9.2) con la capa de decisión de `scrap`
 - `wct accept` con parser/generator/mutator (upstream `bb`/Go en esta fase)
 - Skills `wct:dry`, `wct:accept`, `wct:spec-first`

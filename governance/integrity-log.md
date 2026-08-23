@@ -134,3 +134,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #16: dedup del patrón subprocess que G-DRY-TOK cazó en CI
 - Commit: 191f83198a51bfea12dfbc11d008cd202dc12600
+
+## 2026-08-23T20:19:53.178387+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #17: escape anti-deadlock del Stop hook
+- Commit: aef252a6be0424719aae0bb05a2a76261021b056

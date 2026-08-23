@@ -9,10 +9,14 @@ rules:
     text: >
       No termines un turno con el árbol en rojo. Corre `wct gate --tier fast`
       antes de entregar; el hook de Stop lo corre de todas formas y te devolverá
-      el fallo.
+      el fallo. Si el DEADLOCK GUARD te deja pasar tras bloqueos repetidos, el
+      árbol sigue rojo: decláralo así en el handoff; pasar la válvula no es
+      pasar el gate.
     rationale: >
       Es el anillo 4. Mueve el descubrimiento del fallo al momento de escribirlo,
-      cuando el contexto de por qué se escribió así todavía existe.
+      cuando el contexto de por qué se escribió así todavía existe. La válvula
+      anti-deadlock existe para que un agente de solo lectura pueda entregar un
+      handoff honesto sobre un rojo ajeno, no para eximir de reportarlo.
     verified_by: [G-LINT, G-TYPE, G-TEST-FAST]
     severity: hard
     fails: []

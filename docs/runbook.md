@@ -63,6 +63,27 @@ erosiona la confianza en CI. Con esos datos se decide después entre un
 presupuesto de reintentos acotado o aislar el test; ninguna de las dos
 decisiones se toma en caliente.
 
+## Stop hook y anti-deadlock
+
+El Stop hook corre el tier `commit` y bloquea el cierre del turno si falla.
+Ese contrato presume que el agente que cierra es autor del estado del árbol.
+Un rol de solo lectura (verificador, resumidor) que hereda un árbol rojo
+ajeno no puede cumplirlo jamás: cada intento de cierre rebota, y el agente
+entra en loop (hallado en el piloto durante la integración de wct 0.3.0).
+
+Dos válvulas:
+
+1. `WCT_HOOK_ROLE=observer` en el entorno del agente observador: el stop
+   imprime `WCT WARN (observer): ...` y deja pasar. Resérvalo para roles sin
+   permiso de escritura; un coder con esta variable se autoexime del gate.
+2. Cortacircuitos global, sin configuración: la tercera bloqueada consecutiva
+   del mismo evento pasa con `WCT WARN (DEADLOCK GUARD)`. La racha vive en
+   `build/hooks/guard-streak.json` y se reinicia con un stop verde.
+
+Un stop que pasa por una válvula no es un árbol verde: es un agente que puede
+entregar. El aviso obliga a declarar el árbol rojo en el handoff, y la CI de
+PR sigue siendo la frontera dura.
+
 ## Webhooks
 
 `wct webhook` emite un envelope JSON v1 firmado con HMAC-SHA256. La URL y el

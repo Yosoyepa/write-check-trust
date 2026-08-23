@@ -15,6 +15,7 @@ from tools.wct.dry.analyzer import analyze as analyze_dry
 from tools.wct.fmt.engine import run as run_fmt
 from tools.wct.gate.runner import TIERS, run_tier
 from tools.wct.hooks.guard import dispatch as dispatch_hook
+from tools.wct.hotspots.engine import render as render_hotspots, report as hotspot_report
 from tools.wct.integrity.engine import bless, review, write_lock
 from tools.wct.introvert.analyzer import analyze as analyze_tests
 from tools.wct.mutate.engine import run as run_mutation, scan as scan_mutation, update_manifest
@@ -86,6 +87,13 @@ def parser() -> argparse.ArgumentParser:
     )
     split.add_argument("file", help="archivo fuente a planear")
     split.add_argument("--json", action="store_true", help="salida JSON")
+
+    hotspots = sub.add_parser(
+        "hotspots", help="churn x complejidad: dónde refactorizar primero (asesor)"
+    )
+    hotspots.add_argument("--days", type=int, default=90)
+    hotspots.add_argument("--top", type=int, default=10)
+    hotspots.add_argument("--json", action="store_true", help="salida JSON")
 
     selftest = sub.add_parser("selftest", help="attack the harness with known-bad inputs")
     selftest.add_argument("suite", choices=["redteam"])
@@ -160,6 +168,13 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(render_split(report))
             return 0 if report["ok"] else 1
+        if args.command == "hotspots":
+            hotspots = hotspot_report(root, days=args.days, top=args.top)
+            if args.json:
+                print(json.dumps(hotspots, indent=2, ensure_ascii=False))
+            else:
+                print(render_hotspots(hotspots))
+            return 0
         if args.command == "hook":
             return dispatch_hook(args.event)
         if args.command == "archmetrics":

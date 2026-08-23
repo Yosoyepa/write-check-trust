@@ -128,8 +128,6 @@ mark-parentheses = false
 "tools/wct/cli.py" = ["C901", "PLR0911", "PLR0912", "PLR0915"]
 # TODO(owner=yosoyepa, issue=#12): separar comparación de forma de extracción.
 "tools/wct/dry/analyzer.py" = ["C901", "PLR0912"]
-# TODO(owner=yosoyepa, issue=#12): tabular los patrones del guard por evento.
-"tools/wct/hooks/guard.py" = ["PLR0911"]
 # TODO(owner=yosoyepa, issue=#12): extraer el veredicto por test del walker.
 "tools/wct/introvert/analyzer.py" = ["C901", "PLR0912", "PLR0915"]
 # TODO(owner=yosoyepa, issue=#12): data-driven de los 30 casos del red team.

@@ -128,7 +128,15 @@ uv run wct selftest redteam
 uv run wct adopt /ruta/a/repositorio
 uv run wct fmt [--staged]
 uv run wct split-plan <archivo> [--json]
+uv run wct hotspots [--days 90] [--top 10] [--json]
 ```
+
+### Hotspots: dónde refactorizar primero
+
+`wct hotspots` cruza el churn de `git log --numstat` con la complejidad
+cognitiva por archivo (Tornhill): el mejor predictor empírico de defectos
+publicado. Es asesor — exit 0 siempre — porque un umbral de churn castigaría
+a los módulos simplemente activos.
 
 ### Formateo acotado al changeset
 

@@ -116,3 +116,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #13: gates de tamaño/cognitiva/supresiones y fix G-DRY-TOK
 - Commit: fab7c6008f2138377226bdf0ff92d0aeab57c646
+
+## 2026-08-23T18:40:24.249988+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #14: release 0.3.0 (hotspots, CI hardening, split runner, ratchets)
+- Commit: 8b70814c119f6464510eec948dd88aa38814a7a9

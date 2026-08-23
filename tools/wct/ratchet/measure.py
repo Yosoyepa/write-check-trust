@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 import json
 from pathlib import Path
+import re
+import shutil
+import subprocess
 
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.integrity.engine import require_approval_evidence
@@ -19,12 +22,29 @@ from tools.wct.util.git import head_sha
 
 MIN_APPROVER = 2
 MIN_REASON = 12
+PERCENT = re.compile(r"actual:\s*(\d+(?:\.\d+)?)%")
+
+
+def interrogate_percent(text: str) -> float | None:
+    """Extrae el 'actual: N%' de la salida de interrogate."""
+    match = PERCENT.search(text)
+    return float(match.group(1)) if match else None
+
+
+def docstring_coverage(root: Path) -> float | None:
+    """Cobertura de docstrings medida por interrogate (None si la tool falta)."""
+    if shutil.which("interrogate") is None:
+        return None
+    completed = subprocess.run(
+        ["interrogate", "src"], cwd=root, text=True, capture_output=True, check=False
+    )
+    return interrogate_percent(completed.stdout + completed.stderr)
 
 
 def measurements(root: Path) -> dict[str, float]:
     architecture = analyze_architecture(root)
     tests = analyze_tests(root)
-    return {
+    metrics = {
         "suppressions": float(suppression_count(root)),
         "debt-markers": float(len(debt_findings(root))),
         "introverted-tests": float(tests["counts"].get("introverted", 0)),
@@ -34,6 +54,10 @@ def measurements(root: Path) -> dict[str, float]:
         "per-file-ignores": float(ignores_count(root)),
         "file-size": float(len(size_oversized(root)["files"])),
     }
+    docstrings = docstring_coverage(root)
+    if docstrings is not None:
+        metrics["docstring-coverage"] = docstrings
+    return metrics
 
 
 def check(root: Path) -> list[str]:

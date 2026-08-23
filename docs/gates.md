@@ -92,7 +92,7 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 | `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` |
 | `G-AUDIT` | cero CVEs críticos/altos en dependencias desplegables | `pip-audit` (export del lock) |
 | `G-SBOM` | SBOM generado | `cyclonedx-py environment` |
-| `G-DOC` | cobertura de docstrings ≥ piso ratchet (34 %) | `interrogate src --fail-under 34` |
+| `G-DOC` | cobertura de docstrings ≥ piso ratchet | `interrogate src --fail-under <baseline>` (34 hoy; `wct ratchet record` lo sube) |
 | `G-REDTEAM` | el harness resiste a sus 30 adversarios (F1–F15) | `wct selftest redteam` |
 
 ## Gates de flujos específicos
@@ -105,7 +105,7 @@ a la espera de decisión del mantenedor.
 | `G-MUT` | manual: `make harden` y skills de mutación | `mutmut run` |
 | `G-COMMIT-MSG` | pre-commit (commit-msg hook) | `cz check --commit-msg-file` |
 | `G-TEST-RANDOM` | sin flujo automático: exige el plugin `pytest-randomly` (decisión pendiente) | `pytest --randomly-seed=last` |
-| `G-DRY-TOK` | sin flujo automático: exige `jscpd` de node (decisión pendiente) | `jscpd src tools --exit-code 1` (presupuesto en `.jscpd.json`) |
+| `G-DRY-TOK` | duplicación por tokens bajo presupuesto (5 % a 70+ tokens) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
 
 ## Alias para reglas
 

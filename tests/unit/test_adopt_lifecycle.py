@@ -9,7 +9,14 @@ import subprocess
 
 import pytest
 
-from tools.wct.adopt.lifecycle import check, lock, render_check, render_sync, sync
+from tools.wct.adopt.lifecycle import (
+    _collect_local_files,
+    check,
+    lock,
+    render_check,
+    render_sync,
+    sync,
+)
 from tools.wct.cli import main, normalize_adopt_invocation
 
 
@@ -364,3 +371,19 @@ def test_cli_adopt_explicit_path_inventories_that_target(
     assert exit_code == 0
     assert captured["target"] == str(tmp_path)
     assert str(tmp_path) in capsys.readouterr().out
+
+
+def test_collect_local_files_ignores_artifact_directories(tmp_path: Path) -> None:
+    """__pycache__ y .pyc inflan solo-local con ruido: no son divergencia."""
+    pkg = tmp_path / "tools" / "wct"
+    (pkg / "__pycache__").mkdir(parents=True)
+    (pkg / "engine.py").write_text("x = 1\n", encoding="utf-8")
+    (pkg / "__pycache__" / "engine.cpython-312.pyc").write_bytes(b"junk")
+    (pkg / "nested").mkdir()
+    (pkg / "nested" / "__pycache__").mkdir()
+    (pkg / "nested" / "mod.py").write_text("y = 2\n", encoding="utf-8")
+    (pkg / "nested" / "__pycache__" / "mod.pyc").write_bytes(b"junk")
+
+    files = _collect_local_files(tmp_path, ["tools/wct"])
+
+    assert files == {"tools/wct/engine.py", "tools/wct/nested/mod.py"}

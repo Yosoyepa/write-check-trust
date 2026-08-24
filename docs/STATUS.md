@@ -13,7 +13,7 @@
 |---|---|
 | `uv run wct --version` | Versión del harness |
 | `uv run wct doctor` | Salud: YAML de gobernanza, Python, hooks cableados (9 eventos) |
-| `uv run wct gate --tier commit` | Gates ACTIVOS con estado real (hoy: fast 7 / commit 19 / pr 25 / full 30) |
+| `uv run wct gate --tier commit` | Gates ACTIVOS con estado real (hoy: fast 7 / commit 20 / pr 26 / full 33) |
 | `uv run wct selftest redteam` | Red team: 30/30 adversarios F1–F15 (2 por modo de fallo) |
 | `uv run wct report` | Reglas y perfil vivos |
 | `ls tools/wct/` | Módulos existentes: accept, archmetrics, cognitive, dry, hotspots, introvert, mutate, ratchet, size, splitplan… |
@@ -43,6 +43,9 @@
 | `wct hotspots` (churn × complejidad) | v0.3.0 (PR #14) | `wct hotspots` |
 | Runner particionado (488 LOC, bajo el techo de 500) | v0.3.0 (PR #14, #16) | `wct gate --tier commit` → G-SIZE PASS |
 | Válvulas anti-deadlock del Stop hook (observer + cortacircuito) | **v0.4.0 (PR #17)** | `tools/wct/hooks/guard.py::stop_gate`; `WCT_HOOK_ROLE=observer` |
+| G-WIRE (anti-patrones de inyección DI en domain/ y application/) | **v0.5.0 (Fase β-1)** | `wct gate --tier commit` → fila G-WIRE PASS |
+| G-LCOM (cohesión LCOM4 advisory + ratchet) | **v0.5.0 (Fase β-1)** | `wct lcom --json`; gate G-LCOM en full tier |
+| G-DRY-TPL (clones de plantilla AST anonimizada + ratchet) | **v0.5.0 (Fase β-1)** | `wct dry --normalized`; gate G-DRY-TPL en full tier |
 
 Los seis roles de pipeline (specifier, coder, cleaner, architect, hardener,
 verifier) están en `.claude/agents/`; el plugin en `plugins/write-check-trust/`.
@@ -68,6 +71,7 @@ verifier) están en `.claude/agents/`; el plugin en `plugins/write-check-trust/`
   endurecimiento de workflows.
 - **v0.3.0** — hotspots, G-SIZE, G-COGNITIVE, auditoría de per-file-ignores,
   G-DRY-TOK con diente en CI, partición del runner, ratchet de docstrings.
+- **v0.5.0** (Fase β-1) — Métricas estructurales que faltaban: G-WIRE (anti-patrones DI en domain/application), G-LCOM (cohesión LCOM4 advisory como ratchet) y G-DRY-TPL (segunda pasada DRY con normalización de plantilla ast.Name/ast.Constant a '_').
 - **v0.4.0** — escape anti-deadlock del Stop hook: `WCT_HOOK_ROLE=observer` +
   cortacircuito (tercera bloqueada consecutiva pasa con advertencia que obliga
   a declarar el árbol rojo). Hallado en el piloto (personalAssistant).

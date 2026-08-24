@@ -19,15 +19,15 @@ skips silenciosos.
 | Tier | Cuándo corre | Presupuesto | Gates |
 |---|---|---:|---:|
 | `fast` | feedback en edición y PostToolUse | 10 s | 7 |
-| `commit` | pre-commit, Stop y handoff | 120 s | 19 |
-| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 25 |
-| `full` | release, hardener y CI programada | 30 min | 30 |
+| `commit` | pre-commit, Stop y handoff | 120 s | 20 |
+| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 26 |
+| `full` | release, hardener y CI programada | 30 min | 33 |
 
 ```bash
 uv run wct gate --tier fast    # 7/7
-uv run wct gate --tier commit  # 19/19
-uv run wct gate --tier pr      # 25/25  (o `make pr`)
-uv run wct gate --tier full    # 30/30
+uv run wct gate --tier commit  # 20/20
+uv run wct gate --tier pr      # 26/26  (o `make pr`)
+uv run wct gate --tier full    # 33/33
 ```
 
 ## fast — 7 gates
@@ -42,7 +42,7 @@ uv run wct gate --tier full    # 30/30
 | `G-FMT` | todo el árbol formateado | `ruff format --check` |
 | `G-TYPE` | tipado estricto sin errores | `mypy tools/wct src` |
 
-## commit — añade 12
+## commit — añade 13
 
 | Gate | Qué exige | Verificador |
 |---|---|---|
@@ -58,6 +58,7 @@ uv run wct gate --tier full    # 30/30
 | `G-ACCEPT` | Gherkin parseable, sin repetición estructural | `wct accept parse` |
 | `G-SIZE` | archivos ≤ 500 LOC; deuda legada en baseline que solo baja | `wct` (contador LOC por tokenize) |
 | `G-COGNITIVE` | complejidad cognitiva ≤ 15 por función en src/ | `wct` (walker AST propio, S3776) |
+| `G-WIRE` | inyección de dependencias limpia en domain/ y application/, sin star-imports ni llamadas a nivel de módulo | `wct` (AST walker de cableado) |
 
 ## pr — añade 6 (espejo local de la CI de PR)
 
@@ -80,7 +81,7 @@ base resoluble, reporta ERROR (no SKIP) porque la promesa del tier es
 paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 `origin/main` → `origin/master` → `main` → `master`.
 
-## full — añade 11
+## full — añade 13
 
 | Gate | Qué exige | Verificador |
 |---|---|---|
@@ -89,7 +90,9 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 | `G-CC` | complejidad ciclomática ≤ 10 | `xenon --max-absolute B` |
 | `G-DRY` | sin duplicación estructural accionable | `wct dry` |
 | `G-DRY-TOK` | cero clones por tokens a 70+ tokens (tolerancia cero con `--exit-code`) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
+| `G-DRY-TPL` | sin clones de plantilla AST (similitud anonimizada ≥ 0.90) sobre el ratchet | `wct dry --normalized` |
 | `G-INTROVERT` | honestidad de tests: aserciones sobre el SUT | `wct introvert` |
+| `G-LCOM` | cohesión LCOM4 de clases (componentes conexas < 2 o dentro del ratchet) | `wct lcom` |
 | `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` |
 | `G-AUDIT` | cero CVEs críticos/altos en dependencias desplegables | `pip-audit` (export del lock) |
 | `G-SBOM` | SBOM generado | `cyclonedx-py environment` |

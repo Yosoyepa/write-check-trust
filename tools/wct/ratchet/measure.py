@@ -8,6 +8,7 @@ import shutil
 import subprocess
 
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
+from tools.wct.dry.tpl import analyze_template
 from tools.wct.integrity.engine import require_approval_evidence
 from tools.wct.introvert.analyzer import analyze as analyze_tests
 from tools.wct.lcom.engine import scan as scan_lcom
@@ -55,6 +56,7 @@ def measurements(root: Path) -> dict[str, float]:
         "per-file-ignores": float(ignores_count(root)),
         "file-size": float(len(size_oversized(root)["files"])),
         "lcom-classes": float(len(scan_lcom(root)["violators"])),
+        "dry-template-clusters": float(len(analyze_template(root)["candidates"])),
     }
     docstrings = docstring_coverage(root)
     if docstrings is not None:

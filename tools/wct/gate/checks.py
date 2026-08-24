@@ -14,6 +14,7 @@ from tools.wct.accept.pipeline import ir_dry, parse_feature
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.cognitive.engine import scan as scan_cognitive
 from tools.wct.dry.analyzer import analyze as analyze_dry
+from tools.wct.dry.tpl import analyze_template
 from tools.wct.integrity.engine import violations as integrity_violations
 from tools.wct.introvert.analyzer import analyze as analyze_tests
 from tools.wct.lcom.engine import scan as scan_lcom
@@ -193,3 +194,20 @@ def gate_lcom(root: Path) -> GateResult:
     if not compare(len(violators), base):
         findings.append(f"ratchet: {len(violators)} > baseline {base['value']}")
     return _result("G-LCOM", started, findings, "cohesión de clases LCOM4 saludable")
+
+
+def gate_dry_tpl(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = analyze_template(root)
+    candidates = report["candidates"]
+    base = baseline(root, "dry-template-clusters")
+    findings = list(report["errors"])
+    if not compare(len(candidates), base):
+        for item in candidates:
+            findings.append(
+                f"{item['left']['file']}:{item['left']['start']} ~ "
+                f"{item['right']['file']}:{item['right']['start']} "
+                f"score={item['score']}"
+            )
+        findings.append(f"ratchet: {len(candidates)} > baseline {base['value']}")
+    return _result("G-DRY-TPL", started, findings, "sin clones de plantilla sobre la baseline")

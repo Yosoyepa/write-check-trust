@@ -12,6 +12,7 @@ from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.config import ConfigError, find_root
 from tools.wct.doctor.checks import diagnose
 from tools.wct.dry.analyzer import analyze as analyze_dry
+from tools.wct.dry.tpl import analyze_template
 from tools.wct.fmt.engine import run as run_fmt
 from tools.wct.gate.runner import TIERS, run_tier
 from tools.wct.hooks.guard import dispatch as dispatch_hook
@@ -58,6 +59,9 @@ def parser() -> argparse.ArgumentParser:
     dry = sub.add_parser("dry", help="find fuzzy structural duplication")
     dry.add_argument("paths", nargs="*")
     dry.add_argument("--json", action="store_true")
+    dry.add_argument(
+        "--normalized", action="store_true", help="use template normalization (G-DRY-TPL)"
+    )
 
     introvert = sub.add_parser(
         "introvert", help="classify whether test assertions trace to the SUT"
@@ -191,6 +195,10 @@ def main(argv: list[str] | None = None) -> int:
             return bool(report["violations"])
         if args.command == "dry":
             paths = [root / path for path in args.paths] if args.paths else None
+            if args.normalized:
+                report = analyze_template(root, paths)
+                print(json.dumps(report, indent=2, ensure_ascii=False))
+                return 0
             report = analyze_dry(root, paths)
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return bool(

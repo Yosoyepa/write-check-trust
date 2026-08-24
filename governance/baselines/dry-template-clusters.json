@@ -1,0 +1,10 @@
+{
+  "metric": "dry-template-clusters",
+  "recorded_at": "2026-08-23T00:00:00Z",
+  "commit": null,
+  "recorded_by": "seed",
+  "value": 9,
+  "unit": "count",
+  "direction": "lower_is_better",
+  "note": "Pares de funciones con similitud de plantilla anonimizada >= 0.90."
+}

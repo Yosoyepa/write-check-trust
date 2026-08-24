@@ -30,7 +30,7 @@ jobs:
         run: uv run wct doctor
       - name: tier fast
         run: uv run wct gate --tier fast
-      - name: tier commit (presupuesto: 120 s)
+      - name: "tier commit (presupuesto: 120 s)"
         run: |
           start=$(date +%s)
           uv run wct gate --tier commit

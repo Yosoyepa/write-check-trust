@@ -146,3 +146,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #21: fase beta-1 metricas estructurales (G-WIRE, G-LCOM, G-DRY-TPL)
 - Commit: 4231366784a696b22e445d22870d337a1064efbe
+
+## 2026-08-24T00:57:09.660135+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #22: release 0.5.0 tras beta-1
+- Commit: ca3d673bf28fa19ac0ea0da271a9964c5cec020c

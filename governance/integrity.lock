@@ -1,5 +1,5 @@
 {
-  "commit": "e81753055e3fdfe51809a7eb23566a10f0d7d25d",
+  "commit": "be151317d7668d1583a7f53f79e56623ea652acd",
   "files": {
     ".claude/agents/architect.md": "6cc0e84aef88676f0a578ad8ffa709dca75b6fb560f4745abf1ffc2b61435345",
     ".claude/agents/cleaner.md": "58e6084e0654b91590a714feeec7aed1db777c5e02ac00952d20d771741c8c22",
@@ -36,6 +36,7 @@
     ".claude/skills/wct-security/agents/openai.yaml": "ae07725a308194662a4ea4c8ed44fbfb329b8beb10a2e5b3cdada3e86dadb86e",
     ".claude/skills/wct-test-honesty/SKILL.md": "a91df9f1ea6cff3d91d86e6ebc67b61f8eec4cdd577d0a92cde6ba1eb139a825",
     ".claude/skills/wct-test-honesty/agents/openai.yaml": "773778b35403fcb84cb4f484c5378c753e40f885c7416e542992737010603814",
+    ".github/workflows/adoption-smoke.yml": "3b6df594169a645ce75adb5939db03999880326970a7eaca653d79ce40cc9575",
     ".github/workflows/full-hardening.yml": "b774af804fe875da814be3c01ac853fb76d0090277c9509e52139c41da56959b",
     ".github/workflows/quality.yml": "f0da4aa905205159b2d1f5a3500cdd474c03c1702084ce4a721b2fcc819c9c27",
     ".importlinter": "0546f9da8afa7efad7b535fb245bf4f241171660433e5943e9267c1f2b21a49b",
@@ -59,7 +60,7 @@
     "governance/decisions/ADR-002-ruff.md": "db1c65720c305b0572482d8fd76311c48b2f52fc8dc900de79c764a21c80d298",
     "governance/decisions/ADR-003-crap-threshold.md": "3c604d392cce1098e943cb2c68198784899cf018b105fe3acb078c1331f5288f",
     "governance/generated/mutation-manifest.json": "3f5c6257bdc5547fc13108c6254cf6b4a304728eb670a4a9bf62be93fd86f216",
-    "governance/integrity-log.md": "b3da77a9fac58aa8126e74974b7db1702ef26e55dbe1d553510ef57d3f7042cc",
+    "governance/integrity-log.md": "13a6350086596743f98c01ef26e6f0d9ce3e91d4b078fef341f018982aa7b9a2",
     "governance/lint/legacy/.flake8": "aabe4353c6dac04f085a8cf44a91b104344ea61f4c49bd1b44a1a26c5b6bea11",
     "governance/lint/legacy/.isort.cfg": "dd606fb2bece67d3ffdd19410cd70c709e904ff7fd385fcbb3a1042274663665",
     "governance/lint/legacy/black.toml": "40b9ad163b0956f87d1d8a30e965ac59b433b28a72a871763c6799cbbb88937c",
@@ -104,7 +105,7 @@
     "plugins/write-check-trust/skills/wct-security/agents/openai.yaml": "ae07725a308194662a4ea4c8ed44fbfb329b8beb10a2e5b3cdada3e86dadb86e",
     "plugins/write-check-trust/skills/wct-test-honesty/SKILL.md": "a91df9f1ea6cff3d91d86e6ebc67b61f8eec4cdd577d0a92cde6ba1eb139a825",
     "plugins/write-check-trust/skills/wct-test-honesty/agents/openai.yaml": "773778b35403fcb84cb4f484c5378c753e40f885c7416e542992737010603814",
-    "pyproject.toml": "5ef788309eea96b3a63b77e10cb788e5d7714c312ff2feee08ad4aeaf0d0b318",
+    "pyproject.toml": "a337f8ce5fda44a92c84208ee934fe548f8130fe2d371b0407cdd5ba4efb3035",
     "quality/redteam/README.md": "0ef17aa920317fcae4fb7e189dcc3e0f821c093635611d6257c1a6f2ee7bf72f",
     "quality/redteam/cases.yaml": "656ff374e4b4b1d03c52f064e7f18afa45a73f36e5722fee65f33d859a5e310e",
     "skills/wct-acceptance/SKILL.md": "adabdb53e9eaad99241750a28b9962a0d80b9162e7e589de3686c2c94616f146",
@@ -140,7 +141,7 @@
     "tools/wct/accept/__init__.py": "9f5dff8daf3d06d7a5134d858e881c2cc45d2ff955a5b4e032fa9e5dfb475b13",
     "tools/wct/accept/pipeline.py": "de6f74b9da9b422d3cd5ee7c128f1c90e38308476365e9efe72a7500b42e47a6",
     "tools/wct/adopt/__init__.py": "b6caa5bd998c24ebe900b0d8d631e1ebb34b0f9a8ee9b76ce6f4fbf53d20a894",
-    "tools/wct/adopt/lifecycle.py": "1e5a744b9aaf65c7031ab13cd6db00b14984aeb2aaa95fe1a9f3a824cdd986e2",
+    "tools/wct/adopt/lifecycle.py": "b045dc53883dcd05d1aaaa7fd71ca25dd418079f6ced4e748bc1c7e3b11144c0",
     "tools/wct/archmetrics/__init__.py": "852c5306074d08f8520d16f295a7a02c869ab01ec53f8ccf6b23ba6e0e040cbf",
     "tools/wct/archmetrics/analyzer.py": "fcc1aa8242f7661f80249b76e78ce82d7bbefc892c639b9f752f75a961e643b8",
     "tools/wct/cli.py": "d7dbd71bd138e11fd6f12f5a2c0b4e59cdabf55546638fcf8693a1ebf62895b1",
@@ -189,7 +190,7 @@
     "tools/wct/webhook.py": "f89156240bb5734303f98593e950f8faed29a495dcc8ba24334a40c197e7dd84",
     "tools/wct/wire/__init__.py": "b3099f7050e756b976127417854ec470dcd7893bd1398c17c5bf83d4a2eb39b2",
     "tools/wct/wire/engine.py": "e177d35e46bff754740e8ebc1c7eb1f823a0f0771138a68ca9ca4612167ce932",
-    "uv.lock": "b964fcbbf514dce3097125cad5f4d7bc98b8dd870dec17e593b0336949b9be5b"
+    "uv.lock": "b0f21368b7c720e18f4d1a16f31848de80fe60e54c2daac2deda8582bcb44855"
   },
   "hash": "sha256:eol-normalized",
   "schema_version": 1

@@ -10,6 +10,7 @@ import subprocess
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.integrity.engine import require_approval_evidence
 from tools.wct.introvert.analyzer import analyze as analyze_tests
+from tools.wct.lcom.engine import scan as scan_lcom
 from tools.wct.ratchet.engine import (
     baseline,
     compare,
@@ -53,6 +54,7 @@ def measurements(root: Path) -> dict[str, float]:
         ),
         "per-file-ignores": float(ignores_count(root)),
         "file-size": float(len(size_oversized(root)["files"])),
+        "lcom-classes": float(len(scan_lcom(root)["violators"])),
     }
     docstrings = docstring_coverage(root)
     if docstrings is not None:

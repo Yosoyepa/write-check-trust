@@ -25,6 +25,7 @@ from tools.wct.gate.checks import (
     gate_debt,
     gate_dry,
     gate_introvert,
+    gate_lcom,
     gate_meta_integrity,
     gate_rules_drift,
     gate_size,
@@ -360,6 +361,7 @@ REGISTRY: dict[str, Gate] = {
     "G-ACCEPT": gate_accept,
     "G-SIZE": gate_size,
     "G-COGNITIVE": gate_cognitive,
+    "G-LCOM": gate_lcom,
     "G-WIRE": gate_wire,
     "G-CRAP": external(
         "G-CRAP",
@@ -491,6 +493,7 @@ TIERS: dict[str, list[str]] = {
         "G-SIZE",
         "G-COGNITIVE",
         "G-WIRE",
+        "G-LCOM",
         "G-SAST-BANDIT",
         "G-SAST-SEMGREP",
         "G-SECRET",

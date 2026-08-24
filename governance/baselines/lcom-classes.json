@@ -1,0 +1,10 @@
+{
+  "metric": "lcom-classes",
+  "recorded_at": "2026-08-23T00:00:00Z",
+  "commit": null,
+  "recorded_by": "seed",
+  "value": 0,
+  "unit": "count",
+  "direction": "lower_is_better",
+  "note": "Conteo de clases con LCOM4 >= 2 (componentes conexas disjuntas)."
+}

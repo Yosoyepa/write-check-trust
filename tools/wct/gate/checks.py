@@ -16,6 +16,7 @@ from tools.wct.cognitive.engine import scan as scan_cognitive
 from tools.wct.dry.analyzer import analyze as analyze_dry
 from tools.wct.integrity.engine import violations as integrity_violations
 from tools.wct.introvert.analyzer import analyze as analyze_tests
+from tools.wct.lcom.engine import scan as scan_lcom
 from tools.wct.model import GateResult, Status
 from tools.wct.ratchet.engine import (
     baseline,
@@ -178,3 +179,17 @@ def gate_wire(root: Path) -> GateResult:
     return _result(
         "G-WIRE", started, findings, "inyección de dependencias limpia en domain y application"
     )
+
+
+def gate_lcom(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = scan_lcom(root)
+    violators = report["violators"]
+    base = baseline(root, "lcom-classes")
+    findings = [
+        f"{item['file']}:{item['line']}: {item['class']}: LCOM4={item['lcom4']} >= 2"
+        for item in violators
+    ]
+    if not compare(len(violators), base):
+        findings.append(f"ratchet: {len(violators)} > baseline {base['value']}")
+    return _result("G-LCOM", started, findings, "cohesión de clases LCOM4 saludable")

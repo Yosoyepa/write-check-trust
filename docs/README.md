@@ -14,6 +14,9 @@
 |---|---|
 | [PLAN.md](../PLAN.md) | Decisiones, fases, límites y catálogo de gates del desarrollo del harness. |
 | [RESEARCH.md](../RESEARCH.md) | Investigación fuente: conflictos, evidencia y razonamiento detrás de cada decisión. |
+| [CHANGELOG.md](../CHANGELOG.md) | Cambios notables por versión (Keep a Changelog + SemVer). |
+| [RELEASES.md](../RELEASES.md) | Política de madurez: qué significa alpha/beta/GA aquí y su evidencia. |
+| [ADOPTERS.md](../ADOPTERS.md) | Quién usa WCT y con qué evidencia. |
 | [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) | Avisos de terceros y licencias de dependencias. |
 
 ## Decisiones de arquitectura (ADR)

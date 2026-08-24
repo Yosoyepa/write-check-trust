@@ -87,6 +87,16 @@ def _resolve_git_ref(source: Path, ref: str, label: str) -> str:
     return res.stdout.strip()
 
 
+_ARTIFACT_SUFFIXES = frozenset({".pyc", ".pyo"})
+
+
+def _is_artifact(child: Path) -> bool:
+    relative_parts = child.parts
+    return (
+        any(part == "__pycache__" for part in relative_parts) or child.suffix in _ARTIFACT_SUFFIXES
+    )
+
+
 def _collect_local_files(root: Path, paths: list[str]) -> set[str]:
     local_files: set[str] = set()
     for path_entry in paths:
@@ -95,7 +105,7 @@ def _collect_local_files(root: Path, paths: list[str]) -> set[str]:
             local_files.add(path_entry)
         elif target.is_dir():
             for child in target.rglob("*"):
-                if child.is_file():
+                if child.is_file() and not _is_artifact(child):
                     local_files.add(child.relative_to(root).as_posix())
     return local_files
 

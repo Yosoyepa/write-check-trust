@@ -158,3 +158,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #23: adopt lifecycle lock/check/sync (beta-2)
 - Commit: e81753055e3fdfe51809a7eb23566a10f0d7d25d
+
+## 2026-08-24T01:50:17.386984+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #24: declarar beta 1.0.0-beta.1
+- Commit: be151317d7668d1583a7f53f79e56623ea652acd

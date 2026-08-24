@@ -164,3 +164,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #24: declarar beta 1.0.0-beta.1
 - Commit: be151317d7668d1583a7f53f79e56623ea652acd
+
+## 2026-08-24T01:57:14.564464+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #25: fix YAML adoption-smoke
+- Commit: d4952b60b7a429a77b795bf3bebc34cefd272647

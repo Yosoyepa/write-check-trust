@@ -39,6 +39,8 @@ from tools.wct.selftest.redteam import run as run_redteam
 from tools.wct.splitplan.engine import plan as plan_split, render as render_split
 from tools.wct.webhook import send_from_environment
 
+_MIN_NORMALIZE_TOKENS = 2
+
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="wct", description="Write, Check, Trust hardening harness")
@@ -124,6 +126,12 @@ def parser() -> argparse.ArgumentParser:
     ratchet.add_argument("--reason")
 
     adopt = sub.add_parser("adopt", help="inventory repository or manage adopted harness lifecycle")
+    adopt.add_argument(
+        "--inventory-target",
+        default=None,
+        metavar="RUTA",
+        help="ruta a inventariar (forma flag de `wct adopt <ruta>`)",
+    )
     adopt_sub = adopt.add_subparsers(dest="adopt_command")
 
     lock_p = adopt_sub.add_parser("lock", help="lock vendor paths to an upstream commit")
@@ -162,8 +170,24 @@ def _json_object(raw: str) -> dict[str, object]:
     return value
 
 
+def normalize_adopt_invocation(argv: list[str]) -> list[str]:
+    """Preserva `wct adopt <ruta>` como inventario junto a lock/check/sync.
+
+    argparse no admite un posicional raíz conviviendo con subparsers: el
+    primer token siempre se interpreta como subcomando. La normalización
+    reescribe la forma posicional histórica a un flag antes de parsear.
+    """
+    adopt_subcommands = {"lock", "check", "sync"}
+    if len(argv) < _MIN_NORMALIZE_TOKENS:
+        return argv
+    if argv[0] != "adopt" or argv[1] in adopt_subcommands or argv[1].startswith("-"):
+        return argv
+    return ["adopt", "--inventory-target", *argv[1:]]
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = parser().parse_args(argv)
+    tokens = sys.argv[1:] if argv is None else list(argv)
+    args = parser().parse_args(normalize_adopt_invocation(tokens))
     try:
         root = find_root()
         if args.command == "gate":
@@ -327,7 +351,10 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     print(render_sync(sync_report))
                 return 0
-            print(render_inventory(inspect_repository(root.resolve())))
+            inventory_target = (
+                Path(args.inventory_target).resolve() if args.inventory_target else root.resolve()
+            )
+            print(render_inventory(inspect_repository(inventory_target)))
             return 0
         if args.command == "webhook":
             data = _json_object(args.data)

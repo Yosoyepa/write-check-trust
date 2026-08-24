@@ -10,7 +10,7 @@ import subprocess
 import pytest
 
 from tools.wct.adopt.lifecycle import check, lock, render_check, render_sync, sync
-from tools.wct.cli import main
+from tools.wct.cli import main, normalize_adopt_invocation
 
 
 def make_upstream_repo(
@@ -328,3 +328,39 @@ def test_sync_cli_json(
     assert "patch_path" in data
     assert "changed_files_count" in data
     assert "conflict_candidates" in data
+
+
+# --- CLI compat: `wct adopt <ruta>` convive con lock/check/sync --------------
+
+
+def test_normalize_rewrites_explicit_path_to_inventory_target() -> None:
+    normalized = normalize_adopt_invocation(["adopt", "../otro-repo"])
+
+    assert normalized == ["adopt", "--inventory-target", "../otro-repo"]
+
+
+def test_normalize_leaves_subcommands_flags_and_bare_adopt_untouched() -> None:
+    for argv in (
+        ["adopt"],
+        ["adopt", "lock", "--source", "x"],
+        ["adopt", "check", "--source", "x", "--json"],
+        ["adopt", "--help"],
+        ["gate", "--tier", "fast"],
+    ):
+        assert normalize_adopt_invocation(argv) == argv
+
+
+def test_cli_adopt_explicit_path_inventories_that_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    captured: dict[str, str] = {}
+    monkeypatch.setattr(
+        "tools.wct.cli.inspect_repository",
+        lambda target: captured.update(target=str(target)) or {"target": str(target)},
+    )
+
+    exit_code = main(["adopt", str(tmp_path)])
+
+    assert exit_code == 0
+    assert captured["target"] == str(tmp_path)
+    assert str(tmp_path) in capsys.readouterr().out

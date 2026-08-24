@@ -170,3 +170,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #25: fix YAML adoption-smoke
 - Commit: d4952b60b7a429a77b795bf3bebc34cefd272647
+
+## 2026-08-24T03:07:07.417959+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #26: adoption-smoke alineado al quickstart del README
+- Commit: 3ad346d2a3deac933ceb63eb3a5baf5479670490

@@ -5,7 +5,7 @@
 > como bug de este documento. El estado real siempre es derivable con el kit
 > de abajo; ninguna prosa (ni PLAN.md, ni RESEARCH.md, ni esta) es evidencia.
 
-Última verificación: 2026-08-23 · `v0.4.0` · main verde (full tier 30/30 en CI).
+Última verificación: 2026-08-24 · `v1.0.0-beta.1` · **beta declarada** — política en [RELEASES.md](RELEASES.md).
 
 ## Kit de verificación (~30 s)
 
@@ -56,13 +56,11 @@ verifier) están en `.claude/agents/`; el plugin en `plugins/write-check-trust/`
 1. **Issue #12** — 6 archivos conservan 33 códigos exentos en per-file-ignores
    (archmetrics/analyzer, cli, accept/pipeline, dry/analyzer, introvert/analyzer,
    selftest/redteam). Rastreado; `wct hotspots` da el orden de ataque.
-2. **`wct adopt`**: ciclo de vida de vendoring mecanizado (`lock/check/sync`) + inventario de repositorios.
-3. **Publicar el plugin** en el marketplace de Claude Code (existe, no publicado).
-4. Opcionales no planeados para alpha: LCOM4 (P6, advisory), tach opt-in,
-   variante polyglot (JS/TS), benchmarks de boilerplate (tiangolo).
-5. **Declarar beta** es decisión del maintainer: los criterios de salida
-   habituales ya se cumplen de facto (full 30/30, red team 30/30, 0 survivors
-   en mutación diferencial por diseño del gate).
+2. **Publicar el plugin** en el marketplace de Claude Code (existe, no publicado).
+3. **GA (1.0.0)**: 3 adoptadores externos, co-maintainer documentado, 30 días
+   de beta estable — ver [RELEASES.md](RELEASES.md).
+4. Opcionales: tach opt-in, variante polyglot (JS/TS), benchmarks de
+   boilerplate (tiangolo), wizard de migración con medición de baselines.
 
 ## Historial de versiones
 
@@ -71,7 +69,13 @@ verifier) están en `.claude/agents/`; el plugin en `plugins/write-check-trust/`
   endurecimiento de workflows.
 - **v0.3.0** — hotspots, G-SIZE, G-COGNITIVE, auditoría de per-file-ignores,
   G-DRY-TOK con diente en CI, partición del runner, ratchet de docstrings.
-- **v0.5.0** (Fase β-1) — Métricas estructurales que faltaban: G-WIRE (anti-patrones DI en domain/application), G-LCOM (cohesión LCOM4 advisory como ratchet) y G-DRY-TPL (segunda pasada DRY con normalización de plantilla ast.Name/ast.Constant a '_').
+- **v0.4.0** — válvulas anti-deadlock del Stop hook (hallado en el piloto).
+- **v0.5.0** — métricas estructurales (β-1: G-WIRE, G-LCOM, G-DRY-TPL) y
+  ciclo de vida del vendido (β-2: `adopt lock/check/sync`, validado contra
+  el piloto).
+- **v1.0.0-beta.1** — **beta declarada** con política de madurez
+  ([RELEASES.md](RELEASES.md)), CHANGELOG, ADOPTERS y smoke-test de
+  adopción en CI (`adoption-smoke.yml`: clon limpio → verde, ≤120 s).
 - **v0.4.0** — escape anti-deadlock del Stop hook: `WCT_HOOK_ROLE=observer` +
   cortacircuito (tercera bloqueada consecutiva pasa con advertencia que obliga
   a declarar el árbol rojo). Hallado en el piloto (personalAssistant).

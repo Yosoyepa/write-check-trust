@@ -1,11 +1,16 @@
+"""Adopt package: inventory existing repositories and manage vendor lifecycle."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
 
+from tools.wct.adopt.lifecycle import check, lock, render_check, render_lock, render_sync, sync
+
 
 def inspect_repository(target: Path) -> dict[str, Any]:
+    """Inspect an existing repository to determine structure and adoption strategy."""
     ignored = {".git", ".venv", "node_modules", "vendor", "build", "dist"}
 
     def count(*suffixes: str) -> int:
@@ -43,4 +48,17 @@ def inspect_repository(target: Path) -> dict[str, Any]:
 
 
 def render_inventory(report: dict[str, Any]) -> str:
+    """Render repository adoption inventory report as formatted JSON."""
     return json.dumps(report, indent=2, ensure_ascii=False)
+
+
+__all__ = [
+    "check",
+    "inspect_repository",
+    "lock",
+    "render_check",
+    "render_inventory",
+    "render_lock",
+    "render_sync",
+    "sync",
+]

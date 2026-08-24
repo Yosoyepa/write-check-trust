@@ -125,11 +125,26 @@ uv run wct introvert --json
 uv run wct mutate scan|run|update-manifest
 uv run wct accept parse|ir-dry|generate|run|mutate [feature]
 uv run wct selftest redteam
-uv run wct adopt /ruta/a/repositorio
+uv run wct adopt [ruta]
+uv run wct adopt lock --source <path-clon> [--paths tools/wct] [--force]
+uv run wct adopt check --source <path-clon> [--ref HEAD] [--json]
+uv run wct adopt sync --source <path-clon> --ref <ref> [--out patch] [--json]
 uv run wct fmt [--staged]
 uv run wct split-plan <archivo> [--json]
 uv run wct hotspots [--days 90] [--top 10] [--json]
 ```
+
+### Ciclo de vida del arnés vendido (`wct adopt lock/check/sync`)
+
+Mecaniza la actualización de vendoring (ej. repositorios que embeben `tools/wct/`)
+siguiendo el patrón cruft/copier: **acoplamiento por hash de commit exacto**.
+
+- **`wct adopt lock --source <path>`**: genera `.wct-upstream.json` acoplando los paths al HEAD SHA y URL de origen del clon upstream.
+- **`wct adopt check --source <path> [--ref <ref>]`**: reporta en tres secciones:
+  1. *Drift*: clasificación de archivos locales vs upstream en el commit bloqueado (`identical`, `diverged`, `solo-local`, `solo-upstream`).
+  2. *Behind*: cambios en upstream entre el commit bloqueado y `--ref`.
+  3. *Conflict candidates*: archivos con divergencia local y cambios en upstream (`diverged ∩ changed`).
+- **`wct adopt sync --source <path> --ref <ref>`**: genera el unified diff patch (`build/tmp/wct-sync.patch`) y destaca candidatos a conflicto para revisión manual. **Propone, nunca ejecuta**: ningún archivo del proyecto se modifica automáticamente.
 
 ### Hotspots: dónde refactorizar primero
 

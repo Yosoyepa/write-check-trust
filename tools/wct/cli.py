@@ -2,12 +2,22 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import subprocess
 import sys
 
 from tools.wct import __version__
 from tools.wct.accept.pipeline import generate, ir_dry, parse_feature, run_mutations
-from tools.wct.adopt import inspect_repository, render_inventory
+from tools.wct.adopt import (
+    check,
+    inspect_repository,
+    lock,
+    render_check,
+    render_inventory,
+    render_lock,
+    render_sync,
+    sync,
+)
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.config import ConfigError, find_root
 from tools.wct.doctor.checks import diagnose
@@ -113,8 +123,30 @@ def parser() -> argparse.ArgumentParser:
     ratchet.add_argument("--approved-by")
     ratchet.add_argument("--reason")
 
-    adopt = sub.add_parser("adopt", help="inventory an existing repository without modifying it")
-    adopt.add_argument("target", nargs="?", default=".")
+    adopt = sub.add_parser("adopt", help="inventory repository or manage adopted harness lifecycle")
+    adopt_sub = adopt.add_subparsers(dest="adopt_command")
+
+    lock_p = adopt_sub.add_parser("lock", help="lock vendor paths to an upstream commit")
+    lock_p.add_argument("--source", required=True, help="path to local upstream clone")
+    lock_p.add_argument("--paths", nargs="+", default=["tools/wct"], help="paths to lock")
+    lock_p.add_argument(
+        "--force", action="store_true", help="overwrite existing .wct-upstream.json"
+    )
+
+    check_p = adopt_sub.add_parser(
+        "check", help="check drift, behind changes and conflict candidates"
+    )
+    check_p.add_argument("--source", required=True, help="path to local upstream clone")
+    check_p.add_argument(
+        "--ref", default="HEAD", help="upstream ref to compare against (default: HEAD)"
+    )
+    check_p.add_argument("--json", action="store_true", help="output report as JSON")
+
+    sync_p = adopt_sub.add_parser("sync", help="propose unified patch for upstream changes")
+    sync_p.add_argument("--source", required=True, help="path to local upstream clone")
+    sync_p.add_argument("--ref", required=True, help="upstream ref to sync against")
+    sync_p.add_argument("--out", default="build/tmp/wct-sync.patch", help="patch destination path")
+    sync_p.add_argument("--json", action="store_true", help="output report as JSON")
 
     webhook = sub.add_parser("webhook", help="send a signed, sanitized lifecycle event")
     webhook.add_argument("event")
@@ -276,7 +308,26 @@ def main(argv: list[str] | None = None) -> int:
                 print(path.relative_to(root))
             return 0
         if args.command == "adopt":
-            print(render_inventory(inspect_repository((root / args.target).resolve())))
+            if args.adopt_command == "lock":
+                report = lock(root, Path(args.source), paths=args.paths, force=args.force)
+                print(render_lock(report))
+                return 0
+            if args.adopt_command == "check":
+                check_report = check(root, Path(args.source), ref=args.ref)
+                if args.json:
+                    print(json.dumps(check_report, indent=2, ensure_ascii=False))
+                else:
+                    print(render_check(check_report))
+                return 0
+            if args.adopt_command == "sync":
+                out_path = Path(args.out) if args.out else None
+                sync_report = sync(root, Path(args.source), ref=args.ref, out=out_path)
+                if args.json:
+                    print(json.dumps(sync_report, indent=2, ensure_ascii=False))
+                else:
+                    print(render_sync(sync_report))
+                return 0
+            print(render_inventory(inspect_repository(root.resolve())))
             return 0
         if args.command == "webhook":
             data = _json_object(args.data)

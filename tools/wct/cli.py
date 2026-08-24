@@ -12,12 +12,14 @@ from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.config import ConfigError, find_root
 from tools.wct.doctor.checks import diagnose
 from tools.wct.dry.analyzer import analyze as analyze_dry
+from tools.wct.dry.tpl import analyze_template
 from tools.wct.fmt.engine import run as run_fmt
 from tools.wct.gate.runner import TIERS, run_tier
 from tools.wct.hooks.guard import dispatch as dispatch_hook
 from tools.wct.hotspots.engine import render as render_hotspots, report as hotspot_report
 from tools.wct.integrity.engine import bless, review, write_lock
 from tools.wct.introvert.analyzer import analyze as analyze_tests
+from tools.wct.lcom.engine import scan as scan_lcom
 from tools.wct.mutate.engine import run as run_mutation, scan as scan_mutation, update_manifest
 from tools.wct.ratchet.measure import check as check_ratchets, record as record_ratchets
 from tools.wct.report.overview import overview
@@ -57,6 +59,9 @@ def parser() -> argparse.ArgumentParser:
     dry = sub.add_parser("dry", help="find fuzzy structural duplication")
     dry.add_argument("paths", nargs="*")
     dry.add_argument("--json", action="store_true")
+    dry.add_argument(
+        "--normalized", action="store_true", help="use template normalization (G-DRY-TPL)"
+    )
 
     introvert = sub.add_parser(
         "introvert", help="classify whether test assertions trace to the SUT"
@@ -94,6 +99,9 @@ def parser() -> argparse.ArgumentParser:
     hotspots.add_argument("--days", type=int, default=90)
     hotspots.add_argument("--top", type=int, default=10)
     hotspots.add_argument("--json", action="store_true", help="salida JSON")
+
+    lcom = sub.add_parser("lcom", help="calculate LCOM4 class cohesion (advisory)")
+    lcom.add_argument("--json", action="store_true")
 
     selftest = sub.add_parser("selftest", help="attack the harness with known-bad inputs")
     selftest.add_argument("suite", choices=["redteam"])
@@ -168,6 +176,10 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(render_split(report))
             return 0 if report["ok"] else 1
+        if args.command == "lcom":
+            report = scan_lcom(root)
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+            return 0
         if args.command == "hotspots":
             hotspots = hotspot_report(root, days=args.days, top=args.top)
             if args.json:
@@ -183,6 +195,10 @@ def main(argv: list[str] | None = None) -> int:
             return bool(report["violations"])
         if args.command == "dry":
             paths = [root / path for path in args.paths] if args.paths else None
+            if args.normalized:
+                report = analyze_template(root, paths)
+                print(json.dumps(report, indent=2, ensure_ascii=False))
+                return 0
             report = analyze_dry(root, paths)
             print(json.dumps(report, indent=2, ensure_ascii=False))
             return bool(

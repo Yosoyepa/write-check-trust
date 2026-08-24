@@ -140,3 +140,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #17: escape anti-deadlock del Stop hook
 - Commit: aef252a6be0424719aae0bb05a2a76261021b056
+
+## 2026-08-24T00:47:38.349770+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #21: fase beta-1 metricas estructurales (G-WIRE, G-LCOM, G-DRY-TPL)
+- Commit: 4231366784a696b22e445d22870d337a1064efbe

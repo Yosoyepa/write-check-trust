@@ -14,8 +14,10 @@ from tools.wct.accept.pipeline import ir_dry, parse_feature
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.cognitive.engine import scan as scan_cognitive
 from tools.wct.dry.analyzer import analyze as analyze_dry
+from tools.wct.dry.tpl import analyze_template
 from tools.wct.integrity.engine import violations as integrity_violations
 from tools.wct.introvert.analyzer import analyze as analyze_tests
+from tools.wct.lcom.engine import scan as scan_lcom
 from tools.wct.model import GateResult, Status
 from tools.wct.ratchet.engine import (
     baseline,
@@ -28,6 +30,7 @@ from tools.wct.ratchet.engine import (
 )
 from tools.wct.rules.engine import drift
 from tools.wct.size.engine import oversized as size_oversized
+from tools.wct.wire.engine import scan as scan_wire
 
 
 def _result(gate_id: str, started: float, findings: list[str], ok: str) -> GateResult:
@@ -165,3 +168,46 @@ def gate_cognitive(root: Path) -> GateResult:
         for item in report["functions"]
     ]
     return _result("G-COGNITIVE", started, findings, "anidamiento dentro del umbral cognitivo")
+
+
+def gate_wire(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = scan_wire(root)
+    findings = [
+        f"{item['file']}:{item['line']}: {item['symbol']} ({item['origin']}): {item['rule']}"
+        for item in report["findings"]
+    ]
+    return _result(
+        "G-WIRE", started, findings, "inyección de dependencias limpia en domain y application"
+    )
+
+
+def gate_lcom(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = scan_lcom(root)
+    violators = report["violators"]
+    base = baseline(root, "lcom-classes")
+    findings = [
+        f"{item['file']}:{item['line']}: {item['class']}: LCOM4={item['lcom4']} >= 2"
+        for item in violators
+    ]
+    if not compare(len(violators), base):
+        findings.append(f"ratchet: {len(violators)} > baseline {base['value']}")
+    return _result("G-LCOM", started, findings, "cohesión de clases LCOM4 saludable")
+
+
+def gate_dry_tpl(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = analyze_template(root)
+    candidates = report["candidates"]
+    base = baseline(root, "dry-template-clusters")
+    findings = list(report["errors"])
+    if not compare(len(candidates), base):
+        for item in candidates:
+            findings.append(
+                f"{item['left']['file']}:{item['left']['start']} ~ "
+                f"{item['right']['file']}:{item['right']['start']} "
+                f"score={item['score']}"
+            )
+        findings.append(f"ratchet: {len(candidates)} > baseline {base['value']}")
+    return _result("G-DRY-TPL", started, findings, "sin clones de plantilla sobre la baseline")

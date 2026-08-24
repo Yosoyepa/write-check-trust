@@ -46,6 +46,7 @@
 | G-WIRE (anti-patrones de inyección DI en domain/ y application/) | **v0.5.0 (Fase β-1)** | `wct gate --tier commit` → fila G-WIRE PASS |
 | G-LCOM (cohesión LCOM4 advisory + ratchet) | **v0.5.0 (Fase β-1)** | `wct lcom --json`; gate G-LCOM en full tier |
 | G-DRY-TPL (clones de plantilla AST anonimizada + ratchet) | **v0.5.0 (Fase β-1)** | `wct dry --normalized`; gate G-DRY-TPL en full tier |
+| Ciclo de vida del arnés vendido (`wct adopt lock/check/sync`) | **v0.5.0 (Fase β-2)** | `wct adopt lock`, `check`, `sync`; `tools/wct/adopt/` |
 
 Los seis roles de pipeline (specifier, coder, cleaner, architect, hardener,
 verifier) están en `.claude/agents/`; el plugin en `plugins/write-check-trust/`.
@@ -55,8 +56,7 @@ verifier) están en `.claude/agents/`; el plugin en `plugins/write-check-trust/`
 1. **Issue #12** — 6 archivos conservan 33 códigos exentos en per-file-ignores
    (archmetrics/analyzer, cli, accept/pipeline, dry/analyzer, introvert/analyzer,
    selftest/redteam). Rastreado; `wct hotspots` da el orden de ataque.
-2. **`wct adopt` es un inventario**, no un wizard de migración: inspecciona y
-   recomienda estrategia, no guía "métricas existentes vs baseline".
+2. **`wct adopt`**: ciclo de vida de vendoring mecanizado (`lock/check/sync`) + inventario de repositorios.
 3. **Publicar el plugin** en el marketplace de Claude Code (existe, no publicado).
 4. Opcionales no planeados para alpha: LCOM4 (P6, advisory), tach opt-in,
    variante polyglot (JS/TS), benchmarks de boilerplate (tiangolo).

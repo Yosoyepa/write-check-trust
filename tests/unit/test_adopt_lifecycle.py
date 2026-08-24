@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from tools.wct.adopt.lifecycle import check, lock, render_check
+from tools.wct.adopt.lifecycle import check, lock, render_check, render_sync, sync
 from tools.wct.cli import main
 
 
@@ -211,4 +211,120 @@ def test_check_cli_json(
     data = json.loads(capsys.readouterr().out)
     assert "drift" in data
     assert "behind" in data
+    assert "conflict_candidates" in data
+
+
+def test_sync_generates_patch_matching_git_diff(tmp_path: Path) -> None:
+    source = make_upstream_repo(tmp_path / "upstream")
+    adopter = tmp_path / "adopter"
+    adopter.mkdir()
+    lock_result = lock(adopter, source, paths=["tools/wct"])
+    commit_a = lock_result["lock"]["commit"]
+
+    (source / "tools/wct/engine.py").write_text("def run(): upstream_v2\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=source, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "commit B"], cwd=source, check=True, capture_output=True)
+
+    expected_diff = subprocess.run(
+        ["git", "diff", commit_a, "HEAD", "--", "tools/wct"],
+        cwd=source,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+    out_file = adopter / "build/tmp/wct-sync.patch"
+    report = sync(adopter, source, ref="HEAD", out=out_file)
+
+    assert out_file.is_file()
+    assert out_file.read_text(encoding="utf-8") == expected_diff
+    assert report["patch_path"] == str(out_file)
+    assert report["changed_files_count"] == 1
+    assert report["conflict_candidates"] == []
+
+
+def test_sync_lists_conflict_candidates_first_with_warning(tmp_path: Path) -> None:
+    source = make_upstream_repo(tmp_path / "upstream")
+    adopter = tmp_path / "adopter"
+    adopter.mkdir()
+    lock(adopter, source, paths=["tools/wct"])
+
+    # Local vendor diverged
+    (adopter / "tools/wct").mkdir(parents=True)
+    (adopter / "tools/wct/engine.py").write_text("def run(): diverged_local\n", encoding="utf-8")
+
+    # Upstream commit B modifies engine.py and adds other.py
+    (source / "tools/wct/engine.py").write_text("def run(): upstream_v2\n", encoding="utf-8")
+    (source / "tools/wct/other.py").write_text("other\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=source, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "commit B"], cwd=source, check=True, capture_output=True)
+
+    out_file = adopter / "build/tmp/wct-sync.patch"
+    report = sync(adopter, source, ref="HEAD", out=out_file)
+
+    assert report["conflict_candidates"] == ["tools/wct/engine.py"]
+    assert report["changed_files_count"] == 2
+
+    rendered = render_sync(report)
+    warning_text = "revisar a mano: divergencia local + cambio upstream"
+    assert warning_text in rendered
+    # Warning and conflict candidates appear before the patch path and summary
+    assert rendered.find(warning_text) < rendered.find("Patch generado en:")
+
+
+def test_sync_does_not_modify_any_files_outside_build(tmp_path: Path) -> None:
+    source = make_upstream_repo(tmp_path / "upstream")
+    adopter = tmp_path / "adopter"
+    adopter.mkdir()
+    (adopter / "src").mkdir()
+    (adopter / "src/app.py").write_text("print('app')\n", encoding="utf-8")
+    (adopter / "tools/wct").mkdir(parents=True)
+    (adopter / "tools/wct/engine.py").write_text("def run(): local\n", encoding="utf-8")
+    lock(adopter, source, paths=["tools/wct"])
+
+    (source / "tools/wct/engine.py").write_text("def run(): v2\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=source, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "commit B"], cwd=source, check=True, capture_output=True)
+
+    def snapshot(root: Path) -> dict[str, bytes]:
+        return {
+            p.relative_to(root).as_posix(): p.read_bytes()
+            for p in root.rglob("*")
+            if p.is_file() and p.relative_to(root).parts[0] != "build"
+        }
+
+    before = snapshot(adopter)
+    sync(adopter, source, ref="HEAD", out=adopter / "build/tmp/wct-sync.patch")
+    after = snapshot(adopter)
+
+    assert before == after
+
+
+def test_sync_missing_lock_raises_error(tmp_path: Path) -> None:
+    source = make_upstream_repo(tmp_path / "upstream")
+    adopter = tmp_path / "adopter"
+    adopter.mkdir()
+
+    with pytest.raises(ValueError, match=r"falta \.wct-upstream\.json"):
+        sync(adopter, source, ref="HEAD")
+
+
+def test_sync_cli_json(
+    project_factory: Callable[..., Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = make_upstream_repo(tmp_path / "upstream")
+    adopter = project_factory(package="adopter")
+    monkeypatch.setenv("WCT_PROJECT_ROOT", str(adopter))
+
+    main(["adopt", "lock", "--source", str(source)])
+    capsys.readouterr()
+
+    exit_code = main(["adopt", "sync", "--source", str(source), "--ref", "HEAD", "--json"])
+    assert exit_code == 0
+    data = json.loads(capsys.readouterr().out)
+    assert "patch_path" in data
+    assert "changed_files_count" in data
     assert "conflict_candidates" in data

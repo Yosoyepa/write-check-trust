@@ -16,6 +16,7 @@ from typing import Any
 from tools.wct.util.git import run_git
 
 LOCK_FILE_NAME = ".wct-upstream.json"
+DEFAULT_PATCH_PATH = "build/tmp/wct-sync.patch"
 RENAME_FIELD_COUNT = 2
 
 
@@ -232,12 +233,46 @@ def sync(
     ref: str,
     out: Path | None = None,
 ) -> dict[str, Any]:
-    """Propose unified diff patch without modifying vendor files (Milestone 3)."""
-    _ = (root, source, ref, out)
-    return {}
+    """Propose unified diff patch without modifying vendor files."""
+    check_report = check(root, source, ref=ref)
+    locked_commit = check_report["locked_commit"]
+    paths = check_report["paths"]
+
+    resolved_source = source.resolve()
+    diff_res = run_git(resolved_source, "diff", locked_commit, ref, "--", *paths, check=False)
+    patch_text = diff_res.stdout
+
+    target_out = (root / out) if out else (root / DEFAULT_PATCH_PATH)
+    target_out.parent.mkdir(parents=True, exist_ok=True)
+    target_out.write_text(patch_text, encoding="utf-8")
+
+    warning = (
+        "revisar a mano: divergencia local + cambio upstream"
+        if check_report["conflict_candidates"]
+        else None
+    )
+    return {
+        "locked_commit": locked_commit,
+        "ref": ref,
+        "patch_path": str(target_out),
+        "changed_files_count": len(check_report["behind"]),
+        "conflict_candidates": check_report["conflict_candidates"],
+        "warning": warning,
+    }
 
 
 def render_sync(report: dict[str, Any]) -> str:
     """Render sync proposal summary."""
-    _ = report
-    return ""
+    lines: list[str] = []
+    if report["conflict_candidates"]:
+        lines.append("ADVERTENCIA: revisar a mano: divergencia local + cambio upstream")
+        for candidate in report["conflict_candidates"]:
+            lines.append(f"  - {candidate}")
+        lines.append("")
+
+    lines.append(f"Patch generado en: {report['patch_path']}")
+    lines.append(
+        f"Resumen: {report['changed_files_count']} archivos cambiados upstream, "
+        f"{len(report['conflict_candidates'])} candidatos a conflicto"
+    )
+    return "\n".join(lines)

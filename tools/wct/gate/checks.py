@@ -28,6 +28,7 @@ from tools.wct.ratchet.engine import (
 )
 from tools.wct.rules.engine import drift
 from tools.wct.size.engine import oversized as size_oversized
+from tools.wct.wire.engine import scan as scan_wire
 
 
 def _result(gate_id: str, started: float, findings: list[str], ok: str) -> GateResult:
@@ -165,3 +166,15 @@ def gate_cognitive(root: Path) -> GateResult:
         for item in report["functions"]
     ]
     return _result("G-COGNITIVE", started, findings, "anidamiento dentro del umbral cognitivo")
+
+
+def gate_wire(root: Path) -> GateResult:
+    started = time.monotonic()
+    report = scan_wire(root)
+    findings = [
+        f"{item['file']}:{item['line']}: {item['symbol']} ({item['origin']}): {item['rule']}"
+        for item in report["findings"]
+    ]
+    return _result(
+        "G-WIRE", started, findings, "inyección de dependencias limpia en domain y application"
+    )

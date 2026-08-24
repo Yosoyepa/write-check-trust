@@ -29,6 +29,7 @@ from tools.wct.gate.checks import (
     gate_rules_drift,
     gate_size,
     gate_suppressions,
+    gate_wire,
 )
 from tools.wct.model import GateResult, Status
 from tools.wct.mutate.engine import scan as scan_mutations
@@ -359,6 +360,7 @@ REGISTRY: dict[str, Gate] = {
     "G-ACCEPT": gate_accept,
     "G-SIZE": gate_size,
     "G-COGNITIVE": gate_cognitive,
+    "G-WIRE": gate_wire,
     "G-CRAP": external(
         "G-CRAP",
         ["crap4py", "src", "--lcov", "build/coverage/lcov.info", "--max-crap", "6"],
@@ -450,6 +452,7 @@ _COMMIT_GATES = [
     "G-ACCEPT",
     "G-SIZE",
     "G-COGNITIVE",
+    "G-WIRE",
 ]
 
 TIERS: dict[str, list[str]] = {
@@ -487,6 +490,7 @@ TIERS: dict[str, list[str]] = {
         "G-ACCEPT",
         "G-SIZE",
         "G-COGNITIVE",
+        "G-WIRE",
         "G-SAST-BANDIT",
         "G-SAST-SEMGREP",
         "G-SECRET",

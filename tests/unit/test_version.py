@@ -7,6 +7,7 @@ import importlib.metadata
 from pathlib import Path
 import tomllib
 
+import packaging.version
 import pytest
 
 import example
@@ -22,13 +23,20 @@ def _pyproject_version() -> str:
     return str(document["project"]["version"])
 
 
+def _canonical(version: str) -> str:
+    """PEP 440 canonical form: '1.0.0-beta.1' and '1.0.0b1' are the same release."""
+    return str(packaging.version.Version(version))
+
+
 def test_package_versions_derive_from_pyproject() -> None:
     """A release bump in pyproject.toml must reach every __version__.
 
-    Two sources drifted once and CI caught it only by luck.
+    Two sources drifted once and CI caught it only by luck. Comparison is by
+    PEP 440 canonical form: build tooling normalizes pre-release separators,
+    and textual inequality would false-positive on every beta.
     """
-    assert wct_version == _pyproject_version()
-    assert example_version == _pyproject_version()
+    assert _canonical(wct_version) == _canonical(_pyproject_version())
+    assert _canonical(example_version) == _canonical(_pyproject_version())
 
 
 def test_uninstalled_package_falls_back_to_local_version(

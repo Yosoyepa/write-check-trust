@@ -3239,7 +3239,7 @@ wheels = [
 
 [[package]]
 name = "write-check-trust"
-version = "0.5.0"
+version = "1.0.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "pyyaml" },
@@ -3249,6 +3249,7 @@ dependencies = [
 dev = [
     { name = "hypothesis" },
     { name = "mypy" },
+    { name = "packaging" },
     { name = "pytest" },
     { name = "pytest-bdd" },
     { name = "pytest-cov" },
@@ -3282,6 +3283,7 @@ requires-dist = [{ name = "pyyaml", specifier = ">=6.0.2" }]
 dev = [
     { name = "hypothesis", specifier = ">=6.100" },
     { name = "mypy", specifier = ">=1.15" },
+    { name = "packaging", specifier = ">=24.0" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "pytest-bdd", specifier = ">=8.0" },
     { name = "pytest-cov", specifier = ">=6.0" },

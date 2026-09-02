@@ -124,6 +124,7 @@ def parser() -> argparse.ArgumentParser:
     ratchet.add_argument("action", choices=["check", "record"])
     ratchet.add_argument("--approved-by")
     ratchet.add_argument("--reason")
+    ratchet.add_argument("--metric", help="re-registra solo esta métrica (p.ej. coverage-total)")
 
     adopt = sub.add_parser("adopt", help="inventory repository or manage adopted harness lifecycle")
     adopt.add_argument(
@@ -331,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             if not args.approved_by or not args.reason:
                 print("record requiere --approved-by y --reason", file=sys.stderr)
                 return 2
-            for path in record_ratchets(root, args.approved_by, args.reason):
+            for path in record_ratchets(root, args.approved_by, args.reason, metric=args.metric):
                 print(path.relative_to(root))
             return 0
         if args.command == "adopt":

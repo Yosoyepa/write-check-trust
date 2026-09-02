@@ -15,10 +15,6 @@ from typing import Any
 
 from tools.wct.config import load_config
 
-DEFAULT_TEMPLATE_THRESHOLD = 0.90
-MIN_LINES = 4
-MIN_NODES = 20
-
 
 @dataclass(frozen=True)
 class TemplateUnit:
@@ -95,7 +91,11 @@ def _is_test_file(path: Path, root: Path, test_dirs: list[str]) -> bool:
 
 
 def _collect_units(
-    paths: list[Path], root: Path, test_dirs: list[str]
+    paths: list[Path],
+    root: Path,
+    test_dirs: list[str],
+    min_lines: int,
+    min_nodes: int,
 ) -> tuple[list[TemplateUnit], list[str]]:
     units: list[TemplateUnit] = []
     errors: list[str] = []
@@ -111,7 +111,7 @@ def _collect_units(
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 item = _unit(path, root, node)
-                if item.lines >= MIN_LINES and item.nodes >= MIN_NODES:
+                if item.lines >= min_lines and item.nodes >= min_nodes:
                     units.append(item)
     return units, errors
 
@@ -136,10 +136,23 @@ def _find_candidates(units: list[TemplateUnit], threshold: float) -> list[dict[s
 def analyze_template(
     root: Path,
     paths: list[Path] | None = None,
-    threshold: float = DEFAULT_TEMPLATE_THRESHOLD,
+    threshold: float | None = None,
 ) -> dict[str, Any]:
-    """Analiza clones estructurales con normalización agresiva de plantilla."""
-    _root, policy, _thresholds = load_config(root)
+    """Analiza clones estructurales con normalización agresiva de plantilla.
+
+    Los umbrales (template_threshold, min_lines, min_nodes) provienen de
+    governance/thresholds.yaml; una clave ausente es un ValueError que la
+    nombra, nunca un default silencioso (ADR-B-01 §3).
+    """
+    _root, policy, thresholds = load_config(root)
+    dry = thresholds.get("dry", {})
+    try:
+        min_lines = int(dry["min_lines"])
+        min_nodes = int(dry["min_nodes"])
+        if threshold is None:
+            threshold = float(dry["template_threshold"])
+    except KeyError as exc:
+        raise ValueError(f"thresholds.yaml: falta la clave dry.{exc.args[0]}") from exc
     test_dirs: list[str] = policy.get("paths", {}).get("tests", ["tests"])
     if paths is None:
         paths = []
@@ -147,7 +160,7 @@ def analyze_template(
             for directory in policy.get("paths", {}).get(key, []):
                 paths.extend((root / directory).rglob("*.py"))
 
-    units, errors = _collect_units(paths, root, test_dirs)
+    units, errors = _collect_units(paths, root, test_dirs, min_lines, min_nodes)
     candidates = _find_candidates(units, threshold)
 
     return {

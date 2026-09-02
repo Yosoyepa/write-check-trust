@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 import json
+import math
 from pathlib import Path
 import re
 import shutil
@@ -31,7 +32,7 @@ COMMIT_PROVENANCE_CHARS = 12
 PERCENT = re.compile(r"actual:\s*(\d+(?:\.\d+)?)%")
 LCOV_ARTIFACT = Path("build/coverage/lcov.info")
 LCOV_COUNTER = re.compile(r"^(LF|LH|BRF|BRH):(\d+)$")
-TERM_TOTAL = re.compile(r"^TOTAL\b.*?(\d+(?:\.\d+)?)%\s*$", re.MULTILINE)
+RECORD_COVERAGE_JSON = Path("build/tmp/coverage-record.json")
 
 
 def interrogate_percent(text: str) -> float | None:
@@ -75,11 +76,16 @@ def coverage_total(root: Path) -> float | None:
 
 
 def suite_coverage_total(root: Path) -> float:
-    """Corre la suite UNA vez y devuelve el TOTAL oficial del reporte term.
+    """Corre la suite UNA vez y devuelve el piso preciso del JSON de coverage.
 
-    Solo `record` la usa: es la fuente autoritativa (la misma que
-    --cov-fail-under), jamás la ruta de medición de `measurements()`.
+    Solo `record` la usa. ``percent_covered`` es el mismo valor que
+    ``--cov-fail-under`` compara internamente; se trunca a 2 decimales hacia
+    abajo para que el piso registrado nunca supere la medición precisa (el
+    display del reporte term redondea a entero y podía fijar pisos
+    inalcanzables). Registra solo corridas verdes.
     """
+    artifact = root / RECORD_COVERAGE_JSON
+    artifact.unlink(missing_ok=True)
     completed = subprocess.run(
         [
             sys.executable,
@@ -87,7 +93,7 @@ def suite_coverage_total(root: Path) -> float:
             "pytest",
             "--cov",
             "--cov-branch",
-            "--cov-report=term",
+            f"--cov-report=json:{RECORD_COVERAGE_JSON}",
             "-q",
             "-m",
             "not property",
@@ -97,10 +103,16 @@ def suite_coverage_total(root: Path) -> float:
         capture_output=True,
         check=False,
     )
-    match = TERM_TOTAL.search(completed.stdout)
-    if match is None:
-        raise ValueError("la corrida de cobertura no produjo línea TOTAL (¿falló pytest?)")
-    return float(match.group(1))
+    if completed.returncode != 0:
+        raise ValueError(
+            "la suite bajo cobertura no paso; un piso se registra solo de corrida verde"
+        )
+    try:
+        totals = json.loads(artifact.read_text(encoding="utf-8"))["totals"]
+        precise = float(totals["percent_covered"])
+    except (OSError, KeyError, TypeError, ValueError) as error:
+        raise ValueError("la corrida de cobertura no produjo percent_covered") from error
+    return math.floor(precise * 100) / 100
 
 
 def measurements(root: Path) -> dict[str, float]:

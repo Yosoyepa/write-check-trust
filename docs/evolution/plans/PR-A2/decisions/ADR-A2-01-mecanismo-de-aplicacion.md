@@ -24,9 +24,14 @@ fast y llama al motor de ratchets: la medición no puede costar segundos.
    `None` y `check()` la salta (patrón `docstring-coverage`). Sin subprocess:
    el tier fast no se encarece.
 3. **Registro autoritativo**: `ratchet record --metric coverage-total` corre
-   `pytest --cov --cov-branch --cov-report=term` y parsea la línea TOTAL
-   (la misma fuente que `--cov-fail-under`): gate y ratchet no pueden
-   discrepar por construcción.
+   la suite una vez y lee `percent_covered` **del reporte JSON** de
+   coverage.py — el mismo valor preciso que `--cov-fail-under` compara
+   internamente — truncado a 2 decimales hacia abajo: gate y ratchet no
+   pueden discrepar por construcción, y el piso nunca supera la medición.
+   *(Corrección 2026-09-02: la versión original leía la línea TOTAL del
+   reporte term, cuyo display redondea a entero — el primer registro real
+   midió 74.51 preciso como "75" y fijó un piso inalcanzable. Hallazgo del
+   propio flujo de A2 durante el re-baseline.)*
 4. **`--metric` opcional en record** (default: todos, comportamiento
    actual): permite re-baselinear UNA métrica sin re-estampar las otras 9.
 

@@ -9,10 +9,7 @@ from tools.wct.ratchet.measure import record
 
 REASON = "re-baseline por cambio de scope en PR #30"
 
-TERM_REPORT = """\
-Name                             Stmts   Miss Branch BrPart  Cover
-TOTAL                               61      1      6      1    97%
-"""
+COVERAGE_JSON = {"totals": {"percent_covered": 74.51317296678121}}
 
 
 def _baseline_contents(root: Path) -> dict[str, str]:
@@ -27,6 +24,18 @@ class _FakeCompleted:
         self.stdout = stdout
         self.stderr = ""
         self.returncode = returncode
+
+
+def _fake_green_suite(root: Path, totals: dict):
+    """Falso runner que escribe el JSON de coverage como lo haría pytest."""
+
+    def fake_run(_command: list[str], **_kwargs: object) -> _FakeCompleted:
+        report = root / "build/tmp/coverage-record.json"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(json.dumps(totals), encoding="utf-8")
+        return _FakeCompleted("", returncode=0)
+
+    return fake_run
 
 
 def test_record_single_metric_writes_only_that_baseline(
@@ -86,14 +95,17 @@ def test_record_without_metric_still_rewrites_every_baseline(
 def test_record_coverage_total_uses_one_authoritative_suite_run(
     project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """coverage-total se registra del TOTAL oficial de UNA corrida de la suite."""
+    """coverage-total se registra del percent_covered preciso de UNA corrida."""
     root = project_factory()
     before = _baseline_contents(root)
     commands: list[list[str]] = []
 
     def fake_run(command: list[str], **_kwargs: object) -> _FakeCompleted:
         commands.append(list(command))
-        return _FakeCompleted(TERM_REPORT, returncode=0)
+        report = root / "build/tmp/coverage-record.json"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(json.dumps(COVERAGE_JSON), encoding="utf-8")
+        return _FakeCompleted("", returncode=0)
 
     monkeypatch.setattr("tools.wct.ratchet.measure.subprocess.run", fake_run)
 
@@ -103,26 +115,39 @@ def test_record_coverage_total_uses_one_authoritative_suite_run(
     # de pytest de la fuente autoritativa.
     suite_runs = [command for command in commands if "pytest" in command]
     assert len(suite_runs) == 1
-    assert suite_runs[0][1:] == [
-        "-m",
-        "pytest",
-        "--cov",
-        "--cov-branch",
-        "--cov-report=term",
-        "-q",
-        "-m",
-        "not property",
-    ]
+    assert "--cov-report=json:build/tmp/coverage-record.json" in suite_runs[0]
     after = _baseline_contents(root)
     changed = {name for name, text in before.items() if text != after[name]}
     assert changed == {"coverage-total.json"}
-    assert json.loads(after["coverage-total.json"])["value"] == 97.0
+    assert json.loads(after["coverage-total.json"])["value"] == 74.51
 
 
-def test_record_coverage_total_requires_the_term_total_line(
+def test_record_floor_never_exceeds_precise_measurement(
     project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Una corrida sin línea TOTAL no registra nada: falla declarando la causa."""
+    """El piso se trunca hacia abajo: nunca redondea por encima de lo medido.
+
+    Regresión: el display entero del reporte term convertía 74.51 en "75" y
+    el baseline registraba un piso 75.0 que --cov-fail-under (que compara el
+    valor preciso) no podía alcanzar.
+    """
+    root = project_factory()
+    totals = {"totals": {"percent_covered": 74.996}}
+    monkeypatch.setattr("tools.wct.ratchet.measure.subprocess.run", _fake_green_suite(root, totals))
+
+    record(root, "mantenedor", REASON, metric="coverage-total")
+
+    document = json.loads(
+        (root / "governance/baselines/coverage-total.json").read_text(encoding="utf-8")
+    )
+    assert document["value"] == 74.99
+    assert document["value"] < 75
+
+
+def test_record_coverage_total_requires_green_suite_json(
+    project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Una corrida roja o sin JSON no registra nada: falla declarando la causa."""
     root = project_factory()
     before = _baseline_contents(root)
 
@@ -131,7 +156,7 @@ def test_record_coverage_total_requires_the_term_total_line(
 
     monkeypatch.setattr("tools.wct.ratchet.measure.subprocess.run", fake_run)
 
-    with pytest.raises(ValueError, match="TOTAL"):
+    with pytest.raises(ValueError, match="corrida verde"):
         record(root, "mantenedor", REASON, metric="coverage-total")
 
     assert before == _baseline_contents(root)

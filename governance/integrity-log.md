@@ -188,3 +188,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #29: PR-A2 scope+baseline de cobertura (plan docs/evolution/plans/PR-A2)
 - Commit: 3d11238916cd68040538aca3d7fefcd8bead8c07
+
+## 2026-09-02T13:20:54.795878+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #29: PR-A2 scope+baseline de cobertura + fix SHA corto (plan docs/evolution/plans/PR-A2)
+- Commit: 9dc8aa144736a677f2fbb7417da333e9f87cac63

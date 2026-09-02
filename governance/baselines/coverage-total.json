@@ -1,9 +1,9 @@
 {
   "metric": "coverage-total",
-  "recorded_at": "2026-09-02T13:15:10.085662+00:00",
-  "commit": "3d11238916cd68040538aca3d7fefcd8bead8c07",
+  "recorded_at": "2026-09-02T13:20:54.657325+00:00",
+  "commit": "9dc8aa144736",
   "recorded_by": "yosoyepa",
-  "value": 74.0,
+  "value": 75.0,
   "unit": "percent",
   "direction": "higher_is_better",
   "note": "Cobertura de rama del repo completo. La del diff es un gate duro (90%), no un ratchet."

@@ -46,3 +46,9 @@ está casi enteramente en este archivo.
 - Approved by: yosoyepa
 - Reason: re-baseline por cambio de scope en PR #29: 100 era src/example (61 stmts, seed); real con src+tools/wct = 74.49 %
 - Metrics: coverage-total
+
+## 2026-09-02T13:20:54.657564+00:00
+
+- Approved by: yosoyepa
+- Reason: re-baseline por cambio de scope en PR #29, corrige registro previo con SHA corto para G-SECRET: real con src+tools/wct = 74 %
+- Metrics: coverage-total

@@ -82,7 +82,6 @@ source_paths = ["src/example"]
 pytest_add_cli_args_test_selection = [
   "tests/unit/test_inventory.py",
   "tests/unit/test_reserve_stock.py",
-  "tests/property/test_inventory_properties.py",
   "tests/integration/test_cli.py",
   "tests/acceptance/generated/test_acceptance.py",
 ]

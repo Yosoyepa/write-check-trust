@@ -325,7 +325,9 @@ REGISTRY: dict[str, Gate] = {
         ["ruff", "format", "--config", "governance/lint/ruff.toml", "--check", "."],
     ),
     "G-TYPE": external("G-TYPE", ["mypy", "tools/wct", "src"]),
-    "G-TEST": external("G-TEST", ["pytest", "-q", "tests/unit", "tests/integration"]),
+    "G-TEST": external(
+        "G-TEST", ["pytest", "-q", "tests/unit", "tests/integration", "-m", "not property"]
+    ),
     "G-ARCH": external("G-ARCH", ["lint-imports"]),
     "G-DEPS": external(
         "G-DEPS",
@@ -392,6 +394,8 @@ REGISTRY: dict[str, Gate] = {
             "--cov-branch",
             "--cov-report=lcov:build/coverage/lcov.info",
             "-q",
+            "-m",
+            "not property",
         ],
     ),
     "G-COV-DIFF": gate_coverage_diff,

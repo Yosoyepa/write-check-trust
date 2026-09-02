@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 from tools.wct import __version__
-from tools.wct.accept.pipeline import generate, ir_dry, parse_feature, run_mutations
+from tools.wct.accept.pipeline import accept_verdict, generate, ir_dry, parse_feature, run_mutations
 from tools.wct.adopt import (
     check,
     inspect_repository,
@@ -309,8 +309,11 @@ def main(argv: list[str] | None = None) -> int:
                 str(generated.relative_to(root)),
             ]
             report = run_mutations(ir, command)
+            failed, failures = accept_verdict(ir, report)
             print(json.dumps(report, indent=2, ensure_ascii=False))
-            return bool(report["survived"])
+            for failure in failures:
+                print(f"wct: {failure}", file=sys.stderr)
+            return 1 if failed else 0
         if args.command == "selftest":
             count, failures = run_redteam(root)
             for failure in failures:

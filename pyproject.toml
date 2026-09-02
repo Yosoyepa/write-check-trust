@@ -59,7 +59,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/example"]
+source = ["src", "tools/wct"]
 omit = ["tests/*", "tools/wct/__main__.py"]
 
 [tool.coverage.report]

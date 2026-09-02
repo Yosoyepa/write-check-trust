@@ -25,6 +25,8 @@ from tools.wct.util.git import head_sha
 MIN_APPROVER = 2
 MIN_REASON = 12
 PERCENT = re.compile(r"actual:\s*(\d+(?:\.\d+)?)%")
+LCOV_ARTIFACT = Path("build/coverage/lcov.info")
+LCOV_COUNTER = re.compile(r"^(LF|LH|BRF|BRH):(\d+)$")
 
 
 def interrogate_percent(text: str) -> float | None:
@@ -43,7 +45,32 @@ def docstring_coverage(root: Path) -> float | None:
     return interrogate_percent(completed.stdout + completed.stderr)
 
 
+def lcov_percent(text: str) -> float | None:
+    """Porcentaje total de un lcov: (LH+BRH)/(LF+BRF) sumando por archivo.
+
+    Es la misma razón (statements y arcos de rama) con la que coverage.py
+    calcula la línea TOTAL del reporte term, así que ambas fuentes coinciden
+    salvo el redondeo a entero del reporte.
+    """
+    totals = {"LF": 0, "LH": 0, "BRF": 0, "BRH": 0}
+    for line in text.splitlines():
+        match = LCOV_COUNTER.match(line)
+        if match:
+            totals[match.group(1)] += int(match.group(2))
+    measurable = totals["LF"] + totals["BRF"]
+    return 100.0 * (totals["LH"] + totals["BRH"]) / measurable if measurable else None
+
+
+def coverage_total(root: Path) -> float | None:
+    """Cobertura total medida del artefacto lcov del gate (None si no existe)."""
+    artifact = root / LCOV_ARTIFACT
+    if not artifact.is_file():
+        return None
+    return lcov_percent(artifact.read_text(encoding="utf-8"))
+
+
 def measurements(root: Path) -> dict[str, float]:
+    """Métricas actuales del repo: sin subprocess de suite (tier fast)."""
     architecture = analyze_architecture(root)
     tests = analyze_tests(root)
     metrics = {
@@ -61,6 +88,9 @@ def measurements(root: Path) -> dict[str, float]:
     docstrings = docstring_coverage(root)
     if docstrings is not None:
         metrics["docstring-coverage"] = docstrings
+    coverage = coverage_total(root)
+    if coverage is not None:
+        metrics["coverage-total"] = coverage
     return metrics
 
 

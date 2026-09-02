@@ -160,3 +160,26 @@ def test_cli_record_forwards_metric(
 
     assert exit_code == 0
     assert "suppressions.json" in capsys.readouterr().out
+
+
+def test_record_stores_short_commit_sha(
+    project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """La procedencia usa SHA corto: 12 hex no trote el detector de entropía.
+
+    G-SECRET marca los SHA completos (40 hex) como posible secreto; cada
+    `ratchet record` futuro volvería a tropezar. 12 caracteres siguen
+    resolviendo la procedencia unívocamente.
+    """
+    monkeypatch.setattr(
+        "tools.wct.ratchet.measure.head_sha",
+        lambda _root: "3d11238916cd68040538aca3d7fefcd8bead8c07",
+    )
+
+    record(root := project_factory(), "mantenedor", REASON, metric="suppressions")
+
+    document = json.loads(
+        (root / "governance/baselines/suppressions.json").read_text(encoding="utf-8")
+    )
+    assert document["commit"] == "3d11238916cd"
+    assert len(document["commit"]) < 20

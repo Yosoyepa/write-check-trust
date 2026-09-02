@@ -25,6 +25,9 @@ from tools.wct.util.git import head_sha
 
 MIN_APPROVER = 2
 MIN_REASON = 12
+# Procedencia por SHA corto: 40 hex trote G-SECRET (Hex High Entropy);
+# 12 resuelven unívocamente y ningún registro futuro vuelve a tropezar.
+COMMIT_PROVENANCE_CHARS = 12
 PERCENT = re.compile(r"actual:\s*(\d+(?:\.\d+)?)%")
 LCOV_ARTIFACT = Path("build/coverage/lcov.info")
 LCOV_COUNTER = re.compile(r"^(LF|LH|BRF|BRH):(\d+)$")
@@ -154,6 +157,8 @@ def record(root: Path, approved_by: str, reason: str, metric: str | None = None)
         raise ValueError("approved-by y reason >=12 caracteres son obligatorios")
     require_approval_evidence(reason)
     written: list[Path] = []
+    head = head_sha(root)
+    provenance = head[:COMMIT_PROVENANCE_CHARS] if head else None
     for name, current in _record_targets(root, metric).items():
         path = root / "governance/baselines" / f"{name}.json"
         document = baseline(root, name)
@@ -162,7 +167,7 @@ def record(root: Path, approved_by: str, reason: str, metric: str | None = None)
                 "value": current,
                 "recorded_at": datetime.now(UTC).isoformat(),
                 "recorded_by": approved_by,
-                "commit": head_sha(root),
+                "commit": provenance,
             }
         )
         path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

@@ -20,7 +20,11 @@ from tools.wct.config import load_config
 from tools.wct.gate.checks import (
     COVERAGE_TOTAL_BASELINE,
     _result,
+    cognitive_command,
+    coverage_diff_command,
     coverage_total_command,
+    crap_command,
+    dead_code_command,
     gate_accept,
     gate_archmetrics,
     gate_cognitive,
@@ -78,19 +82,29 @@ def gate_meta_rules(root: Path) -> GateResult:
     )
 
 
-def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gate:
+def dynamic(
+    gate_id: str,
+    executable: str,
+    builder: Callable[[Path], list[str] | None],
+    key: str = "",
+    *,
+    optional: bool = False,
+) -> Gate:
+    """Gate cuyo comando resuelve builder(root) — estático o desde thresholds.yaml.
+
+    Ciclo de vida: herramienta ausente → ERROR (o SKIP si es optional);
+    builder None → FAIL nombrando la clave declarada, nunca un default
+    silencioso (ADR-B-01 §3); y la corrida del proceso externo.
+    """
+
     def run(root: Path) -> GateResult:
         started = time.monotonic()
-        executable = command[0]
         if shutil.which(executable) is None:
             status = Status.SKIP if optional else Status.ERROR
-            return GateResult(
-                gate_id,
-                status,
-                f"herramienta ausente: {executable}",
-                int((time.monotonic() - started) * 1000),
-                command=" ".join(command),
-            )
+            return GateResult(gate_id, status, f"herramienta ausente: {executable}")
+        command = builder(root)
+        if command is None:
+            return GateResult(gate_id, Status.FAIL, f"clave ausente o ilegible: {key}")
         status, summary, output = _captured(root, command)
         return GateResult(
             gate_id,
@@ -104,42 +118,19 @@ def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gat
     return run
 
 
-def gate_coverage_total(root: Path) -> GateResult:
-    """G-COV-TOTAL: el baseline de coverage-total aplicado como piso real.
-
-    La construcción de la invocación (incluido el piso) vive en checks.py
-    (partición TEST-007); aquí queda la corrida del proceso. El veredicto
-    de cobertura lo decide pytest-cov sobre la medición fresca.
-    """
-    started = time.monotonic()
-    if shutil.which("pytest") is None:
-        return GateResult("G-COV-TOTAL", Status.ERROR, "herramienta ausente: pytest")
-    command = coverage_total_command(root)
-    if command is None:
-        return GateResult(
-            "G-COV-TOTAL",
-            Status.FAIL,
-            f"baseline ausente o ilegible: {COVERAGE_TOTAL_BASELINE}",
-        )
-    status, summary, output = _captured(root, command)
-    return GateResult(
-        "G-COV-TOTAL",
-        status,
-        summary,
-        int((time.monotonic() - started) * 1000),
-        output.splitlines()[-50:],
-        " ".join(command),
-    )
+def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gate:
+    """Gate de comando estático: la invocación no depende de thresholds.yaml."""
+    return dynamic(gate_id, command[0], lambda _root: command, optional=optional)
 
 
 def gate_coverage_diff(root: Path) -> GateResult:
-    """Hard diff-cover: coverage >= 90% on changed lines, CI-faithful base.
+    """Hard diff-cover sobre las líneas cambiadas, con base fiel a CI.
 
-    The pilot's phase 25 shipped a 17/17 local run that CI rejected on
-    diff-cover: the gate existed but no tier ran it. Here it blocks (ERROR,
-    not SKIP) because its tier's whole promise is local parity with CI.
-    Requires G-COV-TOTAL to have produced build/coverage/lcov.info first
-    (tier ordering guarantees it).
+    El piso nace de thresholds.yaml (coverage.diff_min, ADR-B-01): clave
+    ausente → FAIL nombrándola, nunca un default silencioso. Bloquea como
+    ERROR (no SKIP) porque su tier promete paridad local con CI, y sin rama
+    base no hay diff que auditar. Requiere que G-COV-TOTAL haya producido
+    build/coverage/lcov.info primero (el orden del tier lo garantiza).
     """
     started = time.monotonic()
     if shutil.which("diff-cover") is None:
@@ -151,15 +142,13 @@ def gate_coverage_diff(root: Path) -> GateResult:
             Status.ERROR,
             "sin rama base resoluble: no encontré origin/main ni main",
         )
-    command = [
-        "diff-cover",
-        "build/coverage/lcov.info",
-        "--compare-branch",
-        base,
-        "--fail-under",
-        "90",
-        "--include-untracked",
-    ]
+    command = coverage_diff_command(root, base)
+    if command is None:
+        return GateResult(
+            "G-COV-DIFF",
+            Status.FAIL,
+            "clave ausente o ilegible: coverage.diff_min",
+        )
     status, summary, output = _captured(root, command)
     return GateResult(
         "G-COV-DIFF",
@@ -371,7 +360,7 @@ REGISTRY: dict[str, Gate] = {
             "tools",
         ],
     ),
-    "G-DEAD": external("G-DEAD", ["vulture", "src", "tools/wct", "--min-confidence", "80"]),
+    "G-DEAD": dynamic("G-DEAD", "vulture", dead_code_command, "dead_code.vulture_min_confidence"),
     "G-SAST-BANDIT": external("G-SAST-BANDIT", ["bandit", "-q", "-r", "src"]),
     "G-SAST-SEMGREP": external(
         "G-SAST-SEMGREP",
@@ -397,26 +386,11 @@ REGISTRY: dict[str, Gate] = {
     "G-COGNITIVE": gate_cognitive,
     "G-LCOM": gate_lcom,
     "G-WIRE": gate_wire,
-    "G-CRAP": external(
-        "G-CRAP",
-        ["crap4py", "src", "--lcov", "build/coverage/lcov.info", "--max-crap", "6"],
-        optional=True,
+    "G-CRAP": dynamic("G-CRAP", "crap4py", crap_command, "crap.changed_max", optional=True),
+    "G-CC": dynamic("G-CC", "xenon", cognitive_command, "complexity.xenon_max_*", optional=True),
+    "G-COV-TOTAL": dynamic(
+        "G-COV-TOTAL", "pytest", coverage_total_command, COVERAGE_TOTAL_BASELINE
     ),
-    "G-CC": external(
-        "G-CC",
-        [
-            "xenon",
-            "--max-absolute",
-            "B",
-            "--max-modules",
-            "A",
-            "--max-average",
-            "A",
-            "src",
-        ],
-        optional=True,
-    ),
-    "G-COV-TOTAL": gate_coverage_total,
     "G-COV-DIFF": gate_coverage_diff,
     "G-DOC": gate_docstrings,
     "G-SECRET": gate_secrets,

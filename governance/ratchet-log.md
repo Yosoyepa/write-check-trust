@@ -52,3 +52,9 @@ está casi enteramente en este archivo.
 - Approved by: yosoyepa
 - Reason: re-baseline por cambio de scope en PR #29, corrige registro previo con SHA corto para G-SECRET: real con src+tools/wct = 74 %
 - Metrics: coverage-total
+
+## 2026-09-02T13:32:27.692903+00:00
+
+- Approved by: yosoyepa
+- Reason: re-baseline por cambio de scope en PR #29, piso preciso truncado (74.51 medido, no 75 redondeado): real con src+tools/wct
+- Metrics: coverage-total

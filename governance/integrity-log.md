@@ -176,3 +176,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #26: adoption-smoke alineado al quickstart del README
 - Commit: 3ad346d2a3deac933ceb63eb3a5baf5479670490
+
+## 2026-09-02T12:36:14.465349+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #28: PR-A1 honestidad del reporte (plan docs/evolution/plans/PR-A1)
+- Commit: d83709d70dce8b3fbb5cbfc23a73eaa631e60cd2

@@ -1,6 +1,9 @@
 from hypothesis import given, strategies as st
+import pytest
 
 from example.domain import Inventory
+
+pytestmark = pytest.mark.property
 
 
 @given(

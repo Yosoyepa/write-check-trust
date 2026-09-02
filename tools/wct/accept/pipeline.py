@@ -218,3 +218,34 @@ def run_mutations(ir: dict[str, Any], command: list[str]) -> dict[str, Any]:
         "killed": sum(item["status"] == "killed" for item in results),
         "survived": sum(item["status"] == "survived" for item in results),
     }
+
+
+def accept_verdict(ir: dict[str, Any], report: dict[str, Any]) -> tuple[bool, list[str]]:
+    """Decide el veredicto no vacuo de la mutación de aceptación.
+
+    Anexa al reporte la clave aditiva ``vacuous`` (nombres de escenarios
+    sin Examples) como advertencia, y exige trabajo ejecutado para
+    aprobar: ``killed + survived == 0`` es sin-datos, no éxito, y falla
+    citando TEST-010. Con mutaciones ejecutadas manda la semántica previa:
+    sobrevivientes fallan, el caso sano pasa.
+
+    Args:
+        ir: IR del feature parseado; fuente de los escenarios.
+        report: reporte de ``run_mutations``; recibe ``vacuous`` in place.
+
+    Returns:
+        (fallo, mensajes): fallo True exige exit != 0; mensajes son
+        líneas accionables para stderr (vacías en el caso sano).
+    """
+    report["vacuous"] = [
+        scenario["name"] for scenario in ir["scenarios"] if not scenario["examples"]
+    ]
+    if report["killed"] + report["survived"] == 0:
+        messages = [
+            "0 mutaciones ejecutadas: el escenario no parametriza campos "
+            "variables; agrega Examples (TEST-010)"
+        ]
+        if report["vacuous"]:
+            messages.append(f"escenarios sin Examples: {', '.join(report['vacuous'])}")
+        return True, messages
+    return bool(report["survived"]), []

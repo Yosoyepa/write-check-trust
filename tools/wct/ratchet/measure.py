@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.dry.tpl import analyze_template
@@ -27,6 +28,7 @@ MIN_REASON = 12
 PERCENT = re.compile(r"actual:\s*(\d+(?:\.\d+)?)%")
 LCOV_ARTIFACT = Path("build/coverage/lcov.info")
 LCOV_COUNTER = re.compile(r"^(LF|LH|BRF|BRH):(\d+)$")
+TERM_TOTAL = re.compile(r"^TOTAL\b.*?(\d+(?:\.\d+)?)%\s*$", re.MULTILINE)
 
 
 def interrogate_percent(text: str) -> float | None:
@@ -69,6 +71,35 @@ def coverage_total(root: Path) -> float | None:
     return lcov_percent(artifact.read_text(encoding="utf-8"))
 
 
+def suite_coverage_total(root: Path) -> float:
+    """Corre la suite UNA vez y devuelve el TOTAL oficial del reporte term.
+
+    Solo `record` la usa: es la fuente autoritativa (la misma que
+    --cov-fail-under), jamás la ruta de medición de `measurements()`.
+    """
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "--cov",
+            "--cov-branch",
+            "--cov-report=term",
+            "-q",
+            "-m",
+            "not property",
+        ],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    match = TERM_TOTAL.search(completed.stdout)
+    if match is None:
+        raise ValueError("la corrida de cobertura no produjo línea TOTAL (¿falló pytest?)")
+    return float(match.group(1))
+
+
 def measurements(root: Path) -> dict[str, float]:
     """Métricas actuales del repo: sin subprocess de suite (tier fast)."""
     architecture = analyze_architecture(root)
@@ -103,12 +134,27 @@ def check(root: Path) -> list[str]:
     return failures
 
 
-def record(root: Path, approved_by: str, reason: str) -> list[Path]:
+def _record_targets(root: Path, metric: str | None) -> dict[str, float]:
+    """Métricas que este registro debe re-estampar (todas, o solo `metric`)."""
+    current = measurements(root)
+    if metric is None:
+        return current
+    if metric == "coverage-total":
+        return {metric: suite_coverage_total(root)}
+    if metric in current:
+        return {metric: current[metric]}
+    raise ValueError(
+        f"métrica desconocida: {metric}; válidas: {', '.join(sorted({*current, 'coverage-total'}))}"
+    )
+
+
+def record(root: Path, approved_by: str, reason: str, metric: str | None = None) -> list[Path]:
+    """Re-registra baselines con rastro de aprobación; con `metric`, solo el suyo."""
     if len(approved_by.strip()) < MIN_APPROVER or len(reason.strip()) < MIN_REASON:
         raise ValueError("approved-by y reason >=12 caracteres son obligatorios")
     require_approval_evidence(reason)
     written: list[Path] = []
-    for name, current in measurements(root).items():
+    for name, current in _record_targets(root, metric).items():
         path = root / "governance/baselines" / f"{name}.json"
         document = baseline(root, name)
         document.update(
@@ -126,4 +172,6 @@ def record(root: Path, approved_by: str, reason: str) -> list[Path]:
             f"\n## {datetime.now(UTC).isoformat()}\n\n"
             f"- Approved by: {approved_by}\n- Reason: {reason}\n"
         )
+        if metric is not None:
+            stream.write(f"- Metrics: {metric}\n")
     return written

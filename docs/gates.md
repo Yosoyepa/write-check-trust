@@ -70,7 +70,7 @@ exponía.
 | Gate | Qué exige | Verificador |
 |---|---|---|
 | `G-HOOKS-WIRED` | instalación y hooks diagnosticados | `wct doctor` |
-| `G-COV-TOTAL` | suite completa bajo cobertura, artefacto lcov | `pytest --cov --cov-branch -m "not property"` |
+| `G-COV-TOTAL` | suite completa bajo cobertura total ≥ baseline, artefacto lcov | `pytest --cov --cov-branch --cov-fail-under <baseline> -m "not property"` |
 | `G-COV-DIFF` | cobertura ≥ 90 % sobre líneas nuevas/modificadas contra la rama base remota | `diff-cover --compare-branch <base> --fail-under=90 --include-untracked` |
 | `G-PROP` | property tests aislados (fuera del conteo de coverage) | `pytest -q tests/property` |
 | `G-ACCEPT-MUT` | escenarios Gherkin sobreviven mutación | `wct accept mutate` |
@@ -85,7 +85,7 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 
 | Gate | Qué exige | Verificador |
 |---|---|---|
-| `G-COV-TOTAL` | cobertura total ≥ umbral ratchet | `pytest --cov --cov-branch -m "not property"` |
+| `G-COV-TOTAL` | cobertura total ≥ baseline `coverage-total`, aplicado como piso | `pytest --cov --cov-branch --cov-fail-under <baseline> -m "not property"` |
 | `G-CRAP` | CRAP ≤ 6 por función | `crap4py --max-crap 6` |
 | `G-CC` | complejidad ciclomática ≤ 10 | `xenon --max-absolute B` |
 | `G-DRY` | sin duplicación estructural accionable | `wct dry` |

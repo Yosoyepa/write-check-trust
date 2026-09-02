@@ -18,7 +18,9 @@ import time
 
 from tools.wct.config import load_config
 from tools.wct.gate.checks import (
+    COVERAGE_TOTAL_BASELINE,
     _result,
+    coverage_total_command,
     gate_accept,
     gate_archmetrics,
     gate_cognitive,
@@ -100,6 +102,34 @@ def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gat
         )
 
     return run
+
+
+def gate_coverage_total(root: Path) -> GateResult:
+    """G-COV-TOTAL: el baseline de coverage-total aplicado como piso real.
+
+    La construcción de la invocación (incluido el piso) vive en checks.py
+    (partición TEST-007); aquí queda la corrida del proceso. El veredicto
+    de cobertura lo decide pytest-cov sobre la medición fresca.
+    """
+    started = time.monotonic()
+    if shutil.which("pytest") is None:
+        return GateResult("G-COV-TOTAL", Status.ERROR, "herramienta ausente: pytest")
+    command = coverage_total_command(root)
+    if command is None:
+        return GateResult(
+            "G-COV-TOTAL",
+            Status.FAIL,
+            f"baseline ausente o ilegible: {COVERAGE_TOTAL_BASELINE}",
+        )
+    status, summary, output = _captured(root, command)
+    return GateResult(
+        "G-COV-TOTAL",
+        status,
+        summary,
+        int((time.monotonic() - started) * 1000),
+        output.splitlines()[-50:],
+        " ".join(command),
+    )
 
 
 def gate_coverage_diff(root: Path) -> GateResult:
@@ -386,18 +416,7 @@ REGISTRY: dict[str, Gate] = {
         ],
         optional=True,
     ),
-    "G-COV-TOTAL": external(
-        "G-COV-TOTAL",
-        [
-            "pytest",
-            "--cov",
-            "--cov-branch",
-            "--cov-report=lcov:build/coverage/lcov.info",
-            "-q",
-            "-m",
-            "not property",
-        ],
-    ),
+    "G-COV-TOTAL": gate_coverage_total,
     "G-COV-DIFF": gate_coverage_diff,
     "G-DOC": gate_docstrings,
     "G-SECRET": gate_secrets,

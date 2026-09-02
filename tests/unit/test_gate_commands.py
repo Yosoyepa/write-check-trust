@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import subprocess
 
@@ -35,6 +36,10 @@ def _excludes_property(command: list[str]) -> bool:
 @pytest.mark.usefixtures("_green_external")
 def test_gcov_total_excludes_property_tests(tmp_path: Path) -> None:
     """La cobertura total no puede contar líneas cubiertas por property tests."""
+    baseline = tmp_path / "governance/baselines/coverage-total.json"
+    baseline.parent.mkdir(parents=True)
+    baseline.write_text(json.dumps({"value": 100.0}), encoding="utf-8")
+
     result = REGISTRY["G-COV-TOTAL"](tmp_path)
 
     command = _invocation(result.command)

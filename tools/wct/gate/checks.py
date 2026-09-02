@@ -54,6 +54,32 @@ def gate_meta_integrity(root: Path) -> GateResult:
     )
 
 
+COVERAGE_TOTAL_BASELINE = "governance/baselines/coverage-total.json"
+
+
+def coverage_total_command(root: Path) -> list[str] | None:
+    """Invocación de pytest con el piso del baseline de coverage-total.
+
+    None cuando el baseline falta o es ilegible: el caller lo declara como
+    FAIL nombrando la ruta, nunca corre sin piso (ADR-A2-01).
+    """
+    try:
+        floor = float(baseline(root, "coverage-total")["value"])
+    except (OSError, TypeError, KeyError, ValueError):
+        return None
+    return [
+        "pytest",
+        "--cov",
+        "--cov-branch",
+        "--cov-report=lcov:build/coverage/lcov.info",
+        "--cov-fail-under",
+        str(floor),
+        "-q",
+        "-m",
+        "not property",
+    ]
+
+
 def gate_rules_drift(root: Path) -> GateResult:
     started = time.monotonic()
     findings = [f"regla generada ausente o divergente: {p.relative_to(root)}" for p in drift(root)]

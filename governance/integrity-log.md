@@ -182,3 +182,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #28: PR-A1 honestidad del reporte (plan docs/evolution/plans/PR-A1)
 - Commit: d83709d70dce8b3fbb5cbfc23a73eaa631e60cd2
+
+## 2026-09-02T13:15:10.223966+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #29: PR-A2 scope+baseline de cobertura (plan docs/evolution/plans/PR-A2)
+- Commit: 3d11238916cd68040538aca3d7fefcd8bead8c07

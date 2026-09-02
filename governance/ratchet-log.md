@@ -40,3 +40,9 @@ está casi enteramente en este archivo.
 - **métricas**: las 9 de `governance/baselines/`
 
 <!-- Las entradas nuevas van ARRIBA de esta línea, más reciente primero. -->
+
+## 2026-09-02T13:15:10.087572+00:00
+
+- Approved by: yosoyepa
+- Reason: re-baseline por cambio de scope en PR #29: 100 era src/example (61 stmts, seed); real con src+tools/wct = 74.49 %
+- Metrics: coverage-total

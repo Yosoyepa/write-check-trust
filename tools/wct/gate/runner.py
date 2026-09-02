@@ -18,7 +18,9 @@ import time
 
 from tools.wct.config import load_config
 from tools.wct.gate.checks import (
+    COVERAGE_TOTAL_BASELINE,
     _result,
+    coverage_total_command,
     gate_accept,
     gate_archmetrics,
     gate_cognitive,
@@ -102,39 +104,23 @@ def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gat
     return run
 
 
-COVERAGE_TOTAL_BASELINE = "governance/baselines/coverage-total.json"
-
-
 def gate_coverage_total(root: Path) -> GateResult:
-    """El baseline de coverage-total es un piso: --cov-fail-under sobre medición fresca.
+    """G-COV-TOTAL: el baseline de coverage-total aplicado como piso real.
 
-    Baseline ausente o ilegible es FAIL explícito que nombra la ruta esperada:
-    correr sin piso en silencio es exactamente el defecto que este gate corrige
-    (ADR-A2-01). El veredicto de cobertura lo decide pytest-cov sobre la
-    corrida fresca; este gate solo aporta el piso registrado.
+    La construcción de la invocación (incluido el piso) vive en checks.py
+    (partición TEST-007); aquí queda la corrida del proceso. El veredicto
+    de cobertura lo decide pytest-cov sobre la medición fresca.
     """
     started = time.monotonic()
     if shutil.which("pytest") is None:
         return GateResult("G-COV-TOTAL", Status.ERROR, "herramienta ausente: pytest")
-    try:
-        floor = float(baseline(root, "coverage-total")["value"])
-    except (OSError, TypeError, KeyError, ValueError):
+    command = coverage_total_command(root)
+    if command is None:
         return GateResult(
             "G-COV-TOTAL",
             Status.FAIL,
             f"baseline ausente o ilegible: {COVERAGE_TOTAL_BASELINE}",
         )
-    command = [
-        "pytest",
-        "--cov",
-        "--cov-branch",
-        "--cov-report=lcov:build/coverage/lcov.info",
-        "--cov-fail-under",
-        str(floor),
-        "-q",
-        "-m",
-        "not property",
-    ]
     status, summary, output = _captured(root, command)
     return GateResult(
         "G-COV-TOTAL",

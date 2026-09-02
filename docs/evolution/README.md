@@ -56,8 +56,12 @@ ADRs, specs archivo-por-archivo, escenarios Gherkin para aprobación humana y
 plan de verificación) antes de implementar nada.
 
 - [PR-A1 — Honestidad del reporte del instrumento](plans/PR-A1/README.md)
-  (O-003, O-004 y mitad de O-006; prerrequisito de PR-A2). Estado: plan
-  completo, pendiente de aprobación de escenarios.
+  (O-003, O-004 y mitad de O-006; prerrequisito de PR-A2). Estado: **merge
+  #28** — property aislado contractualmente, aceptación no vacua, resumen
+  PASS/SKIP separados.
+- [PR-A2 — El harness se mide a sí mismo](plans/PR-A2/README.md)
+  (scope de cobertura + baseline aplicado). Estado: plan completo, pendiente
+  de aprobación de escenarios y de re-baseline humano (100→73, ADR-A2-02).
 
 ## Límites
 

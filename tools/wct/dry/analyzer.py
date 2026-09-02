@@ -122,7 +122,7 @@ def analyze(root: Path, paths: list[Path] | None = None) -> dict[str, Any]:
                 before = max(0, shared - 3) * ((intensity - 1) ** 1.5) / (variations + 1)
                 after = max(0, shared - 3) / (variations + 2)
                 pressure = max(0.0, before - after - float(extraction["helper_cost"]))
-            review_threshold = 0.95
+            review_threshold = float(config["review_threshold"])
             action = (
                 "EXTRACT"
                 if pressure >= float(extraction["min_pressure"])

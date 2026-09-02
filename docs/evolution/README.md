@@ -60,8 +60,14 @@ plan de verificación) antes de implementar nada.
   #28** — property aislado contractualmente, aceptación no vacua, resumen
   PASS/SKIP separados.
 - [PR-A2 — El harness se mide a sí mismo](plans/PR-A2/README.md)
-  (scope de cobertura + baseline aplicado). Estado: plan completo, pendiente
-  de aprobación de escenarios y de re-baseline humano (100→73, ADR-A2-02).
+  (scope de cobertura + baseline aplicado). Estado: **merge #29** — coverage
+  mide `src`+`tools/wct`, G-COV-TOTAL aplica `--cov-fail-under` del baseline,
+  ratchet `coverage-total` con registro por métrica; piso registrado en 74.5
+  (preciso, truncado hacia abajo; el redondeo entero del term habría fijado
+  un piso inalcanzable — corrección fechada en ADR-A2-01).
+- [PR-B — Conformidad configuración → runtime](plans/PR-B/README.md)
+  (O-005). Estado: plan completo, pendiente de aprobación de escenarios y de
+  autorización del diff de thresholds.yaml (ADR-B-02).
 
 ## Límites
 

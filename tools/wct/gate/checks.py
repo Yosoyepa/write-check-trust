@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from pathlib import Path
 import time
+from typing import Any
 
 from tools.wct.accept.pipeline import ir_dry, parse_feature
 from tools.wct.archmetrics.analyzer import analyze as analyze_architecture
 from tools.wct.cognitive.engine import scan as scan_cognitive
+from tools.wct.config import ConfigError, load_config
 from tools.wct.dry.analyzer import analyze as analyze_dry
 from tools.wct.dry.tpl import analyze_template
 from tools.wct.integrity.engine import violations as integrity_violations
@@ -78,6 +80,90 @@ def coverage_total_command(root: Path) -> list[str] | None:
         "-m",
         "not property",
     ]
+
+
+def _declared(root: Path, *path: str) -> Any:
+    """Valor declarado en thresholds.yaml; None si falta o es ilegible.
+
+    Contrato ADR-B-01 §3: el caller declara el None como FAIL nombrando la
+    clave — el gate nunca corre con un valor por defecto silencioso.
+    """
+    try:
+        _project, _policy, thresholds = load_config(root)
+        value: Any = thresholds
+        for key in path:
+            value = value[key]
+    except (ConfigError, KeyError, TypeError):
+        return None
+    return value
+
+
+def crap_command(root: Path) -> list[str] | None:
+    """Invocación de crap4py con el umbral declarado (crap.changed_max).
+
+    None cuando la clave falta o es ilegible: el caller lo declara como
+    FAIL nombrando la clave (contrato ADR-B-01 §3).
+    """
+    max_crap = _declared(root, "crap", "changed_max")
+    if max_crap is None:
+        return None
+    return [
+        "crap4py",
+        "src",
+        "--lcov",
+        "build/coverage/lcov.info",
+        "--max-crap",
+        str(max_crap),
+    ]
+
+
+def coverage_diff_command(root: Path, base: str) -> list[str] | None:
+    """Invocación de diff-cover con el piso declarado (coverage.diff_min).
+
+    `base` es la rama contra la que CI compara (remote_base la resuelve);
+    None cuando la clave falta o es ilegible, con el contrato de crap_command.
+    """
+    diff_min = _declared(root, "coverage", "diff_min")
+    if diff_min is None:
+        return None
+    return [
+        "diff-cover",
+        "build/coverage/lcov.info",
+        "--compare-branch",
+        base,
+        "--fail-under",
+        str(diff_min),
+        "--include-untracked",
+    ]
+
+
+def dead_code_command(root: Path) -> list[str] | None:
+    """Invocación de vulture con la confianza declarada (dead_code.vulture_min_confidence)."""
+    confidence = _declared(root, "dead_code", "vulture_min_confidence")
+    if confidence is None:
+        return None
+    return ["vulture", "src", "tools/wct", "--min-confidence", str(confidence)]
+
+
+XENON_FLAGS = ("--max-absolute", "--max-modules", "--max-average")
+XENON_KEYS = ("xenon_max_absolute", "xenon_max_modules", "xenon_max_average")
+
+
+def cognitive_command(root: Path) -> list[str] | None:
+    """Invocación de xenon con los grados declarados (complexity.xenon_max_*)."""
+    complexity = _declared(root, "complexity")
+    command = ["xenon"]
+    try:
+        for flag, name in zip(XENON_FLAGS, XENON_KEYS, strict=True):
+            grade = complexity[name]
+            if grade is None:
+                return None
+            command.append(flag)
+            command.append(str(grade))
+    except (KeyError, TypeError):
+        return None
+    command.append("src")
+    return command
 
 
 def gate_rules_drift(root: Path) -> GateResult:

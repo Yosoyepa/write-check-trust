@@ -57,6 +57,12 @@ dry:
   threshold: 0.82       # similitud de Jaccard mínima para reportar
   min_lines: 4
   min_nodes: 20
+  # Fase β-1 (PR #21): umbral de clones de plantilla (Jaccard sobre AST
+  # anonimizado). DEFAULT_TEMPLATE_THRESHOLD antes huérfano en dry/tpl.py.
+  template_threshold: 0.90
+  # Fase β-1 (PR #21): score de revisión manual sugerida para clones por
+  # tokens. review_threshold antes huérfano en dry/analyzer.py.
+  review_threshold: 0.95
   # Parámetros de extraction_pressure (scrap README):
   #   D_before = 0                                   si F <= 3 o V > 4
   #   D_before = (max(0, F-3) × (I-1)^1.5) / (V+1)   en otro caso
@@ -220,3 +226,16 @@ budgets_seconds:
   tier_commit: 120
   tier_pr: 600
   tier_full: 1800
+
+# ---------------------------------------------------------------------------
+# LCOM4 — cohesión de clases
+# Fuente: Hitz & Montazeri (1995), "Measuring coupling and cohesion in
+# object-oriented systems". Fase β-1 (PR #21), advisory con ratchet.
+# ---------------------------------------------------------------------------
+lcom:
+  # Clases con menos métodos no se evalúan (LCOM4 trivial). MIN_METHODS
+  # antes huérfano en lcom/engine.py.
+  min_methods: 3
+  # LCOM4 >= umbral cuenta como poco cohesiva. LCOM_THRESHOLD antes huérfano
+  # en lcom/engine.py.
+  threshold: 2

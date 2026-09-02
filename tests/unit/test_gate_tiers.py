@@ -82,6 +82,14 @@ def test_command_uses_resolved_base_and_includes_untracked(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     captured: dict[str, object] = {}
+    # El piso --fail-under nace de thresholds.yaml (ADR-B-01): el fixture
+    # declara coverage.diff_min para que el comando pueda construirse.
+    governance = tmp_path / "governance"
+    governance.mkdir()
+    (governance / "policy.yaml").write_text("schema_version: 1\n", encoding="utf-8")
+    (governance / "thresholds.yaml").write_text(
+        "schema_version: 1\ncoverage:\n  diff_min: 90\n", encoding="utf-8"
+    )
     monkeypatch.setattr("tools.wct.gate.runner.shutil.which", lambda _: "/usr/bin/diff-cover")
 
     class Present:

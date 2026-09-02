@@ -13,9 +13,6 @@ from typing import Any
 
 from tools.wct.config import load_config
 
-MIN_METHODS = 3
-LCOM_THRESHOLD = 2
-
 _EXCLUDED_BASES = frozenset(
     {
         "NamedTuple",
@@ -132,12 +129,24 @@ def _connected_components(names: list[str], adj: dict[str, set[str]]) -> int:
     return components
 
 
-def class_lcom4(node: ast.ClassDef) -> int | None:
-    """Calcula LCOM4 de una clase. Retorna None si está excluida."""
+def class_lcom4(node: ast.ClassDef, min_methods: int | None = None) -> int | None:
+    """Calcula LCOM4 de una clase. Retorna None si está excluida.
+
+    min_methods None se resuelve desde governance/thresholds.yaml
+    (lcom.min_methods); una clave ausente es un ValueError que la nombra,
+    nunca un default silencioso (ADR-B-01 §3).
+    """
+    if min_methods is None:
+        _root, _policy, thresholds = load_config()
+        lcom = thresholds.get("lcom", {})
+        try:
+            min_methods = int(lcom["min_methods"])
+        except KeyError as exc:
+            raise ValueError(f"thresholds.yaml: falta la clave lcom.{exc.args[0]}") from exc
     if _is_excluded_class(node):
         return None
     methods = _extract_methods(node)
-    if len(methods) < MIN_METHODS:
+    if len(methods) < min_methods:
         return None
 
     method_names = {m.name for m in methods}
@@ -161,8 +170,19 @@ def class_lcom4(node: ast.ClassDef) -> int | None:
 
 
 def scan(root: Path) -> dict[str, Any]:
-    """Escanea src/ y tools/ en busca de métricas LCOM4."""
-    _root, policy, _thresholds = load_config(root)
+    """Escanea src/ y tools/ en busca de métricas LCOM4.
+
+    Los umbrales (lcom.min_methods, lcom.threshold) provienen de
+    governance/thresholds.yaml del proyecto analizado; una clave ausente es
+    un ValueError que la nombra (ADR-B-01 §3).
+    """
+    _root, policy, thresholds = load_config(root)
+    lcom = thresholds.get("lcom", {})
+    try:
+        min_methods = int(lcom["min_methods"])
+        lcom_threshold = int(lcom["threshold"])
+    except KeyError as exc:
+        raise ValueError(f"thresholds.yaml: falta la clave lcom.{exc.args[0]}") from exc
     candidates: list[Path] = []
     for key in ("source", "tools"):
         for directory in policy.get("paths", {}).get(key, []):
@@ -179,7 +199,7 @@ def scan(root: Path) -> dict[str, Any]:
         rel_file = str(path.relative_to(root))
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
-                score = class_lcom4(node)
+                score = class_lcom4(node, min_methods)
                 if score is not None:
                     classes.append(
                         {
@@ -192,5 +212,5 @@ def scan(root: Path) -> dict[str, Any]:
 
     return {
         "classes": classes,
-        "violators": [c for c in classes if c["lcom4"] >= LCOM_THRESHOLD],
+        "violators": [c for c in classes if c["lcom4"] >= lcom_threshold],
     }

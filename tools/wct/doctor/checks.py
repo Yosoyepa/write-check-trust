@@ -4,16 +4,56 @@ import json
 from pathlib import Path
 import shutil
 import sys
+from typing import Any
 
 from tools.wct.config import load_config
 from tools.wct.integrity.engine import violations
 from tools.wct.rules.engine import drift
 
+# Mapa clave→gate de los umbrales cableados por PR-B (ADR-B-02 §3). Es el
+# ÚNICO elemento estático de la sección: los valores siempre se leen del
+# thresholds.yaml vigente; rota solo si se cablea una clave nueva.
+WIRED_THRESHOLDS: tuple[tuple[str, str], ...] = (
+    ("crap.changed_max", "G-CRAP"),
+    ("coverage.diff_min", "G-COV-DIFF"),
+    ("dead_code.vulture_min_confidence", "G-DEAD"),
+    ("complexity.xenon_max_absolute", "G-CC"),
+    ("complexity.xenon_max_modules", "G-CC"),
+    ("complexity.xenon_max_average", "G-CC"),
+    ("dry.min_lines", "G-DRY-TPL"),
+    ("dry.min_nodes", "G-DRY-TPL"),
+    ("dry.template_threshold", "G-DRY-TPL"),
+    ("dry.review_threshold", "G-DRY"),
+    ("lcom.min_methods", "G-LCOM"),
+    ("lcom.threshold", "G-LCOM"),
+)
+
+_MISSING = "AUSENTE (el gate fallará nombrándola)"
+
+
+def declared_thresholds(thresholds: dict[str, Any]) -> list[tuple[bool, str]]:
+    """Filas advisory 'Umbrales declarados → gates' para el YAML ya cargado.
+
+    Cada fila muestra la clave cableada, el gate que la consume y el valor
+    VIVO del thresholds.yaml recibido (ADR-B-02 §3): doctor informa, nunca
+    bloquea — por eso toda fila nace en ok=True.
+    """
+    rows: list[tuple[bool, str]] = [
+        (True, "Umbrales declarados → gates (advisory; valores de thresholds.yaml)")
+    ]
+    for key, gate in WIRED_THRESHOLDS:
+        value: Any = thresholds
+        for part in key.split("."):
+            value = value.get(part) if isinstance(value, dict) else None
+        rendered = _MISSING if value is None else str(value)
+        rows.append((True, f"  {gate} ← {key} = {rendered}"))
+    return rows
+
 
 def diagnose(root: Path) -> list[tuple[bool, str]]:
     checks: list[tuple[bool, str]] = []
     try:
-        _root, policy, _thresholds = load_config(root)
+        _root, policy, thresholds = load_config(root)
         checks.append((True, "governance YAML válido"))
     except Exception as exc:
         return [(False, f"configuración: {exc}")]
@@ -60,4 +100,5 @@ def diagnose(root: Path) -> list[tuple[bool, str]]:
         checks.append((shutil.which(tool) is not None, f"{tool} disponible"))
     if policy.get("minimalism_mode") == "ultra":
         checks.append((False, "minimalism_mode ultra está prohibido por ADR-001"))
+    checks.extend(declared_thresholds(thresholds))
     return checks

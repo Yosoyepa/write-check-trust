@@ -55,6 +55,20 @@ nuevo piso exige evidencia de aprobación y queda asentado en
 uv run wct ratchet record --approved-by "nombre" --reason "aprobado en PR #N: motivo"
 ```
 
+Sin `--metric` ese comando re-estampa TODOS los baselines medidos. Para
+re-baselinear una sola métrica sin tocar las demás — p. ej. `coverage-total`,
+cuyo valor se toma del TOTAL oficial de una corrida fresca de la suite:
+
+```bash
+uv run wct ratchet record --metric coverage-total --approved-by "nombre" \
+  --reason "aprobado en PR #N: motivo"
+```
+
+`coverage-total` en `ratchet check` se mide del artefacto
+`build/coverage/lcov.info` que el propio gate produce; sin artefacto la
+métrica se abstiene (no se reporta), igual que `docstring-coverage` sin
+interrogate.
+
 ## Tests flaky
 
 Registra cada flake en cuanto aparezca — nombre del test, corrida (job y

@@ -102,6 +102,50 @@ def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gat
     return run
 
 
+COVERAGE_TOTAL_BASELINE = "governance/baselines/coverage-total.json"
+
+
+def gate_coverage_total(root: Path) -> GateResult:
+    """El baseline de coverage-total es un piso: --cov-fail-under sobre medición fresca.
+
+    Baseline ausente o ilegible es FAIL explícito que nombra la ruta esperada:
+    correr sin piso en silencio es exactamente el defecto que este gate corrige
+    (ADR-A2-01). El veredicto de cobertura lo decide pytest-cov sobre la
+    corrida fresca; este gate solo aporta el piso registrado.
+    """
+    started = time.monotonic()
+    if shutil.which("pytest") is None:
+        return GateResult("G-COV-TOTAL", Status.ERROR, "herramienta ausente: pytest")
+    try:
+        floor = float(baseline(root, "coverage-total")["value"])
+    except (OSError, TypeError, KeyError, ValueError):
+        return GateResult(
+            "G-COV-TOTAL",
+            Status.FAIL,
+            f"baseline ausente o ilegible: {COVERAGE_TOTAL_BASELINE}",
+        )
+    command = [
+        "pytest",
+        "--cov",
+        "--cov-branch",
+        "--cov-report=lcov:build/coverage/lcov.info",
+        "--cov-fail-under",
+        str(floor),
+        "-q",
+        "-m",
+        "not property",
+    ]
+    status, summary, output = _captured(root, command)
+    return GateResult(
+        "G-COV-TOTAL",
+        status,
+        summary,
+        int((time.monotonic() - started) * 1000),
+        output.splitlines()[-50:],
+        " ".join(command),
+    )
+
+
 def gate_coverage_diff(root: Path) -> GateResult:
     """Hard diff-cover: coverage >= 90% on changed lines, CI-faithful base.
 
@@ -386,18 +430,7 @@ REGISTRY: dict[str, Gate] = {
         ],
         optional=True,
     ),
-    "G-COV-TOTAL": external(
-        "G-COV-TOTAL",
-        [
-            "pytest",
-            "--cov",
-            "--cov-branch",
-            "--cov-report=lcov:build/coverage/lcov.info",
-            "-q",
-            "-m",
-            "not property",
-        ],
-    ),
+    "G-COV-TOTAL": gate_coverage_total,
     "G-COV-DIFF": gate_coverage_diff,
     "G-DOC": gate_docstrings,
     "G-SECRET": gate_secrets,

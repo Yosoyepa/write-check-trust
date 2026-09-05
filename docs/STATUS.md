@@ -13,7 +13,7 @@
 |---|---|
 | `uv run wct --version` | Versión del harness |
 | `uv run wct doctor` | Salud: YAML de gobernanza, Python, hooks cableados (9 eventos) |
-| `uv run wct gate --tier commit` | Gates ACTIVOS con estado real (hoy: fast 7 / commit 20 / pr 26 / full 33) |
+| `uv run wct gate --tier commit` | Gates ACTIVOS con estado real (hoy: fast 7 / commit 20 / pr 26 / full 34) |
 | `uv run wct selftest redteam` | Red team: 30/30 adversarios F1–F15 (2 por modo de fallo) |
 | `uv run wct report` | Reglas y perfil vivos |
 | `ls tools/wct/` | Módulos existentes: accept, archmetrics, cognitive, dry, hotspots, introvert, mutate, ratchet, size, splitplan… |

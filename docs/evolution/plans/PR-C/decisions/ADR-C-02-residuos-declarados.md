@@ -76,3 +76,15 @@ en 5: 30 casos = **13 gate-engine · 8 gate-tool · 4 hook · 5 heuristic
 (declarados)**. F11-b sigue pendiente de decisión humana de umbral; todo
 cambio de 1 línea en `governance/**` exige autorización humana explícita
 (SEC-005).
+
+## Addendum 2 — PR-E redime los tres residuos de mutación (2026-09-05)
+
+F2-a, F2-b y F5-b se convierten a gate-tool con corridas REALES de
+mutmut sobre fixtures con su propio `[tool.mutmut]` (plan
+docs/evolution/plans/PR-E): el caso caza cuando la corrida mide los
+sobrevivientes y el gate productivo FALLA. F2-b cierra su promesa: es EL
+caso demostración — el test pasa, la mutación expone que no protege nada.
+Queda UN solo residuo declarado: F4-b (diff-cover con fixture git), con
+su redención documentada arriba. El wholesale al harness quedó rechazado
+con números (4.235 sitios / 16 archivos sobre presupuesto / ≈21h) —
+ADR-E-01.

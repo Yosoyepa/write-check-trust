@@ -41,6 +41,8 @@ from tools.wct.gate.checks import (
     gate_suppressions,
     gate_wire,
 )
+from tools.wct.gate.exec import _captured
+from tools.wct.gate.mutation import gate_mutation
 from tools.wct.model import GateResult, Status
 from tools.wct.mutate.engine import scan as scan_mutations
 from tools.wct.ratchet.engine import baseline
@@ -48,19 +50,6 @@ from tools.wct.rules.engine import rule_documents
 from tools.wct.util.git import remote_base
 
 Gate = Callable[[Path], GateResult]
-
-
-def _captured(root: Path, command: list[str]) -> tuple[Status, str, str]:
-    """Ejecuta un comando del gate y resume: status, summary, salida completa."""
-    completed = subprocess.run(command, cwd=root, text=True, capture_output=True, check=False)
-    output = (completed.stdout + "\n" + completed.stderr).strip()
-    status = Status.PASS if completed.returncode == 0 else Status.FAIL
-    summary = (
-        "ok"
-        if status is Status.PASS
-        else (output.splitlines()[-1] if output else f"exit {completed.returncode}")
-    )
-    return status, summary, output
 
 
 def gate_meta_rules(root: Path) -> GateResult:
@@ -453,7 +442,7 @@ REGISTRY: dict[str, Gate] = {
     "G-COMMIT-MSG": external(
         "G-COMMIT-MSG", ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"], optional=True
     ),
-    "G-MUT": external("G-MUT", ["mutmut", "run"], optional=True, scope=("src/example",)),
+    "G-MUT": declares(gate_mutation, tools=("mutmut",), scope=("src/example",)),
     "G-ACCEPT-MUT": external("G-ACCEPT-MUT", ["wct", "accept", "mutate"], optional=True),
     "G-REDTEAM": external("G-REDTEAM", ["wct", "selftest", "redteam"]),
 }
@@ -508,6 +497,7 @@ TIERS: dict[str, list[str]] = {
     "full": [
         *_COMMIT_GATES,
         "G-COV-TOTAL",
+        "G-MUT",
         "G-CRAP",
         "G-CC",
         "G-DRY",

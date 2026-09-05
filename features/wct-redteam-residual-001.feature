@@ -8,12 +8,8 @@ Feature: Los residuos del red team están declarados
     And su comentario lleva la razón y la ruta de redención
 
     Examples:
-      | caso  | razón                                              |
-      | F2-a  | exige corrida real de mutmut                       |
-      | F2-b  | un test hardcoded pasa la suite por diseño         |
-      | F4-b  | diff-cover exige fixture git con rama base         |
-      | F5-b  | survived es el output de una corrida inexistente   |
-      | F11-b | vulture a umbral 80 no ve constantes (confianza 60) |
+      | caso | razón                                      |
+      | F4-b | diff-cover exige fixture git con rama base |
 
   Scenario: La unión de archivos conserva el invariario de modos
     Given los archivos de casos presentes

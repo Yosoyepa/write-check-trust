@@ -7,7 +7,7 @@ fixture aislado y exige que el gate lo rechace: la aserción traza al
 GateResult del gate, no al andamiaje (TEST-003). El skip por herramienta
 ausente es honesto: nombra la herramienta y NO cuenta como verde del caso
 (DoD-F2.2, ADR-C-01 §4). Con las herramientas del grupo quality presentes,
-los 9 casos deben pasar de verdad — un caso que no pase se reporta en
+los 12 casos deben pasar de verdad — un caso que no pase se reporta en
 rojo con su salida, no se marca xfail (ADR-C-01 §5).
 """
 

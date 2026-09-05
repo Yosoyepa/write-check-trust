@@ -23,6 +23,14 @@ grupo quality antes de escribir este archivo):
 - G-SECRET (``gate_secrets`` → detect-secrets): pasa una lista fija de
   caminos; los directorios se enumeran vía ``git ls-files``, así que el
   fixture lleva su propio ``git init`` + ``git add``.
+- G-MUT (``external`` → ``mutmut``): corre ``mutmut run`` con cwd=fixture;
+  el pyproject del fixture declara su PROPIO ``[tool.mutmut]`` con
+  ``source_paths=["src"]``. mutmut copia el árbol a ``mutants/``, inserta
+  ``mutants/src`` al frente de sys.path y corre pytest desde ahí: los tests
+  del fixture importan con imports totalmente calificados
+  (``from victim.mod import ...``) y NO hay conftest que inyecte sys.path
+  (mutmut lo reporta como asociación rota). Receta medida en el paso 0.2 de
+  PR-E contra mutmut 3.7.0.
 
 Los valores con forma de credencial se ensamblan en runtime (nunca como
 literal contiguo en este archivo) para que G-SECRET del propio repositorio
@@ -204,6 +212,18 @@ rules:
 DEPS_PYPROJECT = (
     '[project]\nname = "victim"\nversion = "0.0.0"\nrequires-python = ">=3.11"\ndependencies = []\n'
 )
+
+# pyproject del fixture de mutación (G-MUT): alcance propio, sin selección de
+# tests porque el adversario F2-a no tiene ninguno (receta del paso 0.2).
+MUTMUT_PYPROJECT = (
+    '[project]\nname = "victim"\nversion = "0.0.0"\n\n[tool.mutmut]\nsource_paths = ["src"]\n'
+)
+
+
+def mutmut_pyproject(selection: str) -> str:
+    """Pyproject del fixture de mutación con selección de tests (receta 0.2)."""
+    return f'{MUTMUT_PYPROJECT[:-1]}\npytest_add_cli_args_test_selection = ["{selection}"]\n'
+
 
 # Camino base que gate_secrets pasa a detect-secrets (todos deben existir).
 SECRET_PATHS = {
@@ -391,8 +411,88 @@ def f12_b(tmp_path: Path) -> Path:
     return _git_track(root)
 
 
+def f2_a(tmp_path: Path) -> Path:
+    """F2-a: producción real y NINGÚN test — nada ejercita los mutantes.
+
+    Con un árbol sin tests, pytest colecciona nada (exit 5) y mutmut aborta
+    en la colecta de stats con exit 1 ANTES de emitir un solo veredicto: el
+    gate productivo se niega a aprobar producción sin tests. Medido contra
+    mutmut 3.7.0 sin pipes (matriz del paso 0.1 de PR-E): todos-cazados →
+    exit 0; sobrevivientes → exit 0 (hallazgo, bloquea F2-b/F5-b); sin
+    tests → exit 1.
+    """
+    return _plant(
+        tmp_path,
+        {
+            "pyproject.toml": MUTMUT_PYPROJECT,
+            "src/victim/__init__.py": "",
+            "src/victim/calc.py": (
+                "def add(a, b):\n    return a + b\n\n\ndef mul(a, b):\n    return a * b\n"
+            ),
+        },
+    )
+
+
+def _mutation_adversary(*, module: str, code: str, test_path: str, test_code: str) -> Builder:
+    """Builder de fixture de mutación: pyproject + un módulo + su test (receta 0.2).
+
+    Fábrica en vez de builders gemelos: dos funciones ``_plant(tmp_path,
+    {...})`` con cuatro entradas son el clon de plantilla exacto que
+    G-DRY-TPL rastrea, y sus pares legados ya consumen la baseline (17)
+    que solo puede bajar. Los imports del test son totalmente calificados
+    y el pyproject del fixture declara su ``[tool.mutmut]`` con la
+    selección — la convención medida en el paso 0.2 de PR-E.
+    """
+
+    def plant(tmp_path: Path) -> Path:
+        return _plant(
+            tmp_path,
+            {
+                "pyproject.toml": mutmut_pyproject(test_path),
+                "src/victim/__init__.py": "",
+                f"src/victim/{module}.py": code,
+                test_path: test_code,
+            },
+        )
+
+    return plant
+
+
+# F2-b — EL caso demostración: el test solo asierte el camino vacío
+# (total([]) == 0 sobre sum(items) * 1.0). PASA, pero no protege nada: los
+# mutantes del camino no ejercido sobreviven y G-MUT los lista (ruling
+# PR-E). Solo la mutación expone que el test es una constante.
+F2_BILLING_ADVERSARY = _mutation_adversary(
+    module="billing",
+    code="def total(items):\n    return sum(items) * 1.0\n",
+    test_path="tests/test_billing.py",
+    test_code="from victim.billing import total\n\n"
+    "def test_total_empty():\n    assert total([]) == 0\n",
+)
+
+# F5-b — test débil por cobertura parcial de ramas (distinto de F2-b):
+# solo el camino intermedio de clamp se ejercita y los mutantes de las
+# comparaciones (< → <=, > → >=) sobreviven. La mutación mide lo que la
+# suite NO ejercita.
+F5_CLAMP_ADVERSARY = _mutation_adversary(
+    module="clamp",
+    code=(
+        "def clamp(value, low, high):\n"
+        "    if value < low:\n        return low\n"
+        "    if value > high:\n        return high\n"
+        "    return value\n"
+    ),
+    test_path="tests/test_clamp.py",
+    test_code="from victim.clamp import clamp\n\n"
+    "def test_middle_passes_through():\n    assert clamp(5, 0, 10) == 5\n",
+)
+
+
 BUILDERS: dict[str, Builder] = {
     "F1-b": f1_b,
+    "F2-a": f2_a,
+    "F2-b": F2_BILLING_ADVERSARY,
+    "F5-b": F5_CLAMP_ADVERSARY,
     "F6-a": f6_a,
     "F9-a": f9_a,
     "F10-a": f10_a,

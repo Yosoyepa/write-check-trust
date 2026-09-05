@@ -6,21 +6,10 @@
 # (motores) y cases-tool.yaml (funciones de gate).
 schema_version: 1
 cases:
-  # Residuo (ADR-C-02): mutmut real en fixture src-sin-tests cuesta minutos por
-  # corrida y acopla el caso a la selección de tests del fixture. Redención: PR
-  # de mutación del harness (backlog A2), que planta src sin tests y mide real.
-  - {id: F2-a, failure_mode: F2, gate: G-MUT, harness: heuristic, checker: testless, payload: "production=true;tests=false"}
-  # Residuo (ADR-C-02): un test con valor hardcodeado PASA pytest por diseño;
-  # solo la mutación lo expone (el mutante cambia el valor y el test sigue
-  # verde). Redención: PR de mutación del harness (backlog A2).
-  - {id: F2-b, failure_mode: F2, gate: G-TEST, harness: heuristic, checker: hardcoded, payload: "return 42 # expected fixture"}
   # Residuo (ADR-C-02): diff-cover exige fixture git con rama base y diff real;
   # factible pero frágil. Redención: candidato a PR-C2 pequeño si la demanda lo
   # justifica; hoy la cobertura-diff se califica de facto en cada PR del repo.
   - {id: F4-b, failure_mode: F4, gate: G-COV-DIFF, harness: heuristic, checker: testless, payload: "production=true;tests=false"}
-  # Residuo (ADR-C-02): "survived=1" es el OUTPUT de una corrida de mutmut que
-  # hoy no existe. Redención: PR de mutación del harness (backlog A2).
-  - {id: F5-b, failure_mode: F5, gate: G-MUT, harness: heuristic, checker: survivor, payload: "survived=1"}
   - {id: F14-a, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: "governance/thresholds.yaml"}
   - {id: F14-b, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: ".github/workflows/quality.yml"}
   - {id: F15-a, failure_mode: F15, gate: G-HOOKS-WIRED, harness: hook, checker: forbidden-command, payload: "git commit --no-verify"}

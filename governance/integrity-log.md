@@ -236,3 +236,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: re-bless PR #32: fix G-SECRET excluye governance/baselines regenerados (runner.py post-bless)
 - Commit: 7337799de0291e06246d2664f25c5aba9b2c4cc3
+
+## 2026-09-05T15:15:27.690304+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #34: PR-E mutacion real — G-MUT verifica sobrevivientes, redime F2-a/F2-b/F5-b, G-MUT al tier full (plan docs/evolution/plans/PR-E)
+- Commit: 7c6ae26c45f96d12418fde72e822bc38138e6269

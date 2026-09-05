@@ -38,9 +38,11 @@ import subprocess
 
 Builder = Callable[[Path], Path]
 
-# Réplica del valor productivo de governance/thresholds.yaml. Es parte del
-# instrumento que se califica: cambiarlo aquí maquillaría el hallazgo F1-b.
-VULTURE_MIN_CONFIDENCE = 80
+# Réplica del valor productivo de governance/thresholds.yaml (ADR-D-02 lo
+# bajó de 80 a 60 con whitelist de 1 falso positivo). Es parte del
+# instrumento que se califica: ablandarlo aquí maquillaría los hallazgos
+# vulture (F1-b, F11-a, F11-b).
+VULTURE_MIN_CONFIDENCE = 60
 
 # Réplica verbatim del .importlinter productivo (contratos de capas; sin
 # contratos forbidden_external ni include_external_packages — verificado en
@@ -270,8 +272,8 @@ def f1_b(tmp_path: Path) -> Path:
     """F1-b: import estándar muerto, residuo de un helper generado.
 
     Adversario re-declarado por adjudicación del arquitecto: una FUNCIÓN
-    muerta es confianza 60 en vulture y el umbral productivo (80) la deja
-    pasar; un import sin uso es confianza 90 y sí es cazado.
+    muerta es confianza 60 en vulture; un import sin uso es confianza 90 y
+    queda cazado con margen sobre cualquier umbral declarado.
     """
     return _plant(
         tmp_path,
@@ -292,6 +294,24 @@ def f11_a(tmp_path: Path) -> Path:
             {
                 "src/example/__init__.py": "",
                 "src/example/legacy.py": "from os import path\n",
+            }
+        ),
+    )
+
+
+def f11_b(tmp_path: Path) -> Path:
+    """F11-b: constante muerta a confianza 60 — la clase redimida (ADR-D-02).
+
+    El umbral productivo bajó de 80 a 60: la muerte función/constante/
+    atributo (confianza 60 de vulture) ya no escapa al gate. La gobernanza
+    del fixture replica ese umbral y planta la constante muerta.
+    """
+    return _plant(
+        tmp_path,
+        _vulture_governance(
+            {
+                "src/example/__init__.py": "",
+                "src/example/legacy.py": "UNUSED_CONSTANT = 7\n",
             }
         ),
     )
@@ -378,6 +398,7 @@ BUILDERS: dict[str, Builder] = {
     "F10-a": f10_a,
     "F10-b": f10_b,
     "F11-a": f11_a,
+    "F11-b": f11_b,
     "F12-a": f12_a,
     "F12-b": f12_b,
 }

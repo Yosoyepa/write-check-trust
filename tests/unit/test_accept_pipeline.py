@@ -1,6 +1,40 @@
 from pathlib import Path
 
-from tools.wct.accept.pipeline import ir_dry, mutations, parse_feature
+from tools.wct.accept.pipeline import generate, ir_dry, mutations, parse_feature
+
+FEATURE = """Feature: Reserve
+Scenario Outline: units
+  Given stock "<stock>"
+  Then remaining "<remaining>"
+Examples:
+  | stock | remaining |
+  | 3     | 3         |
+"""
+
+
+def test_generate_is_reproducible_across_roots(tmp_path: Path) -> None:
+    """Dos checkouts del mismo feature producen artefactos byte-idénticos.
+
+    El IR registraba el source como ruta ABSOLUTA: el artefacto versionado
+    cambiaba según el checkout que lo regenerara (bug de PR-C, ADR-D-04).
+    El source debe embeberse relativo al root del repo.
+    """
+    artifacts = []
+    for checkout in ("checkout-a", "checkout-b"):
+        root = tmp_path / checkout
+        (root / "governance").mkdir(parents=True)
+        (root / "governance" / "policy.yaml").write_text("schema_version: 1\n", encoding="utf-8")
+        (root / "features").mkdir()
+        feature = root / "features" / "example.feature"
+        feature.write_text(FEATURE, encoding="utf-8")
+
+        ir = parse_feature(feature)
+        output = generate(ir, root / "tests" / "acceptance" / "generated" / "test_acceptance.py")
+
+        assert ir["source"] == "features/example.feature"
+        artifacts.append(output.read_bytes())
+
+    assert artifacts[0] == artifacts[1]
 
 
 def test_parser_builds_canonical_ir(tmp_path: Path) -> None:

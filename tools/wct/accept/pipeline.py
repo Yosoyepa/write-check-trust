@@ -9,6 +9,8 @@ import sys
 import tempfile
 from typing import Any
 
+from tools.wct.config import ConfigError, find_root
+
 STEP = re.compile(r"^\s*(Given|When|Then|And|But)\s+(.+?)\s*$")
 
 
@@ -73,10 +75,30 @@ def parse_feature(path: Path) -> dict[str, Any]:
     return {
         "schema_version": 1,
         "feature": feature,
-        "source": str(path),
+        "source": _relative_source(path),
         "background": background,
         "scenarios": scenarios,
     }
+
+
+def _relative_source(path: Path) -> str:
+    """Ruta del feature relativa al root del repo cuando es derivable (ADR-D-04).
+
+    El root se resuelve con ``find_root`` (marcador: governance/policy.yaml).
+    Si el feature vive fuera de él, o el root no es derivable, la ruta viaja
+    tal cual: el IR — y el artefacto generado que lo embebe — no debe
+    depender del checkout absoluto que lo produjo.
+
+    Args:
+        path: ruta del archivo .feature tal como la pasó el caller.
+
+    Returns:
+        La ruta relativa al root (POSIX del repo) o la original absoluta.
+    """
+    try:
+        return str(path.resolve().relative_to(find_root(path)))
+    except (ConfigError, ValueError):
+        return str(path)
 
 
 def ir_dry(ir: dict[str, Any]) -> dict[str, Any]:

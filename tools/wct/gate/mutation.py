@@ -17,13 +17,15 @@ from tools.wct.model import GateResult, Status
 
 
 def gate_mutation(root: Path) -> GateResult:
-    """Corre mutmut y FALLA si algún mutante sobrevive (TEST-002).
+    """Corre mutmut y FALLA si algún mutante sobrevive o queda sin test (TEST-002).
 
     El exit code de ``mutmut run`` (3.7.0) no distingue sobrevivientes:
     sale 0 con el árbol limpio Y con mutantes vivos, y solo sale 1 cuando
     la corrida misma no puede ejecutarse (matriz del paso 0.1 de PR-E). El
     veredicto por eso se toma de ``mutmut results``, que lista cada mutante
-    con su estado: cualquier ``: survived`` es un hallazgo que falla el
+    con su estado en UNA pasada: ``: survived`` (ningún test lo detecta) y
+    ``: no tests`` (ningún test lo ejercita — lectura estricta de TEST-002,
+    equivalente a línea sin cobertura) son ambos escapes que fallan el
     gate; la corrida rota falla con su diagnóstico.
 
     Args:
@@ -31,9 +33,10 @@ def gate_mutation(root: Path) -> GateResult:
 
     Returns:
         SKIP si mutmut no está instalado (semántica optional original);
-        FAIL si la corrida aborta o si sobrevive algún mutante — con la
-        lista de sobrevivientes en ``details``; PASS con resumen "cero
-        mutantes sobrevivientes" en caso contrario.
+        FAIL si la corrida aborta o si algún mutante sobrevive o queda sin
+        test — con cada mutante nombrado en ``details`` y el summary
+        distinguiendo ambas clases; PASS con resumen "cero mutantes
+        sobrevivientes" en caso contrario.
     """
     started = time.monotonic()
     if shutil.which("mutmut") is None:
@@ -49,16 +52,26 @@ def gate_mutation(root: Path) -> GateResult:
             "mutmut run",
         )
     _results_status, _results_summary, results_output = _captured(root, ["mutmut", "results"])
-    survivors = [
-        line.strip() for line in results_output.splitlines() if line.rstrip().endswith(": survived")
-    ]
+    survivors: list[str] = []
+    untested: list[str] = []
+    for line in results_output.splitlines():
+        stripped = line.strip()
+        if stripped.endswith(": survived"):
+            survivors.append(stripped)
+        elif stripped.endswith(": no tests"):
+            untested.append(stripped)
+    labels = []
     if survivors:
+        labels.append(f"{len(survivors)} mutantes sobrevivientes")
+    if untested:
+        labels.append(f"{len(untested)} sin test asociado")
+    if labels:
         return GateResult(
             "G-MUT",
             Status.FAIL,
-            f"{len(survivors)} mutantes sobrevivientes",
+            " + ".join(labels),
             int((time.monotonic() - started) * 1000),
-            survivors,
+            survivors + untested,
             "mutmut run && mutmut results",
         )
     return GateResult(

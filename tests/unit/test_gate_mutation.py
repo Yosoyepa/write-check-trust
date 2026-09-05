@@ -94,6 +94,71 @@ def test_run_that_cannot_execute_fails_the_gate(tmp_path: Path) -> None:
     assert result.details, "el FAIL debe llevar el diagnóstico de mutmut"
 
 
+@requires_mutmut
+def test_untested_mutants_fail_the_gate(tmp_path: Path) -> None:
+    """Mutante "no tests" (🫥): ningún test detecta ese cambio (TEST-002 estricto).
+
+    La corrida completa bien (add sí tiene tests), pero los mutantes de
+    ``mul`` quedan "no tests": un escape equivalente a un sobreviviente —
+    el gate debe FALLAR nombrándolos igual que a los sobrevivientes.
+    """
+    root = tmp_path
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "victim"\nversion = "0.0.0"\n\n[tool.mutmut]\n'
+        'source_paths = ["src"]\n'
+        'pytest_add_cli_args_test_selection = ["tests/test_calc.py"]\n',
+        encoding="utf-8",
+    )
+    (root / "src" / "victim").mkdir(parents=True)
+    (root / "src" / "victim" / "__init__.py").write_text("", encoding="utf-8")
+    (root / "src" / "victim" / "calc.py").write_text(
+        "def add(a, b):\n    return a + b\n\n\ndef mul(a, b):\n    return a * b\n",
+        encoding="utf-8",
+    )
+    (root / "tests").mkdir()
+    (root / "tests" / "test_calc.py").write_text(
+        "from victim.calc import add\n\ndef test_add():\n    assert add(2, 3) == 5\n",
+        encoding="utf-8",
+    )
+
+    result = gate_mutation(root)
+
+    assert result.status is Status.FAIL
+    assert "sin test asociado" in result.summary
+    assert any(line.endswith(": no tests") for line in result.details)
+
+
+@requires_mutmut
+def test_survivors_and_untested_are_distinguished_in_one_summary(tmp_path: Path) -> None:
+    """Sobrevivientes y sin-test juntos: un FAIL, summary que distingue ambos."""
+    root = tmp_path
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "victim"\nversion = "0.0.0"\n\n[tool.mutmut]\n'
+        'source_paths = ["src"]\n'
+        'pytest_add_cli_args_test_selection = ["tests/test_billing.py"]\n',
+        encoding="utf-8",
+    )
+    (root / "src" / "victim").mkdir(parents=True)
+    (root / "src" / "victim" / "__init__.py").write_text("", encoding="utf-8")
+    (root / "src" / "victim" / "billing.py").write_text(
+        "def total(items):\n    return sum(items) * 1.0\n\n\ndef mul(a, b):\n    return a * b\n",
+        encoding="utf-8",
+    )
+    (root / "tests").mkdir()
+    (root / "tests" / "test_billing.py").write_text(
+        "from victim.billing import total\n\ndef test_total_empty():\n    assert total([]) == 0\n",
+        encoding="utf-8",
+    )
+
+    result = gate_mutation(root)
+
+    assert result.status is Status.FAIL
+    assert "mutantes sobrevivientes" in result.summary
+    assert "sin test asociado" in result.summary
+    assert any(line.endswith(": survived") for line in result.details)
+    assert any(line.endswith(": no tests") for line in result.details)
+
+
 def test_absent_mutmut_keeps_optional_skip_semantics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

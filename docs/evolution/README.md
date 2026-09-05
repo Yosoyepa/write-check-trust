@@ -66,8 +66,15 @@ plan de verificación) antes de implementar nada.
   (preciso, truncado hacia abajo; el redondeo entero del term habría fijado
   un piso inalcanzable — corrección fechada en ADR-A2-01).
 - [PR-B — Conformidad configuración → runtime](plans/PR-B/README.md)
-  (O-005). Estado: plan completo, pendiente de aprobación de escenarios y de
-  autorización del diff de thresholds.yaml (ADR-B-02).
+  (O-005). Estado: **merge #30** — 4 gates construidos desde thresholds.yaml
+  (clave ausente = gate rojo que la nombra), 4 constantes declaradas con
+  procedencia, y `wct doctor` con la sección de conformidad en vivo (12
+  pares). Primer DoD por unidad de aceptación (feature/workstream/commit/
+  revisión) — estándar desde ahora.
+- [PR-C — Red team productivo](plans/PR-C/README.md) (O-002). Estado:
+  escenarios aprobados (2026-09-05), en ejecución. Convierte 22/26
+  reconocedores paralelos en invocaciones a motores/gates reales sobre
+  fixtures aislados, con 4 residuos declarados (ADR-C-02) y SKIP visible.
 
 ## Límites
 

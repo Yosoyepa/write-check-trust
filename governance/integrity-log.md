@@ -230,3 +230,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: re-bless PR #32: el ratchet record modifico baselines y ratchet-log despues del update-manifest; el bless va siempre al final
 - Commit: 71f22ca9263a6b5296a09ae014e366d24aa68006
+
+## 2026-09-05T14:04:33.209306+00:00
+
+- Approved by: yosoyepa
+- Reason: re-bless PR #32: fix G-SECRET excluye governance/baselines regenerados (runner.py post-bless)
+- Commit: 7337799de0291e06246d2664f25c5aba9b2c4cc3

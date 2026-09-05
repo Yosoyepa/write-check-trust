@@ -248,3 +248,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #36: redención F4-b, red team sin residuos
 - Commit: 95671b38278b9f416b7f5d05678f723fbcd7f406
+
+## 2026-09-05T19:38:53.280119+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #37: G1a clasifica el inventario completo del motor de mutación
+- Commit: e4f08833ed0d8777bbd7240d6acb2ccf9f77cd94

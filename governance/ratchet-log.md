@@ -58,3 +58,9 @@ está casi enteramente en este archivo.
 - Approved by: yosoyepa
 - Reason: re-baseline por cambio de scope en PR #29, piso preciso truncado (74.51 medido, no 75 redondeado): real con src+tools/wct
 - Metrics: coverage-total
+
+## 2026-09-05T12:27:38.016845+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #32: registra 17 clusters (deuda preexistente 16 en main desde 2026-08-23 + 2 de fixtures PR-D - 1 disuelto por la particion de runner.py); deduplicacion archivada como PR propio
+- Metrics: dry-template-clusters

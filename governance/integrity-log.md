@@ -218,3 +218,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #31: PR-C red team productivo + redencion F9-b (plan docs/evolution/plans/PR-C)
 - Commit: 258fe2d08a3200759b2e5ebaa8c9af053c4f523c
+
+## 2026-09-05T12:27:36.473013+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #32: PR-D perfiles y completitud + redenciones (plan docs/evolution/plans/PR-D)
+- Commit: 29a79eb8fe7319e4a98fa144e22c03687e97b8a7

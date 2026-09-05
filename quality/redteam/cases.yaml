@@ -21,6 +21,17 @@ cases:
   # Residuo (ADR-C-02): "survived=1" es el OUTPUT de una corrida de mutmut que
   # hoy no existe. Redención: PR de mutación del harness (backlog A2).
   - {id: F5-b, failure_mode: F5, gate: G-MUT, harness: heuristic, checker: survivor, payload: "survived=1"}
+  # Residuo (revisión de arquitecto, PR-C): escape REAL verificado — import-linter
+  # no ve externos sin include_external_packages, semgrep no tiene regla tkinter y
+  # policy no lista tkinter en forbidden_external.application. Redención: 1 línea
+  # en governance/policy.yaml (autorización humana) → convertir a gate-engine
+  # archmetrics.
+  - {id: F9-b, failure_mode: F9, gate: G-ARCH, harness: heuristic, checker: environment, payload: "application:tkinter.Tk"}
+  # Residuo (revisión de arquitecto, PR-C): vulture reporta la constante a
+  # confianza 60 pero el umbral del repo es 80 (thresholds.yaml
+  # dead_code.vulture_min_confidence). Redención: decisión humana del umbral
+  # (bajar a 60 = más ruido, o whitelist) → convertir a gate-tool.
+  - {id: F11-b, failure_mode: F11, gate: G-DEAD, harness: heuristic, checker: unused, payload: "UNUSED_CONSTANT = 7"}
   - {id: F14-a, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: "governance/thresholds.yaml"}
   - {id: F14-b, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: ".github/workflows/quality.yml"}
   - {id: F15-a, failure_mode: F15, gate: G-HOOKS-WIRED, harness: hook, checker: forbidden-command, payload: "git commit --no-verify"}

@@ -13,5 +13,7 @@ cases:
   - {id: F6-b, failure_mode: F6, gate: G-ARCHMETRICS, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "violations>=1"}
   - {id: F7-a, failure_mode: F7, gate: G-ARCH-CYCLE, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "cycles>=1"}
   - {id: F7-b, failure_mode: F7, gate: G-ARCH-CYCLE, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "cycles>=1"}
+  - {id: F8-a, failure_mode: F8, gate: G-ARCHMETRICS, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "violations>=1"}
+  - {id: F8-b, failure_mode: F8, gate: G-ARCHMETRICS, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "violations>=1"}
   - {id: F13-a, failure_mode: F13, gate: G-SUPPRESS, harness: gate-engine, engine: tools.wct.ratchet.engine.suppression_count, expect: ">=1"}
   - {id: F13-b, failure_mode: F13, gate: G-SUPPRESS, harness: gate-engine, engine: tools.wct.ratchet.engine.suppression_count, expect: ">=1"}

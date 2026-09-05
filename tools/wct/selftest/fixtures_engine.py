@@ -74,11 +74,19 @@ MOCK_ONLY = (
 )
 
 
-def _governance(root: Path, thresholds: str) -> Path:
+def _policy_forbidding(layer: str, package: str) -> str:
+    """Policy del fixture con ``package`` prohibido en ``layer`` (casos F8)."""
+    return POLICY.replace(
+        "  forbidden_external: {}",
+        f"  forbidden_external:\n    {layer}:\n      - {package}",
+    )
+
+
+def _governance(root: Path, thresholds: str, policy: str = POLICY) -> Path:
     """Escribe la policy y thresholds mínimos que ``load_config`` exige."""
     directory = root / "governance"
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / "policy.yaml").write_text(POLICY, encoding="utf-8")
+    (directory / "policy.yaml").write_text(policy, encoding="utf-8")
     (directory / "thresholds.yaml").write_text(thresholds, encoding="utf-8")
     return root
 
@@ -175,6 +183,26 @@ def _three_module_cycle(tmp_path: Path) -> Path:
     return root
 
 
+def _domain_framework_leak(tmp_path: Path) -> Path:
+    """F8-a: domain importa sqlalchemy; archmetrics lo caza por forbidden_external."""
+    root = _governance(
+        tmp_path, THRESHOLDS_ARCHITECTURE, _policy_forbidding("domain", "sqlalchemy")
+    )
+    _layer_tree(root)
+    _write(root, f"src/{PACKAGE}/domain/model.py", "import sqlalchemy\n")
+    return root
+
+
+def _application_framework_leak(tmp_path: Path) -> Path:
+    """F8-b: application importa fastapi; archmetrics lo caza por forbidden_external."""
+    root = _governance(
+        tmp_path, THRESHOLDS_ARCHITECTURE, _policy_forbidding("application", "fastapi")
+    )
+    _layer_tree(root)
+    _write(root, f"src/{PACKAGE}/application/web.py", "from fastapi import Request\n")
+    return root
+
+
 def _unjustified_noqa(tmp_path: Path) -> Path:
     """F13-a: noqa sin código de regla ni justificación."""
     return _suppression_fixture(tmp_path, "value = compute()  # noqa\n")
@@ -194,6 +222,8 @@ BUILDERS: dict[str, Builder] = {
     "F6-b": _upward_import_tree,
     "F7-a": _two_module_cycle,
     "F7-b": _three_module_cycle,
+    "F8-a": _domain_framework_leak,
+    "F8-b": _application_framework_leak,
     "F13-a": _unjustified_noqa,
     "F13-b": _unjustified_type_ignore,
 }

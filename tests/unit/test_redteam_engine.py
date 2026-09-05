@@ -189,7 +189,7 @@ def _case_root(tmp_path: Path, files: dict[str, str]) -> Path:
     return tmp_path
 
 
-@pytest.mark.parametrize("case_id", sorted(BUILDERS))
+@pytest.mark.parametrize("case_id", sorted(ENGINE_CASES))
 def test_engine_case_catches_planted_defect(case_id: str, tmp_path: Path) -> None:
     case = ENGINE_CASES[case_id]
     engine = _engine(str(case["engine"]))

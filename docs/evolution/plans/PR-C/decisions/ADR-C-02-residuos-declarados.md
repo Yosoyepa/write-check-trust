@@ -56,19 +56,23 @@ La conversión productiva corrigió la tabla original en tres puntos:
   imports). Migrados a gate-engine con policy espejo de la real
   (sqlalchemy/fastapi están en las listas del repo). El reconocedor
   paralelo los tenía mal atribuidos desde el inicio.
-- **F9-b es un escape real del repo**: `application:tkinter.Tk()` hoy pasa
+- **F9-b era un escape real del repo**: `application:tkinter.Tk()` pasaba
   todos los gates — import-linter no ve externos sin
   `include_external_packages`, semgrep no tiene regla tkinter y la policy
-  no lo lista en `forbidden_external.application`. Residuo declarado;
-  redención: 1 línea en `governance/policy.yaml` (autorización humana) y
-  convertir a gate-engine.
+  no lo listaba en `forbidden_external.application`. **REDIMIDO
+  (2026-09-05, PR #31)**: tkinter prohibido en
+  `architecture.forbidden_external.application` con autorización humana
+  explícita (línea con procedencia en policy.yaml); el caso hoy corre como
+  gate-engine (archmetrics lo caza) y el reconocedor `environment` murió
+  con su último usuario.
 - **F11-b es un escape real del repo**: vulture reporta constante muerta a
   confianza 60, pero el umbral declarado es 80
   (`thresholds.yaml → dead_code.vulture_min_confidence`). Residuo
   declarado; redención: decisión humana del umbral (bajar a 60 acepta el
   ruido, o whitelist) y convertir a gate-tool.
 
-El conteo pasa de 4 a 6 residuos: 30 casos = **12 gate-engine · 8 gate-tool
-· 4 hook · 6 heuristic (declarados)**. Los dos escapes nuevos son cambios
-de 1 línea en `governance/**` que requieren autorización humana explícita
-(SEC-005) y pueden ir en el mismo bless.
+El conteo pasó de 4 a 6 residuos y la redención de F9-b (PR #31) lo deja
+en 5: 30 casos = **13 gate-engine · 8 gate-tool · 4 hook · 5 heuristic
+(declarados)**. F11-b sigue pendiente de decisión humana de umbral; todo
+cambio de 1 línea en `governance/**` exige autorización humana explícita
+(SEC-005).

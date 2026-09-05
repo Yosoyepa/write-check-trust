@@ -13,7 +13,6 @@ Feature: Los residuos del red team están declarados
       | F2-b  | un test hardcoded pasa la suite por diseño         |
       | F4-b  | diff-cover exige fixture git con rama base         |
       | F5-b  | survived es el output de una corrida inexistente   |
-      | F9-b  | ningún gate del repo prohíbe tkinter en application |
       | F11-b | vulture a umbral 80 no ve constantes (confianza 60) |
 
   Scenario: La unión de archivos conserva el invariario de modos

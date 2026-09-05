@@ -74,7 +74,8 @@ plan de verificación) antes de implementar nada.
 - [PR-C — Red team productivo](plans/PR-C/README.md) (O-002). Estado:
   escenarios aprobados (2026-09-05), en ejecución. Convierte 22/26
   reconocedores paralelos en invocaciones a motores/gates reales sobre
-  fixtures aislados, con 4 residuos declarados (ADR-C-02) y SKIP visible.
+  fixtures aislados, con 5 residuos declarados (ADR-C-02; F9-b redimido en
+  la PR #31) y SKIP visible.
 
 ## Límites
 

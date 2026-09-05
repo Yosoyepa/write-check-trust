@@ -72,10 +72,11 @@ MOCK_ONLY = (
     "def test_save_delegates() -> None:\n"
     "    client.save.assert_called_once()\n"
 )
+APPLICATION_GUI = "import tkinter\n\n\ndef open_window() -> tkinter.Tk:\n    return tkinter.Tk()\n"
 
 
 def _policy_forbidding(layer: str, package: str) -> str:
-    """Policy del fixture con ``package`` prohibido en ``layer`` (casos F8)."""
+    """Policy del fixture con ``package`` prohibido en ``layer`` (casos F8/F9-b)."""
     return POLICY.replace(
         "  forbidden_external: {}",
         f"  forbidden_external:\n    {layer}:\n      - {package}",
@@ -203,6 +204,16 @@ def _application_framework_leak(tmp_path: Path) -> Path:
     return root
 
 
+def _application_gui_leak(tmp_path: Path) -> Path:
+    """F9-b: application abre GUI con tkinter; archmetrics lo caza (redimido, PR #31)."""
+    root = _governance(
+        tmp_path, THRESHOLDS_ARCHITECTURE, _policy_forbidding("application", "tkinter")
+    )
+    _layer_tree(root)
+    _write(root, f"src/{PACKAGE}/application/gui.py", APPLICATION_GUI)
+    return root
+
+
 def _unjustified_noqa(tmp_path: Path) -> Path:
     """F13-a: noqa sin código de regla ni justificación."""
     return _suppression_fixture(tmp_path, "value = compute()  # noqa\n")
@@ -224,6 +235,7 @@ BUILDERS: dict[str, Builder] = {
     "F7-b": _three_module_cycle,
     "F8-a": _domain_framework_leak,
     "F8-b": _application_framework_leak,
+    "F9-b": _application_gui_leak,
     "F13-a": _unjustified_noqa,
     "F13-b": _unjustified_type_ignore,
 }

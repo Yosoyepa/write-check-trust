@@ -9,8 +9,9 @@ Despachador por arnés (ADR-C-01 §1) sobre la UNIÓN de
 - ``gate-tool``: invoca ``REGISTRY[gate]`` sobre el fixture; herramienta
   ausente → SKIP visible con la herramienta nombrada, nunca failure.
 - ``hook``: ejercita ``pre_tool_use`` real (casos F14/F15).
-- ``heuristic``: reconocedores residuales declarados (ADR-C-02; F9-b/F11-b por
-  escapes reales verificados en la revisión de PR-C).
+- ``heuristic``: reconocedores residuales declarados (ADR-C-02; F11-b por un
+  escape real verificado en la revisión de PR-C. F9-b fue redimido en la
+  PR #31 y corre como gate-engine).
 
 Un caso convertido que el motor NO caza queda en rojo: es un hallazgo del
 instrumento, no se ajusta el fixture hasta que pase (ADR-C-01 §5).
@@ -129,8 +130,8 @@ def _mode_gaps(cases: list[dict[str, Any]], missing: list[str]) -> list[str]:
 def _reject(root: Path, checker: str, payload: str) -> bool:
     """Reconocedor residual: heurísticas declaradas y casos hook.
 
-    Sirve a los 6 casos heuristic declarados (ADR-C-02 más los dos escapes
-    reales F9-b/F11-b de la revisión de PR-C) y a los 4 casos hook.
+    Sirve a los 5 casos heuristic declarados (ADR-C-02 y su addendum; F9-b
+    fue redimido en la PR #31 y ya corre como gate-engine) y a los 4 hook.
     """
     if checker == "testless":
         return "production=true" in payload and "tests=false" in payload
@@ -138,11 +139,6 @@ def _reject(root: Path, checker: str, payload: str) -> bool:
         return "expected fixture" in payload
     if checker == "survivor":
         return int(payload.split("=", 1)[1]) > 0
-    if checker == "environment":
-        layer, source = payload.split(":", 1)
-        return layer in {"domain", "application"} and any(
-            boundary in source for boundary in ("subprocess", "tkinter")
-        )
     if checker == "unused":
         return bool(UNUSED.search(payload))
     if checker == "protected-write":

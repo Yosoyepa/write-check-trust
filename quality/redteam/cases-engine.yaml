@@ -1,0 +1,19 @@
+# Casos del arnés gate-engine (ADR-C-01 §1): cada caso planta su defecto en un
+# fixture (tools/wct/selftest/fixtures_engine.py) y el MOTOR productivo que su
+# gate usa debe cazarlo. `expect` expresa la condición de caza sobre el reporte
+# del motor: `clave.anidada>=N` (las listas cuentan sus elementos) o `>=N` si
+# el motor retorna un escalar.
+schema_version: 1
+cases:
+  - {id: F1-a, failure_mode: F1, gate: G-DRY, harness: gate-engine, engine: tools.wct.dry.analyzer.analyze, expect: "candidates>=1"}
+  - {id: F3-a, failure_mode: F3, gate: G-INTROVERT, harness: gate-engine, engine: tools.wct.introvert.analyzer.analyze, expect: "counts.introverted>=1"}
+  - {id: F3-b, failure_mode: F3, gate: G-INTROVERT, harness: gate-engine, engine: tools.wct.introvert.analyzer.analyze, expect: "counts.introverted>=1"}
+  - {id: F4-a, failure_mode: F4, gate: G-SUPPRESS, harness: gate-engine, engine: tools.wct.ratchet.engine.suppression_count, expect: ">=1"}
+  - {id: F5-a, failure_mode: F5, gate: G-MUT-SITES, harness: gate-engine, engine: tools.wct.mutate.engine.scan, expect: "over_limit>=1"}
+  - {id: F6-b, failure_mode: F6, gate: G-ARCHMETRICS, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "violations>=1"}
+  - {id: F7-a, failure_mode: F7, gate: G-ARCH-CYCLE, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "cycles>=1"}
+  - {id: F7-b, failure_mode: F7, gate: G-ARCH-CYCLE, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "cycles>=1"}
+  - {id: F8-a, failure_mode: F8, gate: G-ARCHMETRICS, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "violations>=1"}
+  - {id: F8-b, failure_mode: F8, gate: G-ARCHMETRICS, harness: gate-engine, engine: tools.wct.archmetrics.analyzer.analyze, expect: "violations>=1"}
+  - {id: F13-a, failure_mode: F13, gate: G-SUPPRESS, harness: gate-engine, engine: tools.wct.ratchet.engine.suppression_count, expect: ">=1"}
+  - {id: F13-b, failure_mode: F13, gate: G-SUPPRESS, harness: gate-engine, engine: tools.wct.ratchet.engine.suppression_count, expect: ">=1"}

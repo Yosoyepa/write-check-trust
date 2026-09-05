@@ -277,17 +277,22 @@ def gate_secrets(root: Path) -> GateResult:
     if shutil.which("detect-secrets") is None:
         return GateResult("G-SECRET", Status.ERROR, "herramienta ausente: detect-secrets")
     paths = list(SECRET_PATHS)
-    # governance/generated/ contiene artefactos regenerados por las propias
-    # herramientas (p. ej. fingerprints sha256 del manifiesto de mutación):
-    # hex de alta entropía por diseño, no secretos. Auditarlos en el baseline
-    # sería fricción en cada regeneración.
+    # governance/generated/ y governance/baselines/ contienen artefactos
+    # regenerados por las propias herramientas: fingerprints sha256 del
+    # manifiesto de mutación los primeros, SHAs cortos de procedencia que
+    # escribe ``wct ratchet record`` los segundos. Ambos son hex de alta
+    # entropía por diseño, no secretos; auditarlos en el baseline sería
+    # fricción en cada regeneración. Incidente PR #32: el SHA de 12 chars
+    # de dry-template-clusters.json cruzó el límite 3.0 de HexHighEntropy
+    # por azar de entropía (el de coverage-total no) — re-acortar el SHA
+    # sería churn que reaparece al azar, no una garantía.
     completed = subprocess.run(
         [
             "detect-secrets",
             "scan",
             "--slim",
             "--exclude-files",
-            "^governance/generated/",
+            "^(governance/generated|governance/baselines)/",
             *paths,
         ],
         cwd=root,

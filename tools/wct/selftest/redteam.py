@@ -175,12 +175,14 @@ def _run_engine(
     return FAILED, f"{case_id}: el motor no reportó el defecto ({case.get('expect')})"
 
 
-def _run_tool(
-    case: dict[str, Any],
-    builders: dict[str, Builder],
-    scratch: Path,
-) -> tuple[str, str]:
-    """Invoca la función de gate sobre el fixture; el caso caza si el gate FALLA."""
+def _run_tool(case: dict[str, Any], builders: dict[str, Builder]) -> tuple[str, str]:
+    """Invoca la función de gate sobre el fixture; el caso caza si el gate FALLA.
+
+    semgrep/detect-secrets enumeran archivos vía git: un fixture dentro del
+    repo es invisible para ellos (untracked). El tmpdir del arnés tool vive
+    fuera del árbol del repo; el de engine se queda en build/tmp (PROC-007;
+    los engines no usan git).
+    """
     tool = str(case.get("tool", ""))
     if shutil.which(tool) is None:
         return SKIPPED, f"herramienta ausente: {tool}"
@@ -190,7 +192,7 @@ def _run_tool(
         return FAILED, f"{case_id}: sin builder para el caso"
     gate = REGISTRY[str(case.get("gate"))]
     try:
-        with tempfile.TemporaryDirectory(dir=scratch, prefix=f"redteam-{case_id}-") as directory:
+        with tempfile.TemporaryDirectory(prefix=f"redteam-{case_id}-") as directory:
             result = gate(builder(Path(directory)))
     except Exception as exc:
         return FAILED, f"{case_id}: {type(exc).__name__}: {exc}"
@@ -199,13 +201,13 @@ def _run_tool(
     return FAILED, f"{case_id}: el gate no cazó el defecto ({result.summary})"
 
 
-def _adjudicate(
+def _dispatch_case(
     root: Path,
     case: dict[str, Any],
     builders: dict[str, Builder],
     scratch: Path,
 ) -> tuple[str, str]:
-    """Corre un caso por su arnés; retorna (estado, detalle)."""
+    """Despacha un caso según su arnés; retorna (estado, detalle)."""
     gate = str(case.get("gate", ""))
     if gate not in REGISTRY:
         return FAILED, f"{case.get('id')}: gate inexistente {gate}"
@@ -213,7 +215,7 @@ def _adjudicate(
     if harness == "gate-engine":
         return _run_engine(case, builders, scratch)
     if harness == "gate-tool":
-        return _run_tool(case, builders, scratch)
+        return _run_tool(case, builders)
     if harness in {"hook", "heuristic"}:
         if _reject(root, str(case.get("checker")), str(case.get("payload"))):
             return CAUGHT, ""
@@ -252,7 +254,7 @@ def run(root: Path) -> tuple[int, list[str]]:
     counts: Counter[str] = Counter()
     skips: list[str] = []
     for case in cases:
-        state, detail = _adjudicate(root, case, builders, scratch)
+        state, detail = _dispatch_case(root, case, builders, scratch)
         if state == CAUGHT:
             counts[str(case.get("harness"))] += 1
         elif state == SKIPPED:

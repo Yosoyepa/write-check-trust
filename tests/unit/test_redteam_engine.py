@@ -309,6 +309,34 @@ def test_gate_tool_case_catches_when_gate_fails(
     assert failures == []
 
 
+def test_gate_tool_fixture_lives_outside_the_repo_tree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """El fixture tool vive fuera del árbol del repo.
+
+    Semgrep/detect-secrets enumeran archivos vía git: un fixture untracked
+    dentro del repo les es invisible (addendum R1).
+    """
+    root = _dummy_root(tmp_path, TOOL_PRESENT_CASES)
+    fixtures: list[Path] = []
+
+    def record(directory: Path) -> Path:
+        fixtures.append(directory)
+        return directory
+
+    monkeypatch.setitem(BUILDERS, "T1", record)
+    monkeypatch.setattr(shutil, "which", lambda _tool: "/usr/bin/true")
+    monkeypatch.setitem(
+        REGISTRY, "G-DEAD", lambda _fixture: GateResult("G-DEAD", Status.FAIL, "dead code")
+    )
+
+    count, failures = redteam.run(root)
+
+    assert count == 1
+    assert failures == []
+    assert not fixtures[0].is_relative_to(root)
+
+
 def test_dispatch_reports_malformed_cases(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _dummy_root(tmp_path, MALFORMED_CASES)
     monkeypatch.syspath_prepend(str(tmp_path))

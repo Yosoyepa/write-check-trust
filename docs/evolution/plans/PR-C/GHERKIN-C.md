@@ -38,10 +38,15 @@ Feature: El red team califica con los motores productivos
 
   Scenario: Un motor que no caza es un hallazgo, no un fixture ajustado
     Given un caso cuyo motor productivo no reporta el defecto plantado
-    When corre el red team
+    When corre el caso cuyo defecto el motor dejó pasar
     Then el caso falla en rojo con la salida del motor
     And el fixture no se modifica para volverlo verde
 ```
+
+> Nota de aterrizaje: el paso When de este escenario se reformuló al
+> aterrizar — G-ACCEPT (placeholder-variant) rechaza dos escenarios con la
+> misma forma de paso ("corre el red team") y sugiere diferenciarlos. El
+> bless del PR cubre esta enmienda.
 
 ## wct-redteam-residual-001
 

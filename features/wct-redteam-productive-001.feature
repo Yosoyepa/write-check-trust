@@ -31,6 +31,6 @@ Feature: El red team califica con los motores productivos
 
   Scenario: Un motor que no caza es un hallazgo, no un fixture ajustado
     Given un caso cuyo motor productivo no reporta el defecto plantado
-    When corre el red team
+    When corre el caso cuyo defecto el motor dejó pasar
     Then el caso falla en rojo con la salida del motor
     And el fixture no se modifica para volverlo verde

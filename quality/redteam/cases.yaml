@@ -1,15 +1,13 @@
 # Casos del red team que NO corre un motor productivo (ADR-C-01 §1):
 # - harness: hook — ejercitan pre_tool_use real, sin cambios de fondo.
-# - harness: heuristic — residuos declarados en ADR-C-02: razón in situ y ruta
-#   de redención. El resumen los cuenta como "heuristic (declarados)".
+# - harness: heuristic — hoy CERO residuos: F4-b, el último (ADR-C-02), fue
+#   redimido en la PR-F (ADR-F-01). Una declaración heurística futura
+#   volvería a vivir aquí, con razón in situ y ruta de redención; el feature
+#   wct-redteam-residual-001 es el ratchet que la exige consciente.
 # Los casos convertidos a ejecución productiva viven en cases-engine.yaml
 # (motores) y cases-tool.yaml (funciones de gate).
 schema_version: 1
 cases:
-  # Residuo (ADR-C-02): diff-cover exige fixture git con rama base y diff real;
-  # factible pero frágil. Redención: candidato a PR-C2 pequeño si la demanda lo
-  # justifica; hoy la cobertura-diff se califica de facto en cada PR del repo.
-  - {id: F4-b, failure_mode: F4, gate: G-COV-DIFF, harness: heuristic, checker: testless, payload: "production=true;tests=false"}
   - {id: F14-a, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: "governance/thresholds.yaml"}
   - {id: F14-b, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: ".github/workflows/quality.yml"}
   - {id: F15-a, failure_mode: F15, gate: G-HOOKS-WIRED, harness: hook, checker: forbidden-command, payload: "git commit --no-verify"}

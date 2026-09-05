@@ -13,6 +13,10 @@ from tools.wct.config import ConfigError, find_root
 
 STEP = re.compile(r"^\s*(Given|When|Then|And|But)\s+(.+?)\s*$")
 
+# TODO(owner=yosoyepa, issue=#35): parse_feature no soporta narrativa Gherkin
+# bajo Feature: (solo #, @, keywords, filas | y steps); soportarla es trabajo
+# separado de PR-F, con TDD propio y decisión sobre el flujo por el IR.
+
 
 def parse_feature(path: Path) -> dict[str, Any]:
     feature = ""

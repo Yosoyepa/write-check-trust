@@ -67,10 +67,10 @@ cases:
     payload: "governance/thresholds.yaml"
   - id: R1
     failure_mode: F1
-    gate: G-MUT
+    gate: G-HOOKS-WIRED
     harness: heuristic
-    checker: testless
-    payload: "production=true;tests=false"
+    checker: forbidden-command
+    payload: "git push --no-verify"
 """
 ISOLATION_CASES = """\
 schema_version: 1
@@ -128,14 +128,14 @@ cases:
     failure_mode: F14
     harness: mesa
     gate: G-MUT
-    checker: testless
-    payload: "x"
+    checker: forbidden-command
+    payload: "git push --no-verify"
   - id: X6
     failure_mode: F14
     gate: G-MUT
     harness: heuristic
-    checker: testless
-    payload: "production=false"
+    checker: forbidden-command
+    payload: "ls"
 """
 PAIR_CASES = """\
 schema_version: 1
@@ -231,6 +231,19 @@ def test_mode_invariant_on_union(tmp_path: Path) -> None:
     )
     _, failures = redteam.run(complete)
     assert "F14: requiere al menos dos casos" in failures
+
+
+def test_union_declares_zero_heuristics() -> None:
+    """Ratchet del feature wct-redteam-residual-001: cero heurísticos reales.
+
+    Carga la unión real de quality/redteam: una declaración futura con arnés
+    heuristic rompe aquí Y en el feature, forzando la declaración consciente
+    con su razón y su ruta de redención (ADR-F-02).
+    """
+    cases, _loaded, _missing = redteam._load_union(REPOSITORY)
+    assert cases, "la unión de casos del red team está vacía"
+    heuristics = [str(case.get("id")) for case in cases if str(case.get("harness")) == "heuristic"]
+    assert heuristics == []
 
 
 def test_summary_counts_by_harness(

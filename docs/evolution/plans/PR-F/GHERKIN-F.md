@@ -1,3 +1,17 @@
+# PR-F — Gherkin
+
+> **Corrección del arquitecto (2026-09-05):** el bloque original de este
+> archivo traía la narrativa como texto libre bajo `Feature:` — Gherkin
+> estándar válido, pero que `parse_feature` (pipeline.py:24-72) no soporta:
+> G-ACCEPT lo reprobó en `feature:4`. La forma aterrizada convierte la
+> narrativa a comentarios `#` (texto íntegro), el convenio del repo desde
+> PR-D. La limitación del parser quedó registrada como deuda con trazabilidad
+> (issue #35 + TODO en pipeline.py, MIN-004); soportar narrativa es trabajo
+> separado con TDD propio.
+
+`features/wct-redteam-residual-001.feature` se reemplaza ÍNTEGRO por:
+
+```gherkin
 # wct-redteam-residual-001
 Feature: El red team no declara residuos
 
@@ -27,3 +41,12 @@ Feature: El red team no declara residuos
     When el runner valida los quince modos de fallo
     Then exige al menos dos casos por modo sobre la unión
     And la ausencia de un archivo no rompe la validación
+```
+
+## Trazabilidad
+
+| Escenario | Comportamiento observable | Prueba que lo fija |
+|---|---|---|
+| El residuo redimido corre el motor productivo | F4-b caza vía `REGISTRY["G-COV-DIFF"]` sobre el fixture git | `test_tool_case_catches_planted_defect[F4-b]` (parametrizado existente) |
+| Ningún caso declara arnés heuristic | unión sin `harness: heuristic` + resumen "0 heuristic (declarados)" | `test_union_declares_zero_heuristics` (nueva) |
+| La unión conserva el invariario de modos | `_mode_gaps` exige ≥2 por modo F1–F15 | `test_mode_gaps_*` existentes en `test_redteam_engine.py` |

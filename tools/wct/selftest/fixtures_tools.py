@@ -31,6 +31,11 @@ grupo quality antes de escribir este archivo):
   (``from victim.mod import ...``) y NO hay conftest que inyecte sys.path
   (mutmut lo reporta como asociación rota). Receta medida en el paso 0.2 de
   PR-E contra mutmut 3.7.0.
+- G-COV-DIFF (``dynamic`` → diff-cover): exige la herramienta en PATH, una
+  rama base que ``remote_base`` resuelva — repo git local con ``main``
+  commiteada — y ``build/coverage/lcov.info`` legible. Corre con
+  ``--include-untracked``, así que la víctima NUEVA no se commitea: el
+  commit base lleva SOLO la gobernanza (ADR-F-01).
 
 Los valores con forma de credencial se ensamblan en runtime (nunca como
 literal contiguo en este archivo) para que G-SECRET del propio repositorio
@@ -51,6 +56,12 @@ Builder = Callable[[Path], Path]
 # instrumento que se califica: ablandarlo aquí maquillaría los hallazgos
 # vulture (F1-b, F11-a, F11-b).
 VULTURE_MIN_CONFIDENCE = 60
+
+# Réplica del valor productivo de governance/thresholds.yaml:113
+# (coverage.diff_min): el piso que diff-cover aplica sobre las líneas
+# cambiadas. Es parte del instrumento que se califica; ablandarlo aquí
+# maquillaría la caza de F4-b (ADR-F-01).
+COVERAGE_DIFF_MIN = 90
 
 # Réplica verbatim del .importlinter productivo (contratos de capas; sin
 # contratos forbidden_external ni include_external_packages — verificado en
@@ -288,6 +299,44 @@ def _git_track(root: Path) -> Path:
     return root
 
 
+def _git_base(root: Path) -> Path:
+    """Planta la gobernanza mínima y la commitea: ``main`` resuelve en rev-parse.
+
+    El commit base es innegociable (ADR-F-01): sin él ``remote_base`` no
+    encuentra rama y G-COV-DIFF reporta ERROR en vez de FAIL. Identidad y
+    ``commit.gpgsign=false`` van explícitos en el comando para que el
+    builder funcione en cualquier máquina/CI sin configuración de git.
+    """
+    _plant(
+        root,
+        {
+            "governance/policy.yaml": "schema_version: 1\n",
+            "governance/thresholds.yaml": (
+                f"schema_version: 1\ncoverage:\n  diff_min: {COVERAGE_DIFF_MIN}\n"
+            ),
+        },
+    )
+    for command in (
+        ("git", "init", "-q", "-b", "main"),
+        ("git", "add", "-A"),
+        (
+            "git",
+            "-c",
+            "user.email=wct@redteam",
+            "-c",
+            "user.name=wct-redteam",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-q",
+            "-m",
+            "base",
+        ),
+    ):
+        subprocess.run(command, cwd=root, check=True, capture_output=True)
+    return root
+
+
 def f1_b(tmp_path: Path) -> Path:
     """F1-b: import estándar muerto, residuo de un helper generado.
 
@@ -488,10 +537,33 @@ F5_CLAMP_ADVERSARY = _mutation_adversary(
 )
 
 
+def f4_b(tmp_path: Path) -> Path:
+    """F4-b: producción nueva sin un solo test — el diff corre con 0%.
+
+    Adversario (ADR-F-01): ``src/victim/ops.py`` recién escrito y UNTRACKED
+    — producción nueva, cero tests — y ``build/coverage/lcov.info``
+    sembrado con ``DA:n,0`` (cero ejecuciones), el artefacto que
+    G-COV-TOTAL produciría si la suite no ejercita el archivo. Receta
+    medida por la sonda del paso 0 (build/tmp/probe_f4b.py, variante A):
+    el gate productivo corre diff-cover --include-untracked contra
+    ``main`` y reprueba con ``Coverage: 0%``.
+    """
+    return _plant(
+        _git_base(tmp_path),
+        {
+            "src/victim/ops.py": "def add(a, b):\n    return a + b\n",
+            "build/coverage/lcov.info": (
+                "TN:\nSF:src/victim/ops.py\nDA:1,0\nDA:2,0\nend_of_record\n"
+            ),
+        },
+    )
+
+
 BUILDERS: dict[str, Builder] = {
     "F1-b": f1_b,
     "F2-a": f2_a,
     "F2-b": F2_BILLING_ADVERSARY,
+    "F4-b": f4_b,
     "F5-b": F5_CLAMP_ADVERSARY,
     "F6-a": f6_a,
     "F9-a": f9_a,

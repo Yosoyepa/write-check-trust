@@ -122,3 +122,14 @@ cases:
     # solo el camino intermedio de clamp se ejercita y los mutantes de las
     # comparaciones (< → <=, > → >=) sobreviven. Sobreviviente distinto del
     # de F2-b; el gate los lista igual.
+  - id: F4-b
+    failure_mode: F4
+    harness: gate-tool
+    gate: G-COV-DIFF
+    tool: diff-cover
+    # Redimido (PR-F, ADR-F-01): producción nueva y cero tests. El fixture es
+    # un repo git con la gobernanza mínima commiteada (main resuelve en
+    # rev-parse --verify), la víctima UNTRACKED y el lcov sembrado con DA:n,0
+    # (cero ejecuciones): diff-cover --include-untracked computa 0% sobre el
+    # diff y reprueba contra el piso productivo. Receta medida por la sonda
+    # PR-F paso 0 (build/tmp/probe_f4b.py, variante A).

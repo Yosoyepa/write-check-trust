@@ -1,0 +1,87 @@
+schema_version: 1
+# Casos gate-tool del red team (PR-C, ADR-C-01 §§1-2): cada caso invoca la
+# FUNCIÓN DE GATE productiva — REGISTRY[gate] en tools/wct/gate/runner.py —
+# sobre el fixture aislado que planta su defecto. El builder vive en
+# tools/wct/selftest/fixtures_tools.py, con la id del caso como clave.
+#
+# Campos:
+#   harness: gate-tool — el runner despacha por arnés.
+#   gate:    nombre existente en REGISTRY (el caso NO reimplementa lógica).
+#   tool:    ejecutable que shutil.which debe resolver, con el MISMO nombre
+#            que usa la función de gate (vulture, lint-imports, semgrep,
+#            deptry, detect-secrets). Ausente → SKIP visible (ADR-C-01 §4):
+#            nunca cuenta como rechazado ni como silencio.
+#
+# Contrato de caza (ruling del arquitecto sobre PR-C): universal, sin campo
+# expect — el caso caza si GateResult.status == FAIL tras invocar la
+# función de gate productiva sobre el fixture.
+#
+# Adjudicación del arquitecto (paso 0.3): F8-a/F8-b migran a cases-engine
+# (el catcher real de forbidden_external es archmetrics, no semgrep);
+# F9-b (tkinter en application) y F11-b (constante muerta a confianza 60
+# con vulture@80) se declaran residuos (ADR-C-02). Los adversarios de
+# F1-b/F11-a/F9-a se re-declararon al que el gate productivo realmente
+# caza a configuración real; los hallazgos de procedencia quedan en el
+# handoff de PR-C para decisión humana.
+cases:
+  - id: F1-b
+    failure_mode: F1
+    harness: gate-tool
+    gate: G-DEAD
+    tool: vulture
+    # Adversario re-declarado (adjudicación): import estándar sin uso —
+    # vulture lo reporta a confianza 90 y el umbral productivo es 80.
+  - id: F11-a
+    failure_mode: F11
+    harness: gate-tool
+    gate: G-DEAD
+    tool: vulture
+    # Adversario re-declarado (adjudicación): from-import muerto —
+    # confianza 90 en vulture, cazado al 80 productivo.
+  - id: F6-a
+    failure_mode: F6
+    harness: gate-tool
+    gate: G-ARCH
+    tool: lint-imports
+    # Cazado: contrato forbidden domain→adapters del .importlinter
+    # productivo (réplica verbatim en el fixture).
+  - id: F9-a
+    failure_mode: F9
+    harness: gate-tool
+    gate: G-SAST-SEMGREP
+    tool: semgrep
+    # Adversario re-declarado (adjudicación): la LLAMADA subprocess.run en
+    # domain/, que es lo que la regla productiva wct-io-in-domain patróna
+    # (subprocess.$ANY(...) con include src/*/domain/**). El catcher real
+    # es semgrep, no import-linter (que no ve externos).
+  - id: F10-a
+    failure_mode: F10
+    harness: gate-tool
+    gate: G-DEPS
+    tool: deptry
+    # Cazado: DEP001 'imaginary_sdk' imported but missing from the
+    # dependency definitions.
+  - id: F10-b
+    failure_mode: F10
+    harness: gate-tool
+    gate: G-DEPS
+    tool: deptry
+    # Cazado: DEP001 sobre transitive_only (disponible solo de forma
+    # transitiva, sin declaración en el pyproject del fixture).
+  - id: F12-a
+    failure_mode: F12
+    harness: gate-tool
+    gate: G-SECRET
+    tool: detect-secrets
+    # Cazado: FAIL vía findings no vacíos (AWS Access Key + Secret
+    # Keyword + Base64 High Entropy). El valor se ensambla en runtime; el
+    # fixture requiere git init + add porque detect-secrets enumera
+    # directorios vía git ls-files.
+  - id: F12-b
+    failure_mode: F12
+    harness: gate-tool
+    gate: G-SECRET
+    tool: detect-secrets
+    # Cazado: FAIL vía findings no vacíos (Private Key). El bloque PEM se
+    # ensambla por partes en el builder para no disparar G-SECRET sobre el
+    # propio repositorio.

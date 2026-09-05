@@ -11,7 +11,9 @@ Despachador por arnés (ADR-C-01 §1) sobre la UNIÓN de
 - ``hook``: ejercita ``pre_tool_use`` real (casos F14/F15).
 - ``heuristic``: reconocedores residuales declarados (ADR-C-02). F9-b fue
   redimido en la PR #31 y corre como gate-engine; F11-b en PR-D (ADR-D-02)
-  y corre como gate-tool.
+  y corre como gate-tool. F4-b fue redimido en la PR-F (ADR-F-01) y corre
+  como gate-tool; el feature wct-redteam-residual-001 fija el conteo en
+  cero.
 
 Un caso convertido que el motor NO caza queda en rojo: es un hallazgo del
 instrumento, no se ajusta el fixture hasta que pase (ADR-C-01 §5).
@@ -135,11 +137,6 @@ def _reject(root: Path, checker: str, payload: str) -> bool:
     return resolver is not None and resolver(root, payload)
 
 
-def _reject_testless(_root: Path, payload: str) -> bool:
-    """F4-b: producción sin tests; solo la cobertura-diff real lo expone."""
-    return "production=true" in payload and "tests=false" in payload
-
-
 def _reject_protected_write(root: Path, payload: str) -> bool:
     """F14: escritura en ruta protegida; la bloquea pre_tool_use."""
     request = {"tool_name": "Edit", "tool_input": {"file_path": str(root / payload)}}
@@ -153,7 +150,6 @@ def _reject_forbidden_command(root: Path, payload: str) -> bool:
 
 
 _CHECKERS: dict[str, Callable[[Path, str], bool]] = {
-    "testless": _reject_testless,
     "protected-write": _reject_protected_write,
     "forbidden-command": _reject_forbidden_command,
 }

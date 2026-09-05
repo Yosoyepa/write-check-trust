@@ -14,7 +14,9 @@ def _results(statuses: list[Status]) -> list[GateResult]:
 
 
 def _summary_line(report: str) -> str:
-    return report.splitlines()[-1]
+    # Con SKIPs el resumen honesto añade una línea tras el agregado (O-006):
+    # localizar por contenido, no por posición.
+    return next(line for line in report.splitlines() if "gates:" in line)
 
 
 def test_summary_separates_pass_skip_fail() -> None:

@@ -1,8 +1,9 @@
 """Registro de gates, tiers y orquestación.
 
 Partición fachada (TEST-007): los gates puros de analyzer viven en
-checks.py; aquí quedan el registro, los gates que disparan procesos
-externos y los que los tests parchean por ruta de módulo.
+checks.py y la metadata de capacidades en capabilities.py; aquí quedan el
+registro, los gates que disparan procesos externos y los que los tests
+parchean por ruta de módulo.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ import tempfile
 import time
 
 from tools.wct.config import load_config
+from tools.wct.gate.capabilities import GateInfo, declares, gate_info, stamped
 from tools.wct.gate.checks import (
     COVERAGE_TOTAL_BASELINE,
     _result,
@@ -95,6 +97,9 @@ def dynamic(
     Ciclo de vida: herramienta ausente → ERROR (o SKIP si es optional);
     builder None → FAIL nombrando la clave declarada, nunca un default
     silencioso (ADR-B-01 §3); y la corrida del proceso externo.
+
+    Estampa GateInfo con el ejecutable que YA conoce: la herramienta vive
+    donde se resuelve, no en una tabla paralela (ADR-D-01).
     """
 
     def run(root: Path) -> GateResult:
@@ -115,12 +120,16 @@ def dynamic(
             " ".join(command),
         )
 
-    return run
+    return stamped(run, GateInfo((executable,)))
 
 
-def external(gate_id: str, command: list[str], *, optional: bool = False) -> Gate:
+def external(
+    gate_id: str, command: list[str], *, optional: bool = False, scope: tuple[str, ...] = ()
+) -> Gate:
     """Gate de comando estático: la invocación no depende de thresholds.yaml."""
-    return dynamic(gate_id, command[0], lambda _root: command, optional=optional)
+    return declares(
+        dynamic(gate_id, command[0], lambda _root: command, optional=optional), scope=scope
+    )
 
 
 def gate_coverage_diff(root: Path) -> GateResult:
@@ -248,21 +257,26 @@ def _audited_secrets(root: Path) -> set[tuple[str, str]]:
     }
 
 
+# Rutas que G-SECRET escanea (runner) y declara como scope (REGISTRY):
+# una sola definición para que el comando y el perfil no diverjan.
+SECRET_PATHS = (
+    "src",
+    "tools",
+    "governance",
+    ".claude",
+    "skills",
+    "plugins",
+    ".github",
+    "pyproject.toml",
+    ".pre-commit-config.yaml",
+)
+
+
 def gate_secrets(root: Path) -> GateResult:
     started = time.monotonic()
     if shutil.which("detect-secrets") is None:
         return GateResult("G-SECRET", Status.ERROR, "herramienta ausente: detect-secrets")
-    paths = [
-        "src",
-        "tools",
-        "governance",
-        ".claude",
-        "skills",
-        "plugins",
-        ".github",
-        "pyproject.toml",
-        ".pre-commit-config.yaml",
-    ]
+    paths = list(SECRET_PATHS)
     # governance/generated/ contiene artefactos regenerados por las propias
     # herramientas (p. ej. fingerprints sha256 del manifiesto de mutación):
     # hex de alta entropía por diseño, no secretos. Auditarlos en el baseline
@@ -318,6 +332,8 @@ def gate_docstrings(root: Path) -> GateResult:
 
 
 def alias(gate_id: str, target: Gate) -> Gate:
+    """Envuelve un gate bajo otro id, heredando su capacidad declarada."""
+
     def run(root: Path) -> GateResult:
         result = target(root)
         return GateResult(
@@ -329,25 +345,39 @@ def alias(gate_id: str, target: Gate) -> Gate:
             result.command,
         )
 
-    return run
+    marked = gate_info(target)
+    return stamped(run, marked) if marked else run
 
 
+# Scopes verificados contra los comandos/analizadores reales (SPEC-D-01 paso 0):
+# los external/dynamic citan los args de rutas de su comando; los analizadores
+# puros citan las policy.paths que su motor recorre. Gates de configuración
+# (G-META-*), drift de reglas y orquestadores sin rutas propias (G-SBOM,
+# G-COMMIT-MSG, G-AUDIT, G-COV-DIFF, G-ACCEPT-MUT, G-REDTEAM, G-HOOKS-WIRED)
+# no declaran scope.
 REGISTRY: dict[str, Gate] = {
     "G-META-1": gate_meta_integrity,
     "G-META-2": gate_meta_rules,
     "G-RULES-DRIFT": gate_rules_drift,
-    "G-SUPPRESS": gate_suppressions,
-    "G-DEBT": gate_debt,
-    "G-LINT": external("G-LINT", ["ruff", "check", "--config", "governance/lint/ruff.toml", "."]),
+    "G-SUPPRESS": declares(gate_suppressions, scope=("src", "tests")),
+    "G-DEBT": declares(gate_debt, scope=("src", "tests")),
+    "G-LINT": external(
+        "G-LINT",
+        ["ruff", "check", "--config", "governance/lint/ruff.toml", "."],
+        scope=(".",),
+    ),
     "G-FMT": external(
         "G-FMT",
         ["ruff", "format", "--config", "governance/lint/ruff.toml", "--check", "."],
+        scope=(".",),
     ),
-    "G-TYPE": external("G-TYPE", ["mypy", "tools/wct", "src"]),
+    "G-TYPE": external("G-TYPE", ["mypy", "tools/wct", "src"], scope=("tools/wct", "src")),
     "G-TEST": external(
-        "G-TEST", ["pytest", "-q", "tests/unit", "tests/integration", "-m", "not property"]
+        "G-TEST",
+        ["pytest", "-q", "tests/unit", "tests/integration", "-m", "not property"],
+        scope=("tests/unit", "tests/integration"),
     ),
-    "G-ARCH": external("G-ARCH", ["lint-imports"]),
+    "G-ARCH": external("G-ARCH", ["lint-imports"], scope=("src/example",)),
     "G-DEPS": external(
         "G-DEPS",
         [
@@ -359,63 +389,66 @@ REGISTRY: dict[str, Gate] = {
             "--known-first-party",
             "tools",
         ],
+        scope=("src", "tools"),
     ),
-    "G-DEAD": dynamic("G-DEAD", "vulture", dead_code_command, "dead_code.vulture_min_confidence"),
-    "G-SAST-BANDIT": external("G-SAST-BANDIT", ["bandit", "-q", "-r", "src"]),
+    "G-DEAD": declares(
+        dynamic("G-DEAD", "vulture", dead_code_command, "dead_code.vulture_min_confidence"),
+        scope=("src", "tools/wct"),
+    ),
+    "G-SAST-BANDIT": external("G-SAST-BANDIT", ["bandit", "-q", "-r", "src"], scope=("src",)),
     "G-SAST-SEMGREP": external(
         "G-SAST-SEMGREP",
-        [
-            "semgrep",
-            "--quiet",
-            "--error",
-            "--severity",
-            "ERROR",
-            "--config",
-            "governance/semgrep",
-        ],
+        ["semgrep", "--quiet", "--error", "--severity", "ERROR", "--config", "governance/semgrep"],
         optional=True,
+        scope=(".",),
     ),
-    "G-AUDIT": gate_audit,
-    "G-ARCHMETRICS": gate_archmetrics,
-    "G-DRY": gate_dry,
-    "G-DRY-TPL": gate_dry_tpl,
-    "G-INTROVERT": gate_introvert,
-    "G-MUT-SITES": gate_mutation_sites,
-    "G-ACCEPT": gate_accept,
-    "G-SIZE": gate_size,
-    "G-COGNITIVE": gate_cognitive,
-    "G-LCOM": gate_lcom,
-    "G-WIRE": gate_wire,
-    "G-CRAP": dynamic("G-CRAP", "crap4py", crap_command, "crap.changed_max", optional=True),
-    "G-CC": dynamic("G-CC", "xenon", cognitive_command, "complexity.xenon_max_*", optional=True),
-    "G-COV-TOTAL": dynamic(
-        "G-COV-TOTAL", "pytest", coverage_total_command, COVERAGE_TOTAL_BASELINE
+    "G-AUDIT": declares(gate_audit, tools=("uv", "pip-audit")),
+    "G-ARCHMETRICS": declares(gate_archmetrics, scope=("src/example",)),
+    "G-DRY": declares(gate_dry, scope=("src",)),
+    "G-DRY-TPL": declares(gate_dry_tpl, scope=("src", "tools")),
+    "G-INTROVERT": declares(gate_introvert, scope=("tests",)),
+    "G-MUT-SITES": declares(gate_mutation_sites, scope=("src",)),
+    "G-ACCEPT": declares(gate_accept, scope=("features",)),
+    "G-SIZE": declares(gate_size, scope=("src", "tools")),
+    "G-COGNITIVE": declares(gate_cognitive, scope=("src",)),
+    "G-LCOM": declares(gate_lcom, scope=("src", "tools")),
+    "G-WIRE": declares(gate_wire, scope=("src/example/domain", "src/example/application")),
+    "G-CRAP": declares(
+        dynamic("G-CRAP", "crap4py", crap_command, "crap.changed_max", optional=True),
+        scope=("src",),
     ),
-    "G-COV-DIFF": gate_coverage_diff,
-    "G-DOC": gate_docstrings,
-    "G-SECRET": gate_secrets,
-    "G-PROP": external("G-PROP", ["pytest", "-q", "tests/property"]),
+    "G-CC": declares(
+        dynamic("G-CC", "xenon", cognitive_command, "complexity.xenon_max_*", optional=True),
+        scope=("src",),
+    ),
+    "G-COV-TOTAL": declares(
+        dynamic("G-COV-TOTAL", "pytest", coverage_total_command, COVERAGE_TOTAL_BASELINE),
+        scope=("src", "tools/wct"),
+    ),
+    "G-COV-DIFF": declares(gate_coverage_diff, tools=("diff-cover",)),
+    "G-DOC": declares(gate_docstrings, tools=("interrogate",), scope=("src",)),
+    "G-SECRET": declares(gate_secrets, tools=("detect-secrets",), scope=SECRET_PATHS),
+    "G-PROP": external("G-PROP", ["pytest", "-q", "tests/property"], scope=("tests/property",)),
     "G-TEST-RANDOM": external(
-        "G-TEST-RANDOM", ["pytest", "-q", "--randomly-seed=last"], optional=True
+        "G-TEST-RANDOM", ["pytest", "-q", "--randomly-seed=last"], optional=True, scope=("tests",)
     ),
     # --exit-code 1: sin esa bandera jscpd sale 0 aunque encuentre clones
     # (verificado empíricamente) y el gate sería vacío. CON la bandera es
     # tolerancia cero: cualquier clon a 70+ tokens falla (el "threshold" de
     # .jscpd.json solo afecta el reporte, no el exit — también verificado).
     "G-DRY-TOK": external(
-        "G-DRY-TOK", ["jscpd", "src", "tools", "--exit-code", "1"], optional=True
+        "G-DRY-TOK",
+        ["jscpd", "src", "tools", "--exit-code", "1"],
+        optional=True,
+        scope=("src", "tools"),
     ),
     "G-SBOM": external(
-        "G-SBOM",
-        ["cyclonedx-py", "environment", "--output-file", "build/sbom.json"],
-        optional=True,
+        "G-SBOM", ["cyclonedx-py", "environment", "--output-file", "build/sbom.json"], optional=True
     ),
     "G-COMMIT-MSG": external(
-        "G-COMMIT-MSG",
-        ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"],
-        optional=True,
+        "G-COMMIT-MSG", ["cz", "check", "--commit-msg-file", ".git/COMMIT_EDITMSG"], optional=True
     ),
-    "G-MUT": external("G-MUT", ["mutmut", "run"], optional=True),
+    "G-MUT": external("G-MUT", ["mutmut", "run"], optional=True, scope=("src/example",)),
     "G-ACCEPT-MUT": external("G-ACCEPT-MUT", ["wct", "accept", "mutate"], optional=True),
     "G-REDTEAM": external("G-REDTEAM", ["wct", "selftest", "redteam"]),
 }

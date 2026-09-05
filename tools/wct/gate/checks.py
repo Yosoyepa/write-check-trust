@@ -138,11 +138,24 @@ def coverage_diff_command(root: Path, base: str) -> list[str] | None:
 
 
 def dead_code_command(root: Path) -> list[str] | None:
-    """Invocación de vulture con la confianza declarada (dead_code.vulture_min_confidence)."""
+    """Invocación de vulture con la confianza y whitelist declaradas.
+
+    La whitelist (``dead_code.whitelist``, ADR-D-02) viaja SOLO cuando la
+    clave existe en thresholds.yaml (patrón PR-B: clave ausente → sin ella,
+    sin default silencioso). Se pasa como path posicional porque vulture
+    2.16 no tiene flag ``--whitelist``: los nombres referenciados en un
+    archivo escaneado cuentan como usados. La ruta es relativa al root
+    porque el gate corre con ``cwd=root``.
+    """
     confidence = _declared(root, "dead_code", "vulture_min_confidence")
     if confidence is None:
         return None
-    return ["vulture", "src", "tools/wct", "--min-confidence", str(confidence)]
+    command = ["vulture", "src", "tools/wct"]
+    whitelist = _declared(root, "dead_code", "whitelist")
+    if whitelist is not None:
+        command.append(str(whitelist))
+    command += ["--min-confidence", str(confidence)]
+    return command
 
 
 XENON_FLAGS = ("--max-absolute", "--max-modules", "--max-average")

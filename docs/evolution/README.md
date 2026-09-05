@@ -72,10 +72,16 @@ plan de verificación) antes de implementar nada.
   pares). Primer DoD por unidad de aceptación (feature/workstream/commit/
   revisión) — estándar desde ahora.
 - [PR-C — Red team productivo](plans/PR-C/README.md) (O-002). Estado:
-  escenarios aprobados (2026-09-05), en ejecución. Convierte 22/26
-  reconocedores paralelos en invocaciones a motores/gates reales sobre
-  fixtures aislados, con 5 residuos declarados (ADR-C-02; F9-b redimido en
-  la PR #31) y SKIP visible.
+  **merge #31** — 30 casos = 13 gate-engine · 8 gate-tool · 4 hook ·
+  5 heuristic (F9-b redimido en la misma PR). La ejecución destapó 2
+  escapes reales y 2 atribuciones erróneas del reconocedor paralelo;
+  G-ACCEPT le corrigió el escenario al arquitecto.
+- [PR-D — Perfiles y completitud](plans/PR-D/README.md) (O-006). Estado:
+  autorizado por delegación de arquitecto (2026-09-05), en ejecución.
+  Perfil de capacidades derivado del constructor (herramienta, presencia,
+  scope, tiers), resumen honesto con SKIPs, y tres redenciones: F11-b
+  (vulture 60 + whitelist, sonda = 1 FP), ruff sin --config, artefacto de
+  aceptación con ruta relativa.
 
 ## Límites
 

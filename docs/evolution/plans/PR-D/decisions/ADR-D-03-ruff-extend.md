@@ -42,3 +42,16 @@ ajenos. Es un footgun del propio harness, detectado por el harness.
   ambos sobre el repo (el desnudo hoy falla → TDD rojo primero).
 - pyproject.toml es ruta protegida: viaja en el bless de esta PR (el
   humano autorizó la decisión por delegación 2026-09-05).
+
+## Addendum — el extend es parcial (root-cause de PR-E, 2026-09-05)
+
+El fix cierra el ruleset pero NO los `per-file-ignores`: en modo extend,
+ruff resuelve los paths de un config relativos al DIRECTORIO del archivo
+que lo declara (`governance/lint/tests/**` — no existe), mientras que
+`--config` los resuelve relativos al cwd (matchea). `ruff check .`
+desnudo reporta 622 (S101/PLR2004/etc. en tests); con `--config` pasa.
+Descartado como estructural: patrones `../../` rompen el comando
+autoritativo, y duplicar la tabla en pyproject duplica gobernanza
+inauditable (el ratchet audita solo governance/lint/ruff.toml). Vigente:
+el comando autoritativo del repo SIEMPRE lleva `--config`; el desnudo
+queda como aproximado por-archivo. Candidato a issue upstream.

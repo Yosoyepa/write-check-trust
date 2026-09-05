@@ -124,6 +124,7 @@ architecture:
       - pymongo
       - kafka
       - celery
+      - tkinter          # GUI: aprobado en PR #31 (2026-09-05); redime el residuo F9-b (ADR-C-02 addendum)
   # Módulos ambientalmente inadecuados (engineering.prompt de swarm-forge):
   # abren GUIs, dependen de dispositivos, cuelgan bajo test. Se EXCLUYEN de
   # coverage, mutación, CRAP y DRY. Mantén esta lista mínima.

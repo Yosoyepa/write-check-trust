@@ -130,8 +130,6 @@ mark-parentheses = false
 "tools/wct/dry/analyzer.py" = ["C901", "PLR0912"]
 # TODO(owner=yosoyepa, issue=#12): extraer el veredicto por test del walker.
 "tools/wct/introvert/analyzer.py" = ["C901", "PLR0912", "PLR0915"]
-# TODO(owner=yosoyepa, issue=#12): data-driven de los 30 casos del red team.
-"tools/wct/selftest/redteam.py" = ["C901", "PLR0911", "PLR0912"]
 
 [format]
 quote-style = "double"

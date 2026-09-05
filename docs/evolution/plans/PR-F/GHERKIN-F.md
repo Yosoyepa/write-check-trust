@@ -1,15 +1,24 @@
 # PR-F — Gherkin
 
+> **Corrección del arquitecto (2026-09-05):** el bloque original de este
+> archivo traía la narrativa como texto libre bajo `Feature:` — Gherkin
+> estándar válido, pero que `parse_feature` (pipeline.py:24-72) no soporta:
+> G-ACCEPT lo reprobó en `feature:4`. La forma aterrizada convierte la
+> narrativa a comentarios `#` (texto íntegro), el convenio del repo desde
+> PR-D. La limitación del parser quedó registrada como deuda con trazabilidad
+> (issue #35 + TODO en pipeline.py, MIN-004); soportar narrativa es trabajo
+> separado con TDD propio.
+
 `features/wct-redteam-residual-001.feature` se reemplaza ÍNTEGRO por:
 
 ```gherkin
 # wct-redteam-residual-001
 Feature: El red team no declara residuos
 
-  F4-b, el último residuo (ADR-C-02), fue redimido en la PR-F (ADR-F-01):
-  la cobertura-diff corre productiva. Este feature es el ratchet — un caso
-  futuro con arnés heuristic lo pone en rojo y obliga a declararlo
-  consciente, con su razón y su ruta de redención.
+  # F4-b, el último residuo (ADR-C-02), fue redimido en la PR-F (ADR-F-01):
+  # la cobertura-diff corre productiva. Este feature es el ratchet — un caso
+  # futuro con arnés heuristic lo pone en rojo y obliga a declararlo
+  # consciente, con su razón y su ruta de redención.
 
   Scenario Outline: El residuo redimido corre el motor productivo
     Given el caso <caso> con producción nueva y cero tests en el fixture git

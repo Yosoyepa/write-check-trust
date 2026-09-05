@@ -10,8 +10,31 @@
 | Tier fast | 7/7 | `uv run wct gate --tier fast` |
 | Tier commit | G-META-1 rojo por diseño (rutas protegidas tocadas); resto verde | `uv run wct gate --tier commit` |
 | Aceptación | parse limpio + ir-dry sin colisiones de forma (steps nuevos únicos) | `uv run wct accept parse` + `ir-dry` |
-| Mutación delta | 0 sobrevivientes / 0 sin test | `uv run wct mutate` |
+| Mutación delta | "No hay funciones cambiadas respecto al manifest" — correcto POR ALCANCE: `paths.source: [src]` (policy.yaml:50) y este PR no toca `src/` | `uv run wct mutate run` |
 | Ruff | limpio | `ruff check --config governance/lint/ruff.toml` |
+
+## Resultados reales (arquitecto, rama fix/redteam-diffcover @ f7df214)
+
+- `uv run pytest -q` → **300 passed** in 48.19s.
+- `uv run pytest --collect-only -q` → 300 tests collected, EXIT=0.
+- `uv run wct selftest redteam` → **`30/30 · 13 gate-engine · 13 gate-tool · 4 hook · 0 heuristic (declarados) · 0 SKIP`**, EXIT=0.
+- `uv run wct gate --tier fast` → **7/7 PASS**, EXIT=0.
+- `uv run wct gate --tier commit` → **19 PASS · 1 FAIL = G-META-1** (`modificado: quality/redteam/cases-tool.yaml`) — rojo por diseño hasta el bless humano.
+- `uv run wct accept parse features/wct-redteam-residual-001.feature` → 3 escenarios, EXIT=0.
+- `uv run wct accept ir-dry features/wct-redteam-residual-001.feature` → `{"findings": [], "count": 0}`, EXIT=0.
+
+## Correcciones del arquitecto (2026-09-05)
+
+1. **GHERKIN-F.md**: el bloque original traía narrativa como texto libre bajo
+   `Feature:` — Gherkin estándar, pero `parse_feature` no lo soporta (G-ACCEPT
+   FAIL `feature:4`). Aterrizó como comentarios `#` (texto íntegro);
+   GHERKIN-F.md corregido a la forma aterrizada. La limitación quedó
+   registrada con trazabilidad (issue #35 + TODO en pipeline.py, MIN-004).
+2. **Observación de alcance (reportada, no corregida)**: el diferencial de
+   mutación por función (`function_hashes`/`scan`) ya existe — la condición
+   bloqueante de ADR-E-01 para mutar el harness. Extender el alcance a
+   `tools/` es un cambio de `policy.yaml` (SEC-005, autorización explícita)
+   con medición de presupuesto propia: candidato a PR futura.
 
 ## Predicciones que refutarían el diseño
 

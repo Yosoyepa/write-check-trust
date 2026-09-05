@@ -81,7 +81,13 @@ def parser() -> argparse.ArgumentParser:
     introvert.add_argument("paths", nargs="*")
     introvert.add_argument("--json", action="store_true")
 
-    mutate = sub.add_parser("mutate", help="differential mutation workflow")
+    mutate = sub.add_parser(
+        "mutate",
+        help=(
+            "differential mutation workflow; run mide el delta y clasifica el inventario "
+            "del motor (exit 0 PASS · 1 FAIL · 2 ERROR con diagnóstico)"
+        ),
+    )
     mutate.add_argument("action", choices=["scan", "run", "update-manifest"])
     mutate.add_argument("--approved-by", help="solo humanos: bendice el lock en el mismo paso")
     mutate.add_argument("--reason", help="cita la aprobación (URL o #N de PR/issue)")

@@ -57,3 +57,70 @@ diseño** con autorización diagnóstica explícita del prompt de REVIEW-G1
 `build/tmp/g1probe/` NO se recrearon ni modificaron (preservados como
 evidencia; REVIEW-G1 los leyó en modo lectura). Directorio único nuevo:
 `build/tmp/g1a-freshness/`.
+
+## Verificación del coder (2026-09-05)
+
+Implementación de G1a (commit de implementación, rama
+`fix/g1a-mutation-verdict`): adaptador `tools/wct/mutate/verdict.py`
++ delegación en `gate/mutation.py` + `engine.run` con exit semántico +
+diagnóstico del CLI. Entorno idéntico al de arriba (mutmut 3.7.0, Python
+3.12.13/uv). Todas las corridas sobre fixtures en `tmp_path` de pytest; el
+`mutants/**` del repo NO se tocó (política de repetición = G1b). Salidas
+íntegras en `build/tmp/g1a-*.txt` (efímeras; aquí las clave).
+
+### TDD — rojo observado antes de implementar [O]
+
+- `test_mutation_verdict.py`: `ModuleNotFoundError: No module named
+  'tools.wct.mutate.verdict'` (clasificación inexistente).
+- `test_clean_tree_cites_inventory`: `AssertionError: assert 'clasificación
+  del motor' in 'cero mutantes sobrevivientes'` — PASS sin inventario citado
+  (RG01).
+- `test_timeout_states_are_instrument_error` y
+  `test_injected_nonterminal_states_error`: `assert <Status.PASS: 'PASS'> is
+  <Status.ERROR: 'ERROR'>` — el PASS falso de P8/P7-B, ahora rojo (RG03/M04b).
+- `test_run_failure_blocks_without_product_label`: `assert 'ejecución no
+  completada' in 'failed to collect stats. runner returned 5'` — FAIL con
+  otro texto (D2).
+- `test_cli_subprocess_delta_reports_ids`: `assert 0 == 1` — el CLI heredaba
+  el exit 0 de `mutmut run` con sobrevivientes y no imprimía identidades
+  (RG09).
+- `test_cli_delta_zero_informs_without_quality_claim`: ROJO pese a que la
+  tabla del SPEC lo predecía "—" — el mensaje viejo era "No hay funciones
+  cambiadas respecto al manifest." y el contrato RG08 ("sin trabajo
+  diferencial") es nuevo. Desviación reportada en el handoff.
+
+### Batería de verificación (salida real) [O]
+
+- `uv run pytest -q` → `319 passed` ×3 (ver presupuesto abajo).
+- `uv run pytest --collect-only -q` → `319 tests collected in 0.39s`.
+- `uv run wct accept parse features/wct-mutation-verdict-001.feature` →
+  exit 0, IR schema_version 1 (feature intacta).
+- `uv run wct accept ir-dry features/wct-mutation-verdict-001.feature` →
+  `{"findings": [], "count": 0}` exit 0.
+- `uv run wct selftest redteam` → `30/30 rechazados · 13 gate-engine · 13
+  gate-tool · 4 hook · 0 heuristic (declarados) · 0 SKIP` — SIN CAMBIOS
+  (F2-a/F2-b/F5-b siguen cazados: FAIL preservado por ADR-G1-01 fila 9).
+- `uv run wct gate --tier fast` → `7 gates: 7 PASS · 0 SKIP · 0 FAIL/ERROR`.
+- `uv run wct gate --tier commit` → `20 gates: 19 PASS · 0 SKIP · 1
+  FAIL/ERROR`; el único rojo es `G-META-1 FAIL — modificado:
+  tools/wct/cli.py` (esperado por diseño: la frontera toca `tools/wct/**`
+  y el bless es humano).
+- `ruff format`/`ruff check --fix` (`--config governance/lint/ruff.toml`)
+  sobre la frontera → `7 files left unchanged` / `All checks passed!`.
+
+### Presupuesto exploratorio RG12 (muestra pequeña, declarada como tal)
+
+- Suite base (pre-cambio): 300 passed en **44.89 / 46.65 / 47.44 s**
+  (mediana 46.65, rango 2.55).
+- Suite nueva: 319 passed en **82.04 / 86.50 / 87.32 s** (mediana 86.50,
+  rango 5.28). Delta mediana ≈ **+40 s**, dominado por el control timeout
+  REAL: `test_timeout_states_are_instrument_error` 18.66 s (patrón P8),
+  `test_injected_nonterminal_states_error` 5.81 s (dos pasadas del motor:
+  corrida sana + cache), `test_cli_subprocess_delta_reports_ids` 3.95 s
+  (subprocess `uv run` real).
+- Costo de la llamada extra `mutmut --version` [O]: 0.66 s bajo `uv run`
+  (salida `mutmut, version 3.7.0`), 1 llamada por veredicto medido.
+- `wct gate --tier full` antes/después: **NO medido** — G-MUT en full
+  ejecutaría `mutmut run` sobre el repo y re-escribiría `mutants/**`,
+  bloqueado por ADR-G1-02 (política de repetición = G1b). El presupuesto
+  DEFINITIVO sigue siendo medición y aprobación humana en G1b.

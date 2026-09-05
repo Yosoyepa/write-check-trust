@@ -5,14 +5,20 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import subprocess
 from typing import Any
 
 from tools.wct.config import load_config
 from tools.wct.integrity.engine import bless
+from tools.wct.model import Status
+from tools.wct.mutate.verdict import mutation_verdict, render_verdict
 
 MANIFEST = Path("governance/generated/mutation-manifest.json")
 MANIFEST_SCHEMA = 2
+
+# El CLI mide con la MISMA política del gate (ADR-G1-03): exit semántico
+# 0/1/2 para PASS/FAIL/ERROR; SKIP no existe en esta vía (la herramienta
+# ausente ya abortó antes con error explícito).
+EXIT_CODES = {Status.PASS: 0, Status.FAIL: 1, Status.ERROR: 2}
 
 
 def _fingerprint(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
@@ -167,12 +173,22 @@ def update_manifest(root: Path, *, approved_by: str = "", reason: str = "") -> P
 
 
 def run(root: Path) -> int:
+    """Mide el delta diferencial y clasifica el inventario del motor.
+
+    Delta cero → mensaje informativo y exit 0 (RG08: "sin trabajo
+    diferencial" — no es una medición de calidad). Delta > 0 → adaptador
+    ``mutation_verdict`` con la MISMA política del gate (ADR-G1-03):
+    imprime el diagnóstico (estado/fase/conteos/identidades) y retorna el
+    exit semántico 0/1/2.
+    """
     report = scan(root)
     if report["over_limit"]:
         raise ValueError(f"más de 100 mutation sites: {', '.join(report['over_limit'])}")
     if report["changed_functions"] == 0:
-        print("No hay funciones cambiadas respecto al manifest.")
+        print("sin trabajo diferencial: ninguna función cambió respecto al manifest")
         return 0
     if shutil.which("mutmut") is None:
         raise RuntimeError("mutmut no está instalado; ejecuta `uv sync --group quality`")
-    return subprocess.run(["mutmut", "run"], cwd=root, check=False).returncode
+    verdict = mutation_verdict(root)
+    print(render_verdict(verdict))
+    return EXIT_CODES[verdict.status]

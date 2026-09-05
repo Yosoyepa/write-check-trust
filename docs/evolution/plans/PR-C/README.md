@@ -44,6 +44,13 @@ declarado** — nunca disfrazado.
 **Dentro**: framework de arneses + 22 conversiones (10 engine + 12 tool) +
 relabeling de residuos + resumen por arnés + SKIP visible + tests.
 
+**Resultado de la ejecución** (addendum de ADR-C-02): 30 casos = 12
+gate-engine · 8 gate-tool · 4 hook · 6 heuristic (declarados). F8-a/b
+migraron a engine (el catcher real del framework-leak por import es
+archmetrics, no semgrep); F9-b y F11-b son escapes reales del repo
+declarados como residuos con redención de 1 línea pendiente de
+autorización humana.
+
 **Fuera**: convertir los 4 residuos (exigen corridas de mutmut/diff-cover —
 pertenecen al PR de mutación del harness y a O-004); añadir casos nuevos a
 F1–F15; tocar los 4 casos hook (ya productivos); paralelizar la ejecución.

@@ -44,3 +44,31 @@ diferencia de que ahora el reporte **dice qué son**.
   (4) — honesto y auditable, alineado con la separación PASS/SKIP de A1.
 - La deuda tiene dueño y ruta (PR de mutación del harness); no es un TODO
   anónimo.
+
+## Addendum — lo que destapó la ejecución (2026-09-05)
+
+La conversión productiva corrigió la tabla original en tres puntos:
+
+- **F8-a/F8-b no eran falsos negativos**: el catcher productivo del
+  framework-leak por IMPORT es `archmetrics.analyzer.analyze`
+  (`forbidden_external` por capa, `analyzer.py:169-173`) — G-ARCHMETRICS,
+  no G-SAST-SEMGREP (cuyas reglas cubren filtración de tipos y uso, no
+  imports). Migrados a gate-engine con policy espejo de la real
+  (sqlalchemy/fastapi están en las listas del repo). El reconocedor
+  paralelo los tenía mal atribuidos desde el inicio.
+- **F9-b es un escape real del repo**: `application:tkinter.Tk()` hoy pasa
+  todos los gates — import-linter no ve externos sin
+  `include_external_packages`, semgrep no tiene regla tkinter y la policy
+  no lo lista en `forbidden_external.application`. Residuo declarado;
+  redención: 1 línea en `governance/policy.yaml` (autorización humana) y
+  convertir a gate-engine.
+- **F11-b es un escape real del repo**: vulture reporta constante muerta a
+  confianza 60, pero el umbral declarado es 80
+  (`thresholds.yaml → dead_code.vulture_min_confidence`). Residuo
+  declarado; redención: decisión humana del umbral (bajar a 60 acepta el
+  ruido, o whitelist) y convertir a gate-tool.
+
+El conteo pasa de 4 a 6 residuos: 30 casos = **12 gate-engine · 8 gate-tool
+· 4 hook · 6 heuristic (declarados)**. Los dos escapes nuevos son cambios
+de 1 línea en `governance/**` que requieren autorización humana explícita
+(SEC-005) y pueden ir en el mismo bless.

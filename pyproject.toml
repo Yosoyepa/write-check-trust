@@ -48,6 +48,14 @@ quality = [
 [tool.hatch.build.targets.wheel]
 packages = ["tools", "src/example"]
 
+# ADR-D-03 (2026-09-05): ruff invocado SIN --config extiende el perfil
+# viviente del repo. El comando autoritativo (G-LINT) sigue siendo
+# `ruff check --config governance/lint/ruff.toml`; `extend` solo aporta la
+# base cuando no se pasa --config explícito — el footgun del handoff de
+# PR-C (I001 falso con ruleset distinto) queda cerrado.
+[tool.ruff]
+extend = "governance/lint/ruff.toml"
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
 testpaths = ["tests"]

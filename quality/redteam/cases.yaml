@@ -6,10 +6,6 @@
 # (motores) y cases-tool.yaml (funciones de gate).
 schema_version: 1
 cases:
-  # Residuo (ADR-C-02): mutmut real en fixture src-sin-tests cuesta minutos por
-  # corrida y acopla el caso a la selección de tests del fixture. Redención: PR
-  # de mutación del harness (backlog A2), que planta src sin tests y mide real.
-  - {id: F2-a, failure_mode: F2, gate: G-MUT, harness: heuristic, checker: testless, payload: "production=true;tests=false"}
   # Residuo (ADR-C-02): un test con valor hardcodeado PASA pytest por diseño;
   # solo la mutación lo expone (el mutante cambia el valor y el test sigue
   # verde). Redención: PR de mutación del harness (backlog A2).

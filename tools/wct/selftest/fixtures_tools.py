@@ -23,6 +23,14 @@ grupo quality antes de escribir este archivo):
 - G-SECRET (``gate_secrets`` → detect-secrets): pasa una lista fija de
   caminos; los directorios se enumeran vía ``git ls-files``, así que el
   fixture lleva su propio ``git init`` + ``git add``.
+- G-MUT (``external`` → ``mutmut``): corre ``mutmut run`` con cwd=fixture;
+  el pyproject del fixture declara su PROPIO ``[tool.mutmut]`` con
+  ``source_paths=["src"]``. mutmut copia el árbol a ``mutants/``, inserta
+  ``mutants/src`` al frente de sys.path y corre pytest desde ahí: los tests
+  del fixture importan con imports totalmente calificados
+  (``from victim.mod import ...``) y NO hay conftest que inyecte sys.path
+  (mutmut lo reporta como asociación rota). Receta medida en el paso 0.2 de
+  PR-E contra mutmut 3.7.0.
 
 Los valores con forma de credencial se ensamblan en runtime (nunca como
 literal contiguo en este archivo) para que G-SECRET del propio repositorio
@@ -203,6 +211,12 @@ rules:
 # pyproject mínimo que deptry exige en el root del fixture (G-DEPS).
 DEPS_PYPROJECT = (
     '[project]\nname = "victim"\nversion = "0.0.0"\nrequires-python = ">=3.11"\ndependencies = []\n'
+)
+
+# pyproject del fixture de mutación (G-MUT): alcance propio, sin selección de
+# tests porque el adversario F2-a no tiene ninguno (receta del paso 0.2).
+MUTMUT_PYPROJECT = (
+    '[project]\nname = "victim"\nversion = "0.0.0"\n\n[tool.mutmut]\nsource_paths = ["src"]\n'
 )
 
 # Camino base que gate_secrets pasa a detect-secrets (todos deben existir).
@@ -391,8 +405,31 @@ def f12_b(tmp_path: Path) -> Path:
     return _git_track(root)
 
 
+def f2_a(tmp_path: Path) -> Path:
+    """F2-a: producción real y NINGÚN test — nada ejercita los mutantes.
+
+    Con un árbol sin tests, pytest colecciona nada (exit 5) y mutmut aborta
+    en la colecta de stats con exit 1 ANTES de emitir un solo veredicto: el
+    gate productivo se niega a aprobar producción sin tests. Medido contra
+    mutmut 3.7.0 sin pipes (matriz del paso 0.1 de PR-E): todos-cazados →
+    exit 0; sobrevivientes → exit 0 (hallazgo, bloquea F2-b/F5-b); sin
+    tests → exit 1.
+    """
+    return _plant(
+        tmp_path,
+        {
+            "pyproject.toml": MUTMUT_PYPROJECT,
+            "src/victim/__init__.py": "",
+            "src/victim/calc.py": (
+                "def add(a, b):\n    return a + b\n\n\ndef mul(a, b):\n    return a * b\n"
+            ),
+        },
+    )
+
+
 BUILDERS: dict[str, Builder] = {
     "F1-b": f1_b,
+    "F2-a": f2_a,
     "F6-a": f6_a,
     "F9-a": f9_a,
     "F10-a": f10_a,

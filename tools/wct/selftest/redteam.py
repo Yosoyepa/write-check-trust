@@ -136,7 +136,7 @@ def _reject(root: Path, checker: str, payload: str) -> bool:
 
 
 def _reject_testless(_root: Path, payload: str) -> bool:
-    """F2-a/F4-b: producción sin tests; solo la mutación real lo expone."""
+    """F4-b: producción sin tests; solo la mutación/cobertura real lo expone."""
     return "production=true" in payload and "tests=false" in payload
 
 

@@ -242,3 +242,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #34: PR-E mutacion real — G-MUT verifica sobrevivientes, redime F2-a/F2-b/F5-b, G-MUT al tier full (plan docs/evolution/plans/PR-E)
 - Commit: 7c6ae26c45f96d12418fde72e822bc38138e6269
+
+## 2026-09-05T16:41:19.095566+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #36: redención F4-b, red team sin residuos
+- Commit: 95671b38278b9f416b7f5d05678f723fbcd7f406

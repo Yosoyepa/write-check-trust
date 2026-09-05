@@ -6,23 +6,10 @@
 # (motores) y cases-tool.yaml (funciones de gate).
 schema_version: 1
 cases:
-  # Residuo (ADR-C-02; bloqueo medido en PR-E): un test con valor hardcodeado
-  # PASA pytest por diseño; solo la mutación lo expone (el mutante cambia el
-  # valor y el test sigue verde). La redención con el gate actual es
-  # IMPOSIBLE: mutmut 3.7.0 sale 0 aunque sobrevivan mutantes (matriz del
-  # paso 0.1 de PR-E, sin pipes), así que G-MUT aprueba el fixture en falso.
-  # Exige cambio de contrato del G-MUT (runner), no del fixture.
-  - {id: F2-b, failure_mode: F2, gate: G-TEST, harness: heuristic, checker: hardcoded, payload: "return 42 # expected fixture"}
   # Residuo (ADR-C-02): diff-cover exige fixture git con rama base y diff real;
   # factible pero frágil. Redención: candidato a PR-C2 pequeño si la demanda lo
   # justifica; hoy la cobertura-diff se califica de facto en cada PR del repo.
   - {id: F4-b, failure_mode: F4, gate: G-COV-DIFF, harness: heuristic, checker: testless, payload: "production=true;tests=false"}
-  # Residuo (ADR-C-02; bloqueo medido en PR-E): "survived>=1" exige que la
-  # corrida real de mutmut falle ante sobrevivientes, y mutmut 3.7.0 sale 0
-  # aunque sobrevivan (matriz del paso 0.1 de PR-E, sin pipes). Misma
-  # condición que F2-b: la redención exige cambiar el contrato de salida del
-  # G-MUT (runner), no el fixture.
-  - {id: F5-b, failure_mode: F5, gate: G-MUT, harness: heuristic, checker: survivor, payload: "survived=1"}
   - {id: F14-a, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: "governance/thresholds.yaml"}
   - {id: F14-b, failure_mode: F14, gate: G-META-1, harness: hook, checker: protected-write, payload: ".github/workflows/quality.yml"}
   - {id: F15-a, failure_mode: F15, gate: G-HOOKS-WIRED, harness: hook, checker: forbidden-command, payload: "git commit --no-verify"}

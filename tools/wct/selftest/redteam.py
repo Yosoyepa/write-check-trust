@@ -136,18 +136,8 @@ def _reject(root: Path, checker: str, payload: str) -> bool:
 
 
 def _reject_testless(_root: Path, payload: str) -> bool:
-    """F4-b: producción sin tests; solo la mutación/cobertura real lo expone."""
+    """F4-b: producción sin tests; solo la cobertura-diff real lo expone."""
     return "production=true" in payload and "tests=false" in payload
-
-
-def _reject_hardcoded(_root: Path, payload: str) -> bool:
-    """F2-b: valor hardcodeado; pytest lo aprueba por diseño."""
-    return "expected fixture" in payload
-
-
-def _reject_survivor(_root: Path, payload: str) -> bool:
-    """F5-b: mutante superviviente, output de una corrida inexistente."""
-    return int(payload.split("=", 1)[1]) > 0
 
 
 def _reject_protected_write(root: Path, payload: str) -> bool:
@@ -164,8 +154,6 @@ def _reject_forbidden_command(root: Path, payload: str) -> bool:
 
 _CHECKERS: dict[str, Callable[[Path, str], bool]] = {
     "testless": _reject_testless,
-    "hardcoded": _reject_hardcoded,
-    "survivor": _reject_survivor,
     "protected-write": _reject_protected_write,
     "forbidden-command": _reject_forbidden_command,
 }

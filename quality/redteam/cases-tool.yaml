@@ -103,3 +103,22 @@ cases:
     # colectar stats sobre un árbol sin tests ("failed to collect stats.
     # runner returned 5") y aborta con exit 1 — el gate productivo se niega
     # a aprobar producción sin tests (medido sin pipes, mutmut 3.7.0).
+  - id: F2-b
+    failure_mode: F2
+    harness: gate-tool
+    gate: G-MUT
+    tool: mutmut
+    # Redimido (ruling PR-E): EL caso demostración. El test solo asierte el
+    # camino vacío (total([]) == 0 sobre sum(items) * 1.0): PASA, pero los
+    # mutantes del camino no ejercido SOBREVIVEN y gate_mutation los lee de
+    # "mutmut results" — el gate falla listándolos. Solo la mutación expone
+    # que el test es una constante.
+  - id: F5-b
+    failure_mode: F5
+    harness: gate-tool
+    gate: G-MUT
+    tool: mutmut
+    # Redimido (ruling PR-E): test débil por cobertura parcial de ramas —
+    # solo el camino intermedio de clamp se ejercita y los mutantes de las
+    # comparaciones (< → <=, > → >=) sobreviven. Sobreviviente distinto del
+    # de F2-b; el gate los lista igual.

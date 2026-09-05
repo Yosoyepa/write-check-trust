@@ -22,6 +22,12 @@ def text_report(results: Sequence[GateResult], *, quiet: bool = False) -> str:
     skipped = sum(result.status is Status.SKIP for result in results)
     failed = len(results) - passed - skipped
     lines.append(f"\n{len(results)} gates: {passed} PASS · {skipped} SKIP · {failed} FAIL/ERROR")
+    if skipped > 0:
+        # Resumen honesto (O-006): un SKIP es una capacidad no verificada,
+        # no un PASS silencioso; la línea remite al perfil del report.
+        lines.append(
+            f"capacidades no verificadas: {skipped} — wct report muestra herramientas ausentes"
+        )
     return "\n".join(lines)
 
 

@@ -16,8 +16,8 @@
 |---|---|---|
 | Suite | `uv run pytest -q` | 268 base + nuevos, 0 failed |
 | Red team | `uv run wct selftest redteam` | 30/30 · 13 engine · 9 tool · 4 hook · 4 heuristic · 0 SKIP |
-| vulture neto | `uv run vulture src tools/wct --min-confidence 60 --whitelist governance/lint/vulture_whitelist.py` | 0 hallazgos, exit 0 |
-| Ratchet | `uv run wct ratchet check` | sin cambios de baseline |
+| vulture neto | `uv run vulture src tools/wct governance/lint/vulture_whitelist.py --min-confidence 60` (whitelist como path posicional — vulture 2.16 no tiene flag) | 0 hallazgos, exit 0 |
+| Ratchet | `uv run wct ratchet check` | solo `dry-template-clusters` (hallazgo preexistente, ver ANALYSIS §5): registro humano en el bless |
 | Report | `uv run wct report` | sección `capabilities` con presencia/scope/tiers |
 | Tier fast | `uv run wct gate --tier fast` | 7/7 |
 | Tier commit | `uv run wct gate --tier commit` | solo G-META-1 rojo (pre-bless) |
@@ -26,6 +26,7 @@
 | Colección | `uv run pytest --collect-only -q` | sin errores |
 | Lint dual | ruff con y sin `--config` | ambos limpios |
 | Runtime | delta del tier fast vs main | sin regresión (>+1s = hallazgo) |
+| Tier full | `uv run wct gate --tier full` | G-META-1/G-HOOKS-WIRED (bless) + G-DRY-TPL (hallazgo preexistente §5) y NADA más |
 
 ## Predicciones falsables
 
@@ -45,6 +46,8 @@
 git checkout fix/capability-profiles
 uv run wct mutate update-manifest --approved-by "yosoyepa" \
   --reason "aprobado en PR #N: PR-D perfiles y completitud + redenciones (plan docs/evolution/plans/PR-D)"
+uv run wct ratchet record --approved-by "yosoyepa" --metric dry-template-clusters \
+  --reason "aprobado en PR #N: registra 18 clusters (deuda preexistente 16 en main desde 2026-08-23 + 2 de fixtures PR-D); deduplicacion archivada como PR propio"
 git add -A && git commit -m "chore: bless PR-D capability profiles (PR #N)" && git push
 ```
 

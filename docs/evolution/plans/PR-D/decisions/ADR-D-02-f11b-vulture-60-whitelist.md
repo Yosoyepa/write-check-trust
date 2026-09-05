@@ -11,8 +11,13 @@ Contexto: [ANALYSIS.md](../ANALYSIS.md) §1 "sonda vulture@60".
 exactamente una entrada (`abstract_symbols`, el falso positivo del
 dataclass consumido vía `asdict()`). La clave nueva
 `dead_code.whitelist` en thresholds.yaml nombra el archivo; el comando
-del gate añade `--whitelist` solo cuando la clave existe (patrón PR-B:
-config declarada, ausencia nombrada). F11-b se convierte a gate-tool con
+del gate añade el archivo whitelist como path posicional solo cuando la
+clave existe (patrón PR-B: config declarada, ausencia nombrada).
+
+> Corrección fechada (2026-09-05, ejecución): vulture 2.16 NO tiene flag
+> `--whitelist` (removido aguas arriba); la forma canónica es el archivo
+> como path posicional del comando — los nombres referenciados en un
+> archivo escaneado cuentan como usados. El mecanismo PR-B no cambia. F11-b se convierte a gate-tool con
 fixture que declara confianza 60 y planta una constante muerta.
 
 ## Evidencia que decide

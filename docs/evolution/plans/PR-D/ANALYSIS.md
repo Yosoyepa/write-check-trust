@@ -83,3 +83,14 @@ Cuatro commits independientes (perfil, resumen, redenciones, artefacto);
 cada uno revertible por separado. Sin cambios de umbrales más allá de
 `dead_code.vulture_min_confidence` (80→60 documentado en ADR-D-02) y una
 clave nueva `dead_code.whitelist`.
+
+## 5. Hallazgo preexistente (destapado por la verificación de D2, 2026-09-05)
+
+`wct ratchet check` sobre main limpio (`87c562c`): `dry-template-clusters:
+actual=16, baseline=9` — la baseline se sembró el 2026-08-23 y los clones
+de plantilla en `tools/wct` crecieron (β-1→PR-C) sin que nadie corriera
+el tier full, único donde vive G-DRY-TPL (`runner.py:477`). Ningún tier de
+CI lo ejecuta: el rojo era invisible. Disposición: registrar la realidad
+con `ratchet record` humano en el bless de esta PR (razón citando la
+deuda), archivar la deduplicación como PR propio, y esta PR añade el tier
+full a su matriz de verificación para que no vuelva a esconderse.

@@ -109,6 +109,11 @@ def _entries() -> dict[str, dict[str, object]]:
     return {str(item["gate"]): item for item in section}
 
 
+def _entry_of(section: list[dict[str, object]], gate_id: str) -> dict[str, object]:
+    """Entrada de un gate dentro de una sección capabilities ya calculada."""
+    return next(item for item in section if item["gate"] == gate_id)
+
+
 def _results(statuses: list[Status]) -> list[GateResult]:
     return [
         GateResult(f"G-{index:02d}", status, "resumen de prueba")
@@ -166,7 +171,8 @@ def test_capabilities_report_tool_presence(
 
 def test_capabilities_presence_with_real_which() -> None:
     """Sin falsear nada, pytest está presente: lo está ejecutando este test."""
-    assert _entries()["G-TEST"]["present"] is True
+    entry = _entry_of(overview(REPO)["capabilities"], "G-TEST")
+    assert entry["present"] is True
 
 
 def test_presence_requires_every_tool_of_the_gate(
@@ -177,12 +183,13 @@ def test_presence_requires_every_tool_of_the_gate(
         "tools.wct.report.overview.shutil.which",
         lambda executable: "/usr/bin/uv" if executable == "uv" else None,
     )
-    assert _entries()["G-AUDIT"]["present"] is False
+    entry = _entry_of(overview(REPO)["capabilities"], "G-AUDIT")
+    assert entry["present"] is False
 
 
 def test_gates_without_tool_are_present_by_definition() -> None:
     """Gates sin herramienta externa: tools vacías y present=true."""
-    entry = _entries()["G-INTROVERT"]
+    entry = _entry_of(overview(REPO)["capabilities"], "G-INTROVERT")
     assert entry["tools"] == []
     assert entry["present"] is True
 

@@ -94,3 +94,12 @@ cases:
     # Cazado: FAIL vía findings no vacíos (Private Key). El bloque PEM se
     # ensambla por partes en el builder para no disparar G-SECRET sobre el
     # propio repositorio.
+  - id: F2-a
+    failure_mode: F2
+    harness: gate-tool
+    gate: G-MUT
+    tool: mutmut
+    # Redimido (PR-E, ADR-E-01): src real y NINGÚN test. mutmut no puede
+    # colectar stats sobre un árbol sin tests ("failed to collect stats.
+    # runner returned 5") y aborta con exit 1 — el gate productivo se niega
+    # a aprobar producción sin tests (medido sin pipes, mutmut 3.7.0).

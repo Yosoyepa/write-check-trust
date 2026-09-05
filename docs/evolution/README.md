@@ -77,11 +77,16 @@ plan de verificación) antes de implementar nada.
   escapes reales y 2 atribuciones erróneas del reconocedor paralelo;
   G-ACCEPT le corrigió el escenario al arquitecto.
 - [PR-D — Perfiles y completitud](plans/PR-D/README.md) (O-006). Estado:
-  autorizado por delegación de arquitecto (2026-09-05), en ejecución.
-  Perfil de capacidades derivado del constructor (herramienta, presencia,
-  scope, tiers), resumen honesto con SKIPs, y tres redenciones: F11-b
-  (vulture 60 + whitelist, sonda = 1 FP), ruff sin --config, artefacto de
-  aceptación con ruta relativa.
+  **merge #32** — perfil de capacidades (47 gates, 35 scopes verificados),
+  resumen honesto con SKIPs, F11-b redimido (vulture 60 + whitelist),
+  ruff extend y artefacto de aceptación reproducible. La cadena del bless
+  destapó la trampa de orden y el falso positivo de entropía en baselines
+  (excluidos por clase en G-SECRET).
+- [PR-E — Mutación real](plans/PR-E/README.md). Estado: autorizado por
+  delegación vigente (2026-09-05), en ejecución. Redime F2-a/F2-b/F5-b
+  con corridas reales de mutmut sobre fixtures; G-MUT entra al tier full
+  (1.9s medidos); wholesale al harness rechazado con números (4.235
+  sitios / 16 archivos / ≈21h).
 
 ## Límites
 

@@ -130,24 +130,54 @@ def _mode_gaps(cases: list[dict[str, Any]], missing: list[str]) -> list[str]:
 def _reject(root: Path, checker: str, payload: str) -> bool:
     """Reconocedor residual: heurísticas declaradas y casos hook.
 
-    Sirve a los 5 casos heuristic declarados (ADR-C-02 y su addendum; F9-b
-    fue redimido en la PR #31 y ya corre como gate-engine) y a los 4 hook.
+    Despacho por tabla: cada checker declarado (ADR-C-02 y su addendum; F9-b
+    fue redimido en la PR #31 y ya corre como gate-engine) es una función
+    pequeña; un checker sin entrada en la tabla no rechaza nada.
     """
-    if checker == "testless":
-        return "production=true" in payload and "tests=false" in payload
-    if checker == "hardcoded":
-        return "expected fixture" in payload
-    if checker == "survivor":
-        return int(payload.split("=", 1)[1]) > 0
-    if checker == "unused":
-        return bool(UNUSED.search(payload))
-    if checker == "protected-write":
-        request = {"tool_name": "Edit", "tool_input": {"file_path": str(root / payload)}}
-        return pre_tool_use(root, request) == BLOCK_EXIT
-    if checker == "forbidden-command":
-        request = {"tool_name": "Bash", "tool_input": {"command": payload}}
-        return pre_tool_use(root, request) == BLOCK_EXIT
-    return False
+    resolver = _CHECKERS.get(checker)
+    return resolver is not None and resolver(root, payload)
+
+
+def _reject_testless(_root: Path, payload: str) -> bool:
+    """F2-a/F4-b: producción sin tests; solo la mutación real lo expone."""
+    return "production=true" in payload and "tests=false" in payload
+
+
+def _reject_hardcoded(_root: Path, payload: str) -> bool:
+    """F2-b: valor hardcodeado; pytest lo aprueba por diseño."""
+    return "expected fixture" in payload
+
+
+def _reject_survivor(_root: Path, payload: str) -> bool:
+    """F5-b: mutante superviviente, output de una corrida inexistente."""
+    return int(payload.split("=", 1)[1]) > 0
+
+
+def _reject_unused(_root: Path, payload: str) -> bool:
+    """F11-b: constante muerta bajo la confianza 80 de vulture."""
+    return bool(UNUSED.search(payload))
+
+
+def _reject_protected_write(root: Path, payload: str) -> bool:
+    """F14: escritura en ruta protegida; la bloquea pre_tool_use."""
+    request = {"tool_name": "Edit", "tool_input": {"file_path": str(root / payload)}}
+    return pre_tool_use(root, request) == BLOCK_EXIT
+
+
+def _reject_forbidden_command(root: Path, payload: str) -> bool:
+    """F15: comando prohibido; lo bloquea pre_tool_use."""
+    request = {"tool_name": "Bash", "tool_input": {"command": payload}}
+    return pre_tool_use(root, request) == BLOCK_EXIT
+
+
+_CHECKERS: dict[str, Callable[[Path, str], bool]] = {
+    "testless": _reject_testless,
+    "hardcoded": _reject_hardcoded,
+    "survivor": _reject_survivor,
+    "unused": _reject_unused,
+    "protected-write": _reject_protected_write,
+    "forbidden-command": _reject_forbidden_command,
+}
 
 
 def _run_engine(
@@ -186,6 +216,15 @@ def _run_tool(case: dict[str, Any], builders: dict[str, Builder]) -> tuple[str, 
     builder = builders.get(case_id)
     if builder is None:
         return FAILED, f"{case_id}: sin builder para el caso"
+    return _gate_on_fixture(case, case_id, builder)
+
+
+def _gate_on_fixture(
+    case: dict[str, Any],
+    case_id: str,
+    builder: Builder,
+) -> tuple[str, str]:
+    """Corre el gate del caso sobre su fixture y traduce el GateResult a veredicto."""
     gate = REGISTRY[str(case.get("gate"))]
     try:
         with tempfile.TemporaryDirectory(prefix=f"redteam-{case_id}-") as directory:
@@ -195,6 +234,13 @@ def _run_tool(case: dict[str, Any], builders: dict[str, Builder]) -> tuple[str, 
     if result.status is Status.FAIL:
         return CAUGHT, ""
     return FAILED, f"{case_id}: el gate no cazó el defecto ({result.summary})"
+
+
+def _reject_verdict(root: Path, case: dict[str, Any], gate: str) -> tuple[str, str]:
+    """Veredicto de los arneses hook/heuristic: decide el reconocedor residual."""
+    if _reject(root, str(case.get("checker")), str(case.get("payload"))):
+        return CAUGHT, ""
+    return FAILED, f"{case.get('id')}: dejó de ser rechazado por {gate}"
 
 
 def _dispatch_case(
@@ -209,14 +255,14 @@ def _dispatch_case(
         return FAILED, f"{case.get('id')}: gate inexistente {gate}"
     harness = str(case.get("harness", ""))
     if harness == "gate-engine":
-        return _run_engine(case, builders, scratch)
-    if harness == "gate-tool":
-        return _run_tool(case, builders)
-    if harness in {"hook", "heuristic"}:
-        if _reject(root, str(case.get("checker")), str(case.get("payload"))):
-            return CAUGHT, ""
-        return FAILED, f"{case.get('id')}: dejó de ser rechazado por {gate}"
-    return FAILED, f"{case.get('id')}: arnés desconocido {harness}"
+        verdict = _run_engine(case, builders, scratch)
+    elif harness == "gate-tool":
+        verdict = _run_tool(case, builders)
+    elif harness in {"hook", "heuristic"}:
+        verdict = _reject_verdict(root, case, gate)
+    else:
+        return FAILED, f"{case.get('id')}: arnés desconocido {harness}"
+    return verdict
 
 
 def _report(

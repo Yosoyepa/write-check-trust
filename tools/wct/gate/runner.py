@@ -508,6 +508,7 @@ TIERS: dict[str, list[str]] = {
     "full": [
         *_COMMIT_GATES,
         "G-COV-TOTAL",
+        "G-MUT",
         "G-CRAP",
         "G-CC",
         "G-DRY",

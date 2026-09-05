@@ -1,8 +1,10 @@
 """CLI de mutación por subprocess del entrypoint real (RG09, ADR-G1-03 §4).
 
 ``wct mutate run`` se ejercita como lo usa un humano — subprocess de
-``uv run wct mutate run`` sobre un micro-repo fixture — nunca llamando a
-``engine.run`` en proceso. Los fixtures viven en tmp_path con su PROPIA
+``uv run wct mutate run`` sobre un micro-repo fixture — nunca invocando el
+entrypoint en proceso. ``mutation_verdict`` sí corre in-process en un test,
+pero como oráculo del cotejo (el contrato que el CLI debe exponer), no como
+sustituto del CLI. Los fixtures viven en tmp_path con su PROPIA
 gobernanza mínima: sin manifiesto el scan marca toda función como cambiada
 (``engine.py`` scan); el manifiesto del fixture de delta cero se genera con
 la herramienta permitida DENTRO del tempdir (``update_manifest``), nunca
@@ -17,7 +19,9 @@ import subprocess
 
 import pytest
 
-from tools.wct.mutate.engine import update_manifest
+from tools.wct.model import Status
+from tools.wct.mutate.engine import EXIT_CODES, update_manifest
+from tools.wct.mutate.verdict import mutation_verdict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -62,12 +66,15 @@ def _wct_mutate_run(root: Path) -> subprocess.CompletedProcess[str]:
 
 @requires_mutmut
 def test_cli_subprocess_delta_reports_ids(tmp_path: Path) -> None:
-    """Sin manifiesto + sobrevivientes: exit 1 e identidades impresas (RG09).
+    """Sin manifiesto + sobrevivientes: el CLI expone el veredicto del SUT (RG09).
 
     Micro-repo SIN manifiesto (scan marca toda función como cambiada) con el
     adversario F2-b: el test solo asienta el camino vacío y los mutantes de
-    ``sum(items) * 1.0`` sobreviven. El CLI mide con la MISMA política del
-    gate (ADR-G1-03): FAIL → exit 1 e ``identidades:`` con cada sobreviviente.
+    ``sum(items) * 1.0`` sobreviven. El entrypoint real corre por subprocess
+    y su salida se coteja contra el veredicto del MISMO SUT calculado
+    in-process sobre el fixture (``mutation_verdict``): exit code vía
+    ``EXIT_CODES``, ``estado:`` y cada ``identidades:`` — aserción más
+    fuerte: el CLI expone exactamente lo que el adaptador dicta.
     """
     root = _micro_repo(
         tmp_path,
@@ -83,14 +90,14 @@ def test_cli_subprocess_delta_reports_ids(tmp_path: Path) -> None:
     completed = _wct_mutate_run(root)
     output = completed.stdout + completed.stderr
 
-    assert completed.returncode == 1, output
-    assert "estado: FAIL" in output
-    assert "fase: criterio" in output
-    assert "conteos: " in output
-    assert "survived=" in output
-    assert "identidades:" in output
-    assert ": survived" in output
-    assert "motor: mutmut " in output
+    expected = mutation_verdict(root)  # SUT in-process: el contrato que el CLI debe exponer
+    assert expected.status is Status.FAIL, expected.summary
+    assert completed.returncode == EXIT_CODES[expected.status], output
+    assert f"estado: {expected.status.value}" in output
+    identidades = [line for line in expected.details if line.startswith("identidades:")]
+    assert identidades, expected.details
+    assert all(line in output for line in identidades), output
+    assert "motor: mutmut " in output, output
 
 
 def test_cli_delta_zero_informs_without_quality_claim(tmp_path: Path) -> None:

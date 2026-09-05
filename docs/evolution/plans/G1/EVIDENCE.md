@@ -48,6 +48,32 @@ versiones y salidas clave para revisión sin reejecutar.
 5. exit 1 y exit 3 colapsan a `killed` (`__main__.py:82-104`): el inventario
    textual NO conserva causa (límite del claim G1a; G1b lo ataca).
 
+## Escape post-merge de G1a (arquitecto, 2026-09-05) — registro honesto
+
+`wct ratchet check` en main tras fusionar PR #37: **`introverted-tests:
+actual=1, baseline=0`** — `test_cli_subprocess_delta_reports_ids` salió
+"introverted" (sus aserciones sobre la salida del subprocess no trazan a
+un import del SUT, regla de `introvert/analyzer.py:97-112`).
+
+Causa raíz, doble:
+
+1. **G-INTROVERT vive solo en el tier full** (`gate/runner.py:506`) — ni
+   el workflow de CI (commit-gates) ni la matriz pre-merge de G1a lo
+   ejecutan: el patrón F05 de POST-PR36 (CI ≠ contratos locales), ahora
+   con un caso propio.
+2. **`wct ratchet check` faltó en mi matriz de verificación pre-merge de
+   la PR #37** (estuvo en la de #36). El escape es del arquitecto, no del
+   coder: su SPEC no lo listaba.
+
+Arreglo (PR inmediata, tests-only, sin bless — sin rutas protegidas): el
+test del CLI coteja la salida del subprocess contra el veredicto del SUT
+calculado in-process (`mutation_verdict` + `EXIT_CODES` importados del
+SUT) — aserción MÁS fuerte que la original: fija que el CLI expone
+exactamente lo que el adaptador dicta (exit según tabla, líneas
+`identidades:` del veredicto). El baseline del ratchet NO se toca
+(PROC-008). Corrección de proceso: `wct ratchet check` entra a la matriz
+de verificación estándar de cada PR desde ahora.
+
 ## Delimitación de roles (REVIEW-G1 §10, final)
 
 El rol **specifier** no ejecuta mutación (`.claude/agents/specifier.md`).

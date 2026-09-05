@@ -47,7 +47,7 @@ git checkout fix/capability-profiles
 uv run wct mutate update-manifest --approved-by "yosoyepa" \
   --reason "aprobado en PR #N: PR-D perfiles y completitud + redenciones (plan docs/evolution/plans/PR-D)"
 uv run wct ratchet record --approved-by "yosoyepa" --metric dry-template-clusters \
-  --reason "aprobado en PR #N: registra 18 clusters (deuda preexistente 16 en main desde 2026-08-23 + 2 de fixtures PR-D); deduplicacion archivada como PR propio"
+  --reason "aprobado en PR #N: registra 17 clusters (deuda preexistente 16 en main desde 2026-08-23 + 2 de fixtures PR-D - 1 disuelto por la particion de runner.py); deduplicacion archivada como PR propio"
 git add -A && git commit -m "chore: bless PR-D capability profiles (PR #N)" && git push
 ```
 

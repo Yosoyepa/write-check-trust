@@ -6,7 +6,7 @@ from pathlib import Path
 from tests.acceptance.steps import execute_scenario
 
 BASE_IR = json.loads(
-    '{"schema_version": 1, "feature": "Reserve stock", "source": "/home/jandradeu/Documents/well_code_template/features/example.feature", "background": [], "scenarios": [{"name": "Reserve available units", "line": 4, "outline": true, "steps": [{"keyword": "Given", "text": "inventory contains \\"<stock>\\" units", "line": 5}, {"keyword": "When", "text": "I reserve \\"<quantity>\\" units", "line": 6}, {"keyword": "Then", "text": "\\"<remaining>\\" units remain", "line": 7}], "examples": [{"stock": "10", "quantity": "3", "remaining": "7"}, {"stock": "5", "quantity": "5", "remaining": "0"}]}]}'
+    '{"schema_version": 1, "feature": "Reserve stock", "source": "features/example.feature", "background": [], "scenarios": [{"name": "Reserve available units", "line": 4, "outline": true, "steps": [{"keyword": "Given", "text": "inventory contains \\"<stock>\\" units", "line": 5}, {"keyword": "When", "text": "I reserve \\"<quantity>\\" units", "line": 6}, {"keyword": "Then", "text": "\\"<remaining>\\" units remain", "line": 7}], "examples": [{"stock": "10", "quantity": "3", "remaining": "7"}, {"stock": "5", "quantity": "5", "remaining": "0"}]}]}'
 )
 
 

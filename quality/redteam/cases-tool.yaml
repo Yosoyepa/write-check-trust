@@ -37,7 +37,16 @@ cases:
     gate: G-DEAD
     tool: vulture
     # Adversario re-declarado (adjudicación): from-import muerto —
-    # confianza 90 en vulture, cazado al 80 productivo.
+    # confianza 90 en vulture, cazado al umbral productivo.
+  - id: F11-b
+    failure_mode: F11
+    harness: gate-tool
+    gate: G-DEAD
+    tool: vulture
+    # Redimido (ADR-D-02, autorización delegada 2026-09-05): constante
+    # muerta a confianza 60 — la clase de adversario que el umbral 80 dejaba
+    # escapar. El fixture declara confianza 60 y planta UNUSED_CONSTANT:
+    # vulture la reporta (60) y el gate productivo la caza.
   - id: F6-a
     failure_mode: F6
     harness: gate-tool

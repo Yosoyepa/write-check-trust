@@ -9,9 +9,9 @@ Despachador por arnés (ADR-C-01 §1) sobre la UNIÓN de
 - ``gate-tool``: invoca ``REGISTRY[gate]`` sobre el fixture; herramienta
   ausente → SKIP visible con la herramienta nombrada, nunca failure.
 - ``hook``: ejercita ``pre_tool_use`` real (casos F14/F15).
-- ``heuristic``: reconocedores residuales declarados (ADR-C-02; F11-b por un
-  escape real verificado en la revisión de PR-C. F9-b fue redimido en la
-  PR #31 y corre como gate-engine).
+- ``heuristic``: reconocedores residuales declarados (ADR-C-02). F9-b fue
+  redimido en la PR #31 y corre como gate-engine; F11-b en PR-D (ADR-D-02)
+  y corre como gate-tool.
 
 Un caso convertido que el motor NO caza queda en rojo: es un hallazgo del
 instrumento, no se ajusta el fixture hasta que pase (ADR-C-01 §5).
@@ -23,7 +23,6 @@ from collections import Counter
 from collections.abc import Callable
 import importlib
 from pathlib import Path
-import re
 import shutil
 import tempfile
 from typing import Any
@@ -40,7 +39,6 @@ FAILURE_MODES = tuple(f"F{index}" for index in range(1, 16))
 CASE_FILES = ("cases.yaml", "cases-engine.yaml", "cases-tool.yaml")
 SCRATCH = Path("build/tmp")
 CAUGHT, SKIPPED, FAILED = "caught", "skipped", "failed"
-UNUSED = re.compile(r"(?:never_called|generated_helper|UNUSED_)")
 
 Builder = Callable[[Path], Path]
 Engine = Callable[[Path], Any]
@@ -130,9 +128,8 @@ def _mode_gaps(cases: list[dict[str, Any]], missing: list[str]) -> list[str]:
 def _reject(root: Path, checker: str, payload: str) -> bool:
     """Reconocedor residual: heurísticas declaradas y casos hook.
 
-    Despacho por tabla: cada checker declarado (ADR-C-02 y su addendum; F9-b
-    fue redimido en la PR #31 y ya corre como gate-engine) es una función
-    pequeña; un checker sin entrada en la tabla no rechaza nada.
+    Despacho por tabla: cada checker declarado (ADR-C-02 y su addendum) es
+    una función pequeña; un checker sin entrada en la tabla no rechaza nada.
     """
     resolver = _CHECKERS.get(checker)
     return resolver is not None and resolver(root, payload)
@@ -153,11 +150,6 @@ def _reject_survivor(_root: Path, payload: str) -> bool:
     return int(payload.split("=", 1)[1]) > 0
 
 
-def _reject_unused(_root: Path, payload: str) -> bool:
-    """F11-b: constante muerta bajo la confianza 80 de vulture."""
-    return bool(UNUSED.search(payload))
-
-
 def _reject_protected_write(root: Path, payload: str) -> bool:
     """F14: escritura en ruta protegida; la bloquea pre_tool_use."""
     request = {"tool_name": "Edit", "tool_input": {"file_path": str(root / payload)}}
@@ -174,7 +166,6 @@ _CHECKERS: dict[str, Callable[[Path, str], bool]] = {
     "testless": _reject_testless,
     "hardcoded": _reject_hardcoded,
     "survivor": _reject_survivor,
-    "unused": _reject_unused,
     "protected-write": _reject_protected_write,
     "forbidden-command": _reject_forbidden_command,
 }

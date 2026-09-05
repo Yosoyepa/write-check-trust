@@ -16,13 +16,14 @@ REPO = Path(__file__).resolve().parents[2]
 
 # Captura PRE (SPEC-B-01 paso 0.3, ee17288): con el YAML vigente los comandos
 # cableados deben seguir siendo byte-idénticos. La fuente cambia; el comando, no.
+# Literal G-DEAD re-capturado en PR-D (ADR-D-02): 60 + whitelist de 1 FP.
 WIRED_LITERALS = {
     "G-CRAP": "crap4py src --lcov build/coverage/lcov.info --max-crap 6",
     "G-COV-DIFF": (
         "diff-cover build/coverage/lcov.info --compare-branch origin/main "
         "--fail-under 90 --include-untracked"
     ),
-    "G-DEAD": "vulture src tools/wct --min-confidence 80",
+    "G-DEAD": ("vulture src tools/wct governance/lint/vulture_whitelist.py --min-confidence 60"),
     "G-CC": "xenon --max-absolute B --max-modules A --max-average A src",
 }
 
@@ -85,6 +86,30 @@ def test_yaml_change_flows_into_command(
     assert result.status is Status.PASS
     assert result.command == "crap4py src --lcov build/coverage/lcov.info --max-crap 9"
     assert "6" not in (result.command or "")
+
+
+def test_dead_code_whitelist_flag_follows_declared_key(
+    project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """dead_code.whitelist presente → el path escaneado; ausente → sin whitelist.
+
+    Patrón PR-B aplicado a la whitelist de vulture (ADR-D-02): el archivo
+    viaja solo cuando la clave está declarada, nunca con un default
+    silencioso que apuntaría a un archivo inexistente. Vulture 2.16 no
+    tiene flag --whitelist: el archivo entra como path posicional y sus
+    nombres referenciados cuentan como usados.
+    """
+    _fake_tools(monkeypatch)
+    root = project_factory()
+
+    with_flag = REGISTRY["G-DEAD"](root)
+    _undeclare(root, "dead_code.whitelist")
+    without_flag = REGISTRY["G-DEAD"](root)
+
+    assert with_flag.status is Status.PASS
+    assert "governance/lint/vulture_whitelist.py" in (with_flag.command or "")
+    assert without_flag.status is Status.PASS
+    assert "vulture_whitelist" not in (without_flag.command or "")
 
 
 @pytest.mark.parametrize(

@@ -7,7 +7,7 @@ fixture aislado y exige que el gate lo rechace: la aserción traza al
 GateResult del gate, no al andamiaje (TEST-003). El skip por herramienta
 ausente es honesto: nombra la herramienta y NO cuenta como verde del caso
 (DoD-F2.2, ADR-C-01 §4). Con las herramientas del grupo quality presentes,
-los 8 casos deben pasar de verdad — un caso que no pase se reporta en
+los 9 casos deben pasar de verdad — un caso que no pase se reporta en
 rojo con su salida, no se marca xfail (ADR-C-01 §5).
 """
 
@@ -103,5 +103,5 @@ def test_absent_tool_reports_visible_skip(
     _count, failures = redteam.run(root)
     captured = capsys.readouterr()
     assert "vulture" in captured.out + captured.err
-    vulture_cases = {"F1-b", "F11-a"}
+    vulture_cases = {"F1-b", "F11-a", "F11-b"}
     assert not any(any(case_id in failure for case_id in vulture_cases) for failure in failures)

@@ -266,3 +266,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: G3a-2 aprobado para bless: visto bueno del diff final tras 5 rondas de revisión (2 humanas + 3 verifier, 12 sondas rechazadas), 2026-09-06 — PR #40
 - Commit: ac5ba8a41f1a5f2183182af8e303c01b8cffcad7
+
+## 2026-09-06T07:21:20.005532+00:00
+
+- Approved by: yosoyepa
+- Reason: Puerta 2 aprobada 2026-09-06: bump beta.2 sin upgrades; PR #41 https://github.com/Yosoyepa/write-check-trust/pull/41
+- Commit: f140673809155c63a26fb35370dfdab5de0f66b6

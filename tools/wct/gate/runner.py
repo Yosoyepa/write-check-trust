@@ -481,6 +481,10 @@ _COMMIT_GATES = [
     "G-SIZE",
     "G-COGNITIVE",
     "G-WIRE",
+    # ADR-G3a-03 G3a-1: promoción por membresía — el control de introvertidos
+    # corre en el tier que CI ya ejecuta. Al vivir en _COMMIT_GATES, full y pr
+    # lo heredan: su entrada literal en full se retiró para no duplicar.
+    "G-INTROVERT",
 ]
 
 TIERS: dict[str, list[str]] = {
@@ -503,7 +507,6 @@ TIERS: dict[str, list[str]] = {
         "G-DRY",
         "G-DRY-TOK",
         "G-DRY-TPL",
-        "G-INTROVERT",
         "G-LCOM",
         "G-SAST-SEMGREP",
         "G-AUDIT",

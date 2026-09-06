@@ -131,6 +131,14 @@ def parser() -> argparse.ArgumentParser:
     ratchet.add_argument("--approved-by")
     ratchet.add_argument("--reason")
     ratchet.add_argument("--metric", help="re-registra solo esta métrica (p.ej. coverage-total)")
+    ratchet.add_argument(
+        "--require",
+        metavar="MÉTRICAS",
+        help=(
+            "exige estas métricas (separadas por coma) o 'all': presencia y umbral, "
+            "NO frescura del artefacto (la procedencia la da el orden de pasos del workflow)"
+        ),
+    )
 
     adopt = sub.add_parser("adopt", help="inventory repository or manage adopted harness lifecycle")
     adopt.add_argument(
@@ -332,9 +340,13 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "ratchet":
             if args.action == "check":
-                failures = check_ratchets(root)
-                print("\n".join(failures) if failures else "Todos los ratchets se mantienen.")
-                return bool(failures)
+                if args.require is None:
+                    failures = check_ratchets(root)
+                    print("\n".join(failures) if failures else "Todos los ratchets se mantienen.")
+                    return bool(failures)
+                report = check_ratchets(root, required=args.require.split(","))
+                print("\n".join([*report.failures, *report.summary]))
+                return bool(report.failures)
             if not args.approved_by or not args.reason:
                 print("record requiere --approved-by y --reason", file=sys.stderr)
                 return 2

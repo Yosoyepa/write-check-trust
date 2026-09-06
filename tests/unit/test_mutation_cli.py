@@ -70,11 +70,15 @@ def test_cli_subprocess_delta_reports_ids(tmp_path: Path) -> None:
 
     Micro-repo SIN manifiesto (scan marca toda función como cambiada) con el
     adversario F2-b: el test solo asienta el camino vacío y los mutantes de
-    ``sum(items) * 1.0`` sobreviven. El entrypoint real corre por subprocess
-    y su salida se coteja contra el veredicto del MISMO SUT calculado
-    in-process sobre el fixture (``mutation_verdict``): exit code vía
-    ``EXIT_CODES``, ``estado:`` y cada ``identidades:`` — aserción más
-    fuerte: el CLI expone exactamente lo que el adaptador dicta.
+    ``sum(items) * 1.0`` sobreviven. El entrypoint real corre por subprocess.
+    Doble clase de aserciones (ADR-G3a-04 §1) en UNA sola ejecución del
+    motor: clase independiente — exit 1 literal, ``estado: FAIL``,
+    ``fase: criterio`` y ``survived=`` en los conteos impresos, contrato
+    público anclado sin tablas de producción — y clase de concordancia — el
+    cotejo contra el veredicto del MISMO SUT calculado in-process
+    (``mutation_verdict``): exit code vía ``EXIT_CODES``, ``estado:`` y cada
+    ``identidades:``; un drift compartido o una divergencia CLI↔adaptador
+    no pueden pasar inadvertidos.
     """
     root = _micro_repo(
         tmp_path,
@@ -90,10 +94,17 @@ def test_cli_subprocess_delta_reports_ids(tmp_path: Path) -> None:
     completed = _wct_mutate_run(root)
     output = completed.stdout + completed.stderr
 
-    expected = mutation_verdict(root)  # SUT in-process: el contrato que el CLI debe exponer
+    # Clase 1: contrato observable independiente del adaptador.
+    assert completed.returncode == 1, output
+    assert "estado: FAIL" in output, output
+    assert "fase: criterio" in output, output
+    assert "survived=" in output, output
+
+    # Clase 2: concordancia con el veredicto del adaptador in-process.
+    expected = mutation_verdict(root)  # SUT: el contrato que el CLI debe exponer
     assert expected.status is Status.FAIL, expected.summary
     assert completed.returncode == EXIT_CODES[expected.status], output
-    assert f"estado: {expected.status.value}" in output
+    assert f"estado: {expected.status.value}" in output, output
     identidades = [line for line in expected.details if line.startswith("identidades:")]
     assert identidades, expected.details
     assert all(line in output for line in identidades), output

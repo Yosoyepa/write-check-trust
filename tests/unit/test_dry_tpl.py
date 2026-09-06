@@ -117,3 +117,21 @@ def test_dry_tpl_gate_is_in_full_tier() -> None:
     assert "G-DRY-TPL" in TIERS["full"]
     assert "G-DRY-TPL" not in TIERS["commit"]
     assert "G-DRY-TPL" not in TIERS["fast"]
+
+
+def test_syntax_error_reported_without_aborting(
+    project_factory: Callable[..., Path],
+) -> None:
+    """Un archivo roto se reporta como error relativo y el análisis continúa.
+
+    Caracterización del refactor G-DRY-TOK (parse_tree compartido): el
+    mensaje llega como relpath:linea: msg en la lista de errores.
+    """
+    root = project_factory()
+    (root / "src" / "roto.py").write_text("def broken(:\n", encoding="utf-8")
+
+    report = analyze_template(root)
+
+    assert len(report["errors"]) == 1
+    assert report["errors"][0].startswith("src/roto.py:")
+    assert report["units"] == 0

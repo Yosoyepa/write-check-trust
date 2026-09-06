@@ -272,3 +272,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: Puerta 2 aprobada 2026-09-06: bump beta.2 sin upgrades; PR #41 https://github.com/Yosoyepa/write-check-trust/pull/41
 - Commit: f140673809155c63a26fb35370dfdab5de0f66b6
+
+## 2026-09-06T08:39:42.083035+00:00
+
+- Approved by: yosoyepa
+- Reason: G-DRY-TOK bloqueo de calificación: dedup real dry/parse_tree sin relajar presupuesto; PR #44 https://github.com/Yosoyepa/write-check-trust/pull/44
+- Commit: 75df709e7a9248a1122929b831894569c2a75f30

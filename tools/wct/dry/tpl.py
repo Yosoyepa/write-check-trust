@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from tools.wct.config import load_config
+from tools.wct.dry import parse_tree
 
 
 @dataclass(frozen=True)
@@ -102,13 +103,12 @@ def _collect_units(
     for path in sorted(set(paths)):
         if not path.is_file() or _is_test_file(path, root, test_dirs):
             continue
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        except SyntaxError as exc:
-            errors.append(f"{path.relative_to(root)}:{exc.lineno}: {exc.msg}")
+        parsed = parse_tree(path, root)
+        if isinstance(parsed, str):
+            errors.append(parsed)
             continue
 
-        for node in ast.walk(tree):
+        for node in ast.walk(parsed):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 item = _unit(path, root, node)
                 if item.lines >= min_lines and item.nodes >= min_nodes:

@@ -1,3 +1,15 @@
+"""Clasifica si las aserciones de un test trazan al SUT (AST, in-process).
+
+Limitación documentada (ADR-G3a-04 §2): el detector solo reconoce como
+traza al SUT los nombres importados in-process (o derivados de ellos). Un
+test que ejercita el entrypoint por subprocess y asevera sobre su salida —
+comportamiento observable legítimo — puede salir ``introverted`` o
+``cloistered`` sin ser un test malo. Los veredictos sobre tests de
+subprocess NO son por sí solos señal de test deficiente: el control de
+calidad de esa clase es la política de doble aserción (contrato observable
+independiente + concordancia con el adaptador in-process).
+"""
+
 from __future__ import annotations
 
 import ast

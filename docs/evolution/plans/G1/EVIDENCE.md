@@ -74,6 +74,41 @@ exactamente lo que el adaptador dicta (exit según tabla, líneas
 (PROC-008). Corrección de proceso: `wct ratchet check` entra a la matriz
 de verificación estándar de cada PR desde ahora.
 
+## Addenda del arquitecto tras revisión humana del cierre G1a (2026-09-05)
+
+Correcciones registradas a petición del humano; verificación propia [E]/[L]:
+
+1. **"Main verde completo" fue demasiado amplio.** La batería post-#37/#38
+   no incluyó el tier `full`. Lo preciso: *main verde en las comprobaciones
+   enumeradas* (pytest 319, redteam, fast, commit, ratchet check). Nada
+   atribuido que no se corrió.
+2. **La reparación #38 es útil, pero no estrictamente más fuerte.** El test
+   anterior comprobaba comportamiento observable del CLI (exit, estado,
+   fase, conteos, identidades); el analizador no reconoce la conexión vía
+   subprocess — limitación del DETECTOR, no prueba de que el test fuera
+   malo. El cotejo añadido usa `EXIT_CODES` de producción (un cambio
+   incorrecto compartido pasa inadvertido), retiró las comprobaciones
+   explícitas de fase/conteos, y re-corre el adaptador sobre el mismo
+   fixture compartiendo caché. **Ajuste registrado** (unidad de
+   SPEC-G3a-1, tras aprobación): conservar AMBAS clases — contrato
+   independiente (exit `1`, `estado: FAIL` literal) Y concordancia con el
+   adaptador.
+3. **`ratchet check` no garantiza medición completa** [E + L]:
+   `measurements` (`ratchet/measure.py:118-140`) omite `docstring-coverage`
+   si `interrogate` falta (`:44-51`) y `coverage-total` si no hay
+   `build/coverage/lcov.info` (`:70-75`) — **sin fallar**; y no comprueba
+   procedencia/antigüedad del LCOV. Medido: el `lcov.info` del árbol local
+   era del **2026-09-02 10:29** — tres días viejo, anterior a los 19 tests
+   y `verdict.py` de G1a — y mi "Todos los ratchets se mantienen" lo
+   consumió sin aviso. "Todos los ratchets se mantienen" ≠ "todos los
+   ratchets se midieron".
+4. **Narrar `ratchet check` en EVIDENCE no lo incorporó a CI** [E]: el
+   workflow (`quality.yml`) corre rules/integrity/doctor, tier commit,
+   pip-audit, cobertura+diff-cover, `accept mutate` y redteam — sin
+   `ratchet check` ni nada del tier full. Su ejecución y completitud son
+   el núcleo de G3a.
+
+
 ## Delimitación de roles (REVIEW-G1 §10, final)
 
 El rol **specifier** no ejecuta mutación (`.claude/agents/specifier.md`).

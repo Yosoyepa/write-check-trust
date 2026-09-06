@@ -12,6 +12,18 @@ from tools.wct.gate.runner import TIERS, gate_coverage_diff
 from tools.wct.model import Status
 
 
+def test_introvert_in_commit_and_pr_without_duplication() -> None:
+    """G-INTROVERT corre en commit y pr (hereda _COMMIT_GATES) sin duplicar en full.
+
+    ADR-G3a-03 G3a-1: promoción por membresía — full ya es ``[*_COMMIT_GATES,
+    …]``, así que la entrada literal de full se RETIRA: el control entra a
+    commit (el tier que CI ejecuta) y a pr sin duplicación.
+    """
+    assert "G-INTROVERT" in TIERS["commit"]
+    assert "G-INTROVERT" in TIERS["pr"]
+    assert TIERS["full"].count("G-INTROVERT") == 1
+
+
 def test_pr_tier_extends_commit_and_adds_pr_ci_gates() -> None:
     extra = set(TIERS["pr"]) - set(TIERS["commit"])
 

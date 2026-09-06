@@ -18,6 +18,9 @@ esta versión corrige; la guía de actualización dice qué hacer al respecto.
 
 ### Changed
 
+- **Presentación y documentación de beta.2**: README reorganizado con inicio
+  rápido, novedades, alcances y límites explícitos; GIF de demostración
+  conservado. Catálogo de tiers alineado con el inventario ejecutable.
 - **La mutación se vuelve real (PR #34)**: `G-MUT` verifica sobrevivientes
   contra el manifiesto diferencial y deja de aceptar redenciones — antes
   un escape podía salir verde sin ejecutar la verificación pesada.

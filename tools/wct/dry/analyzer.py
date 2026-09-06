@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from tools.wct.config import load_config
+from tools.wct.dry import parse_tree
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,34 @@ def _unit(path: Path, root: Path, node: ast.FunctionDef | ast.AsyncFunctionDef) 
     )
 
 
+def _collect_units(paths: list[Path], root: Path, config: Any) -> tuple[list[Unit], list[str]]:
+    """Recolecta las unidades (funciones) que superan los mínimos del config.
+
+    Args:
+        paths: archivos a analizar.
+        root: raíz del proyecto, para relativizar errores de sintaxis.
+        config: sección ``dry`` de thresholds.yaml.
+
+    Returns:
+        Las unidades recolectadas y los errores de sintaxis encontrados.
+    """
+    units: list[Unit] = []
+    errors: list[str] = []
+    for path in sorted(set(paths)):
+        parsed = parse_tree(path, root)
+        if isinstance(parsed, str):
+            errors.append(parsed)
+            continue
+        for node in ast.walk(parsed):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                item = _unit(path, root, node)
+                if item.lines >= int(config["min_lines"]) and item.nodes >= int(
+                    config["min_nodes"]
+                ):
+                    units.append(item)
+    return units, errors
+
+
 def analyze(root: Path, paths: list[Path] | None = None) -> dict[str, Any]:
     _root, policy, thresholds = load_config(root)
     config = thresholds["dry"]
@@ -87,21 +116,7 @@ def analyze(root: Path, paths: list[Path] | None = None) -> dict[str, Any]:
         paths = []
         for directory in policy["paths"]["source"]:
             paths.extend((root / directory).rglob("*.py"))
-    units: list[Unit] = []
-    errors: list[str] = []
-    for path in sorted(set(paths)):
-        try:
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        except SyntaxError as exc:
-            errors.append(f"{path.relative_to(root)}:{exc.lineno}: {exc.msg}")
-            continue
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                item = _unit(path, root, node)
-                if item.lines >= int(config["min_lines"]) and item.nodes >= int(
-                    config["min_nodes"]
-                ):
-                    units.append(item)
+    units, errors = _collect_units(paths, root, config)
     candidates: list[dict[str, Any]] = []
     threshold = float(config["threshold"])
     extraction = config["extraction"]

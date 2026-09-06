@@ -254,3 +254,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #37: G1a clasifica el inventario completo del motor de mutación
 - Commit: e4f08833ed0d8777bbd7240d6acb2ccf9f77cd94
+
+## 2026-09-06T01:42:51.152664+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #39: G3a-1 ratchets exigibles + G-INTROVERT en commit; revisión propia 334 tests, fast 7/7, redteam 30/30, exigible 10/10, sin bloqueantes
+- Commit: 278d31be3e33ffecaac630e02250d730dac5a78e

@@ -7,7 +7,7 @@ no al andamiaje del despachador.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 import importlib
 from pathlib import Path
 import shutil
@@ -24,6 +24,23 @@ from tools.wct.selftest import redteam
 from tools.wct.selftest.fixtures_engine import BUILDERS
 
 REPOSITORY = Path(__file__).resolve().parents[2]
+
+# PROC-013 (2026-09-06, calificación de release M7 sobre 32c5de9): la suite
+# fallaba bajo orden aleatorio en seeds 2/3/sin-semilla — dummy_engine queda
+# cacheado en sys.modules tras el primer import y el test que corre segundo
+# resuelve el módulo del tmp_path AJENO (calls acumuladas de otro test).
+# monkeypatch.syspath_prepend restaura sys.path, no sys.modules: la purga
+# antes y después de cada test del módulo restaura el aislamiento (TEST-006).
+
+
+@pytest.fixture(autouse=True)
+def uncached_dummy_engine() -> Iterator[None]:
+    """Garantiza que cada test importe SU dummy_engine, no el del anterior."""
+    sys.modules.pop("dummy_engine", None)
+    yield
+    sys.modules.pop("dummy_engine", None)
+
+
 ENGINE_CASES = {
     str(case["id"]): case
     for case in yaml.safe_load(

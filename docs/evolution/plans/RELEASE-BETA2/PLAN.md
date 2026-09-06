@@ -1,10 +1,13 @@
 # PLAN beta.2 — ejecución de la salida v1.0.0-beta.2
 
-Estado: propuesta EN EJECUCIÓN (fase 2). Companion de
+Estado: EN EJECUCIÓN; Puerta 2 fusionada, preparación editorial pre-tag. Companion de
 [READINESS.md](READINESS.md) (decisión y hallazgos R01–R11). Este plan NO
 autoriza nada: cada puerta requiere aprobación humana explícita y separada
 (SEC-005). Puerta 1 cerrada: G3a-2 fusionada en `7f2fa04` (PR #40, bless y
-CI verde, 2026-09-06). Corte actual de main: `7f2fa04`.
+CI verde, 2026-09-06). Puerta 2 fusionada: PR #41 → `a04ec85`, versión
+`1.0.0b2`; quality del push a ese SHA verificada en run `34019204081`.
+El README y las notas aún deben integrarse: `a04ec85` NO será el SHA final
+si esta mejora documental entra en beta.2.
 
 ## Secuencia
 
@@ -12,20 +15,47 @@ CI verde, 2026-09-06). Corte actual de main: `7f2fa04`.
 |---|---|---|
 | 0 | Aprobación del diff G3a-2 + Gherkin (SPEC-G3a-2, GHERKIN-G3a-2) | **Puerta 1** (humana) — **APROBADA 2026-09-05** |
 | 1 | Implementación G3a-2: TDD, feature, diff YAML; verifier ×5 rondas; PR; **bless**; CI; squash merge | **FUSIONADA** — PR #40 → `7f2fa04`; bless citando #40; CI verde a la primera (job 184 s; pasos nuevos ≈1 s); suite 345 · commit 21/21 post-merge |
-| 2 | PR de release: CHANGELOG (beta.1→beta.2 con los 14 commits), STATUS, guía de actualización, bump de versión + lock; **bless** (pyproject protegido) | **Puerta 2 AUTORIZADA (2026-09-06)** — bump + lock + docs EJECUTADOS en working tree; staging pendiente de bless |
+| 2 | PR de release: CHANGELOG, STATUS, guía de actualización, bump de versión + lock; **bless** (pyproject protegido) | **FUSIONADA** — PR #41 → `a04ec85`; no repetir bump ni bless por documentación no protegida |
+| 2a | README profesional conservando GIF, catálogo coherente, nota de CHANGELOG y borrador de notas públicas | Edición documental solicitada por el humano; rama `codex/docs-beta2-readme`, pendiente revisión/PR/CI/merge |
 | 3 | Matriz de release sobre el SHA final de main (post-fase 2) — tabla de abajo, evidencias conservadas | ninguna nueva (solo ejecutar) |
 | 4 | Publicación: tag inmutable + GitHub prerelease (`--prerelease`, NO `--latest`), assets (SBOM), verificación del smoke disparado por tag | **Puerta 3**: publicación (humana) |
 
-El candidato es el SHA final de main tras la fase 2 — no se publica
+El candidato es el SHA final de main tras la fase 2a — no se publica
 retrospectivamente ningún SHA intermedio como si incluyera algo posterior
 a su fusión.
+
+## Integración documental antes del tag
+
+1. Revisar y stagear SOLO `README.md`, `docs/gates.md`, `CHANGELOG.md`, este
+   PLAN y `RELEASE-NOTES.md` de este directorio. No incluir los cambios
+   ajenos de G1, POST-PR36, REVIEW-G1 ni `docs/evolution/README.md`.
+2. Abrir PR documental con hooks y CI; la edición no toca rutas protegidas
+   y no requiere otro bless si `wct integrity check` permanece verde. No
+   asumir que «solo docs» permite saltar CI: README forma parte de la
+   presentación del paquete y del recorrido de adopción.
+3. Tras el merge, congelar el SHA candidato. Recalificar M1–M9 sobre ese
+   SHA, conservando evidencia fuera de los archivos versionados del
+   checkout (por ejemplo en `build/tmp/` y assets de la release). No crear
+   commits de resultados después para luego taggear otro SHA sin comprobarlo.
+4. `RELEASE-NOTES.md` es un borrador de contenido público, NO evidencia de
+   publicación ni GO. Sus enlaces con tag solo resolverán al publicar.
+   Tras calificar, adjuntar al cuerpo de la release el SHA, los enlaces a
+   las corridas finales y la descripción del SBOM; no inventar resultados.
+5. Pedir Puerta 3. Solo con aprobación: crear el tag nuevo e inmutable,
+   pushearlo, comprobar M10 en ese tag y publicar la GitHub prerelease con
+   las notas revisadas y el SBOM asociado. No marcarla como Latest estable,
+   no publicar PyPI y no mover un tag existente para corregir un fallo.
+
+El inventario del CHANGELOG se obtiene desde `v1.0.0-beta.1` hasta el
+candidato final. Los 14 commits de funcionalidad anteriores a #41 son un
+corte histórico, no el total final después del bump y esta PR documental.
 
 ## Matriz de release (fase 3 — sobre el SHA candidato)
 
 | # | Control | Comando / dónde | Criterio | Evidencia conservada |
 |---|---|---|---|---|
-| M1 | CI quality | push del merge de fase 2 (y del PR de fase 1) | verde, incluido el paso exigible con LCOV nuevo | URL del run |
-| M2 | Suite completa | `uv run pytest -q` (checkout aislado del SHA) | 334+ passed, 0 failed | salida íntegra en `docs/evolution/plans/RELEASE-BETA2/evidence/` |
+| M1 | CI quality | push del merge de fase 2a | verde, incluido el paso exigible con LCOV nuevo | URL del run y headSha |
+| M2 | Suite completa | `uv run pytest -q` (checkout aislado del SHA) | todos los tests recolectados ejecutados; registrar conteos reales y exclusiones, 0 failed (referencia anterior: 345) | salida íntegra asociada al SHA, preservada como evidencia de release |
 | M3 | Ratchets con LCOV recién producido | borrar `build/coverage/lcov.info` → receta productiva → `uv run wct ratchet check --require coverage-total,docstring-coverage` | `medidas N de N exigibles`, exit 0 | salida + SHA del checkout |
 | M4 | full-hardening | `gh workflow run full-hardening.yml --ref main` (tras el merge); jscpd lo instala el propio workflow | `headSha` del run == SHA candidato; tier full sin FAIL/ERROR; inventario completo de SKIP; G-DRY-TOK ejecutado (jscpd presente) — el fallo histórico de `82d686d` se reproduce o se refuta | JSON del run + intento de descarga de `quality-reports`; si no existe, ausencia REGISTRADA con diagnóstico + log completo (nota M4) |
 | M5 | Orden PROC-004 | secuencia LOCAL en el checkout aislado, en orden canónico: `uv run wct mutate run` → `uv run wct accept mutate` → `uv run wct gate --tier full` | PROC-004 es regla por incremento y el workflow NO la demuestra: G-ACCEPT-MUT vive en el tier pr y full-hardening lo corre DESPUÉS del tier completo. La secuencia local sí recorre mutación → mutación de Gherkin → CRAP/DRY (el tier re-ejecuta G-MUT antes de CRAP/DRY: repetición, no reordenamiento) | tres salidas íntegras en `evidence/` con exit codes |
@@ -62,9 +92,11 @@ Notas de método:
   resuelta 2026-09-05): cero cambios en `pyproject.toml` (R10 — cualquier
   dependencia declarada requiere aprobación aparte; dejarla en dev es
   decisión futura, no bloqueante). Alcance honesto: aleatoriza SOLO
-  unit+integration — la batería del tier commit (333 tests); property
-  queda fuera (1 test: barajarlo es vacío) y la aceptación generada se
-  verifica por mutación, no por orden. La efímera no ES un entorno
+  unit+integration — registrar el conteo real del candidato. Property y
+  aceptación generada quedan fuera: esto NO acredita TEST-006 sobre toda
+  la suite, ni la mutación de aceptación lo sustituye. Antes del GO hay que
+  completar la verificación aleatoria de la suite o aprobar explícitamente
+  esa limitación. La efímera no ES un entorno
   reproducible por construcción: se registran python/uv, sha256 de
   `uv.lock`, versión del paquete efímero y semillas, para que cualquiera
   pueda repetir la corrida exacta.
@@ -99,7 +131,7 @@ propio proyecto. Requiere bless (G-META-1 rojo por diseño hasta entonces).
 - [ ] Orden PROC-004 documentado sin sobre-atribución al workflow (M5).
 - [ ] TEST-006 con semilla/entorno, o excepción humana explícita y registrada (M7).
 - [ ] Smoke limpio ≤ 120 s sin cambios al presupuesto (M6; M10 tras el tag).
-- [ ] CHANGELOG/migración/limitaciones revisados; beta.1→beta.2 completo (14 commits: #25–#27 fixes CI smoke, PR-A1/A2, PR-B, PR-C+blend, PR-D, PR-E, PR-F, G1a, #38, G3a-1, G3a-2 #40).
+- [ ] CHANGELOG/migración/limitaciones revisados contra beta.1→SHA final: incluir #25/#26, PR-A1/A2, B–F, G1a/#38, G3a-1/#39, G3a-2/#40, bump/#41 y mejora documental. Notas públicas revisadas en RELEASE-NOTES.md.
 - [ ] Autorización humana final de publicación.
 - [ ] Tag `v1.0.0-beta.2` inmutable + GitHub release con `--prerelease` (beta.1 quedó `isPrerelease=false` — R07; NO modificar la release histórica); SBOM adjunto; smoke por tag verificado (M10).
 

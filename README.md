@@ -6,274 +6,265 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Yosoyepa/write-check-trust/releases"><img src="https://img.shields.io/github/v/release/Yosoyepa/write-check-trust" alt="release"></a>
-  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml/badge.svg" alt="CI de calidad"></a>
-  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml/badge.svg" alt="CI de hardening completo"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Yosoyepa/write-check-trust?color=blue" alt="licencia MIT"></a>
-  <img src="https://img.shields.io/badge/gates-34_%C2%B7_4_tiers-2ea44f" alt="34 gates en 4 tiers">
+  <strong>Controles ejecutables para desarrollo asistido por IA.</strong><br>
+  Especifica el cambio. Verifica la evidencia. Conserva el control humano.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.11%E2%80%933.14-3776AB?logo=python&logoColor=white" alt="Python 3.11–3.14">
-  <a href="https://docs.astral.sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
-  <img src="https://img.shields.io/badge/mypy-strict-2a6db2" alt="mypy estricto">
-  <img src="https://img.shields.io/badge/commits-conventional-FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits">
+  <a href="https://github.com/Yosoyepa/write-check-trust/releases"><img src="https://img.shields.io/badge/canal-beta-f59e0b" alt="Canal beta; consultar versiones publicadas"></a>
+  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/quality.yml/badge.svg" alt="CI de calidad"></a>
+  <a href="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml"><img src="https://github.com/Yosoyepa/write-check-trust/actions/workflows/full-hardening.yml/badge.svg" alt="CI de hardening completo"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Yosoyepa/write-check-trust?color=blue" alt="Licencia MIT"></a>
 </p>
 
-Base de hardening agnóstica al proveedor para código generado por agentes.
-Combina instrucciones de desarrollo con verificadores ejecutables, hooks
-fail-closed, ratchets, tests adversariales y separación entre autor y
-verificador. Pensada para modelos de alto volumen y bajo costo por token: hace
-que entregar código malo sea caro y detectable, sin depender de inferencia
-cara para revisarlo.
+**Write, Check, Trust (WCT)** es un template y un arnés de calidad para
+proyectos Python. Convierte reglas de desarrollo en verificaciones
+ejecutables: arquitectura, tests, cobertura, mutación, seguridad e integridad
+del propio sistema de control.
 
-No promete demostrar que un programa es correcto. Sí hace difícil entregar
-código sin formato, sin tests útiles, con dependencias ilegales, arquitectura
-erosionada, secretos, supresiones gratuitas o controles manipulados.
+Es agnóstico al proveedor del agente: las instrucciones orientan el trabajo;
+los comandos, sus resultados y la revisión humana determinan qué se acepta.
+Puedes usarlo como punto de partida o integrar el arnés en un repositorio
+existente.
+
+**Esta revisión corresponde a `1.0.0-beta.2`** (`wct 1.0.0b2`). El código
+de una rama no implica una release publicada: consulta
+[Releases](https://github.com/Yosoyepa/write-check-trust/releases) para elegir
+una versión distribuida y [RELEASES.md](RELEASES.md) para la política de madurez.
+
+[Inicio rápido](#inicio-rápido) · [Novedades de beta.2](#qué-cambia-en-beta2) ·
+[Verificación](#elige-la-verificación-adecuada) ·
+[Adopción](#adopción-en-un-proyecto-existente) · [Documentación](#documentación)
 
 <p align="center">
   <img src="docs/assets/demo-gate.gif" alt="Demo: wct gate --tier fast en verde, y en rojo cuando el agente deja un import sin uso y formato roto" width="820">
 </p>
 
-<p align="center"><em>Salida real del harness: la segunda corrida falla porque el changeset contiene un import sin uso y formato roto.</em></p>
+<p align="center"><em>Demostración del tier fast: el mismo control pasa en un árbol válido y bloquea un cambio con errores de lint y formato. No representa la batería completa de release.</em></p>
 
-## Modelo de confianza
+## Qué aporta WCT
 
-El template separa dos planos: **persuasión** (orienta al agente, no prueba
-nada) y **prueba** (códigos de salida autoritativos). `governance/` es la
-única fuente de verdad; las reglas por proveedor se generan y `wct rules
-check` rechaza el drift manual.
+| Necesidad | Cómo la aborda |
+|---|---|
+| Reglas consistentes entre agentes | `governance/` define la política; las instrucciones por proveedor se generan y se comprueba su sincronización. |
+| Tests que detecten cambios de comportamiento | Análisis de aserciones, cobertura y mutación diferencial sobre el alcance configurado. |
+| Evitar que la deuda crezca | Ratchets: baselines que impiden retrocesos en las métricas medidas. |
+| Detectar cambios en los propios controles | Lock de integridad y aprobación humana para rutas protegidas. |
+| Revisiones trazables | Escenarios Gherkin, evidencia de comandos y separación entre autor y verificador. |
+| Actualizar el arnés integrado en otro proyecto | `adopt lock/check/sync`: referencia por SHA, detección de divergencias y propuesta de parche. |
 
-```mermaid
-flowchart TB
-    G["governance/<br/>fuente única de verdad"]
-    subgraph P["Plano de persuasión (orienta)"]
-        R["AGENTS.md · CLAUDE.md ·<br/>reglas por proveedor · skills"]
-    end
-    subgraph V["Plano de prueba (verifica)"]
-        W["wct gate"] --> T1["ruff · mypy · pytest"]
-        W --> T2["import-linter · archmetrics"]
-        W --> T3["mutmut · CRAP · DRY · semgrep"]
-    end
-    G -- "wct rules build" --> R
-    G -- "policy.yaml · thresholds.yaml" --> W
-```
-
-Detalles completos en [docs/architecture.md](docs/architecture.md).
+WCT está pensado para equipos que quieren hacer revisable el trabajo de los
+agentes. **No demuestra corrección total ni sustituye el criterio técnico.**
+Usarlo con modelos económicos es un caso de uso, no una mejora de calidad o
+coste demostrada mediante un benchmark de modelos.
 
 ## Inicio rápido
 
-Requiere Python 3.11–3.14, `uv` y Git.
+Requiere Git, Make, `uv` y Python. El paquete declara compatibilidad con
+Python **3.11–3.14**; la CI del template está configurada con **3.12**.
+
+Para explorar el estado actual del proyecto:
 
 ```bash
+git clone https://github.com/Yosoyepa/write-check-trust.git
+cd write-check-trust
 make bootstrap
 uv run wct doctor
 uv run wct gate --tier commit
 ```
 
-`make bootstrap` instala grupos dev/quality, genera reglas, crea el lock de
-integridad e instala pre-commit. Tras editar archivos protegidos con
-aprobación humana (ver [runbook](docs/runbook.md)), en UNA sola línea:
+Para una adopción reproducible, selecciona un tag publicado o un SHA revisado
+antes de ejecutar `make bootstrap`. El ejemplo anterior clona la rama por
+defecto, no una versión inmutable.
 
-```bash
-uv run wct integrity bless --approved-by "nombre" --reason "aprobado en PR #N: explicación concreta"
-```
+`make bootstrap` instala los grupos dev/quality, genera instrucciones e
+instala los hooks de Git. Solo crea el lock de integridad si no existe;
+**no aprueba ni bendice cambios en un lock existente**.
 
-> [!IMPORTANT]
-> El `--reason` debe citar evidencia de aprobación (URL o `#N`); una frase en
-> prosa no prueba nada y el comando la rechaza. `bless` (y `ratchet record`, y
-> `mutate update-manifest --approved-by`) es exclusivamente humano: el hook
-> PreToolUse bloquea al agente que lo intente, incluida su forma
-> `python -m tools.wct ...`.
+> [!TIP]
+> Usa `uv run wct`, no `wct` a secas. Así ejecutas el arnés del entorno del
+> proyecto y evitas colisiones con otros programas del sistema.
 
-## Tiers y gates
+Si un control falla, lee su causa antes de modificar código o configuración.
+Los diagnósticos de instalación están en
+[el kit de verificación](docs/STATUS.md) y el [runbook](docs/runbook.md).
 
-| Tier | Uso | Presupuesto | Gates |
-|---|---|---:|---:|
-| `fast` | feedback durante edición y PostToolUse | 10 s | 7 |
-| `commit` | pre-commit, Stop y handoff | 120 s | 19 |
-| `pr` | espejo local de la CI de PR, antes de pushear | 10 min | 25 |
-| `full` | release, hardener y CI programada | 30 min | 30 |
+## Qué cambia en beta.2
+
+- **Ratchets exigibles.** `--require` bloquea cuando falta una medición
+  requerida y conserva las comparaciones de las demás métricas. El modo
+  sin requisitos explícitos mantiene su comportamiento histórico.
+- **Cobertura producida y consumida en CI.** El workflow genera LCOV sin
+  property tests, exige cobertura total y docstrings, y ejecuta property
+  en un paso separado. Once tests protegen el contrato de esos pasos.
+- **Honestidad de tests antes del merge.** `G-INTROVERT` pasa al tier
+  `commit`; el escape observado en #37/#38 tiene una regresión en la suite.
+- **Mutación y red team con evidencia productiva.** El veredicto de
+  mutación clasifica los resultados que recibe del motor. Los 30 casos
+  del corpus adversarial usan motores productivos o hooks, sin casos
+  declarados como heurísticos.
+- **Alcance de la verificación más explícito.** El reporte distingue qué
+  controla el arnés y sobre qué rutas, en lugar de tratar cada verde
+  como evidencia de cobertura universal.
+
+Consulta el [CHANGELOG y la guía beta.1 → beta.2](CHANGELOG.md).
+Un proyecto antes verde puede encontrar nuevos bloqueos: diagnostica si
+se trata de un defecto real, una configuración incompleta o una limitación
+del analizador. No relajes umbrales para obtener verde.
+
+## Elige la verificación adecuada
+
+| Tier | Uso | Controles en beta.2 |
+|---|---|---:|
+| `fast` | Feedback corto de reglas, lint, formato y tipos | 7 |
+| `commit` | Verificación habitual antes de entregar: incluye tests unit/integration e integridad | 21 |
+| `pr` | Comprobaciones adicionales para preparar una PR, incluidas cobertura diferencial y aceptación mutada | 27 |
+| `full` | Hardening ampliado, mutación y controles para calificar una release | 34 |
 
 ```bash
 uv run wct gate --tier fast
 uv run wct gate --tier commit
-uv run wct gate --tier pr    # o make pr
-uv run wct gate --tier full
+uv run wct gate --tier pr
 ```
 
-El catálogo completo —qué exige cada gate y con qué herramienta se verifica—
-está en [docs/gates.md](docs/gates.md). El tier `pr` existe para que la
-verificación local sea fiel a CI: todo lo que `quality.yml` exige de una PR,
-en un solo comando (nació de una entrega del piloto que pasó 17/17 local y
-falló en CI por diff-coverage que ningún tier local exponía).
+`full` y `pr` son extensiones de `commit`, no una escalera acumulativa:
+**full no incluye todos los controles de pr**. El tier `pr` tampoco
+sustituye la secuencia completa del workflow, incluido el ratchet exigible.
+El inventario ejecutable vive en [TIERS](tools/wct/gate/runner.py);
+el detalle por control está en el [catálogo](docs/gates.md).
 
-> [!CAUTION]
-> Un gate que crashea retorna exit 2 y **bloquea** (fail-closed): nunca se
-> interpreta como permiso.
+El hook de pre-commit corre `fast`; la CI de calidad corre `commit` y sus
+pasos adicionales. Un resultado `SKIP` no acredita una comprobación
+ejecutada. Los errores del arnés bloquean: no son un permiso para continuar.
 
-## Comandos propios
+### Ratchets con mediciones actuales
+
+Desde la raíz del proyecto, esta es la cadena de cobertura de beta.2:
 
 ```bash
-uv run wct rules build|check
-uv run wct doctor
-uv run wct report
-uv run wct ratchet check
-uv run wct archmetrics --json
-uv run wct dry --json
-uv run wct introvert --json
-uv run wct mutate scan|run|update-manifest
-uv run wct accept parse|ir-dry|generate|run|mutate [feature]
-uv run wct selftest redteam
-uv run wct adopt [ruta]
-uv run wct adopt lock --source <path-clon> [--paths tools/wct] [--force]
-uv run wct adopt check --source <path-clon> [--ref HEAD] [--json]
-uv run wct adopt sync --source <path-clon> --ref <ref> [--out patch] [--json]
-uv run wct fmt [--staged]
-uv run wct split-plan <archivo> [--json]
-uv run wct hotspots [--days 90] [--top 10] [--json]
+uv run pytest --cov --cov-branch --cov-report=lcov:build/coverage/lcov.info -q -m "not property" &&
+uv run wct ratchet check --require coverage-total,docstring-coverage &&
+uv run pytest -q tests/property
 ```
 
-### Ciclo de vida del arnés vendido (`wct adopt lock/check/sync`)
+El encadenamiento con `&&` detiene la secuencia si falla un comando.
+El primero produce el artefacto; el segundo
+exige las mediciones y compara los ratchets; el tercero ejecuta property
+sin incorporarlo a cobertura. En CI, los pasos dependen del éxito previo.
 
-Mecaniza la actualización de vendoring (ej. repositorios que embeben `tools/wct/`)
-siguiendo el patrón cruft/copier: **acoplamiento por hash de commit exacto**.
+`--require all` exige el inventario explícito de diez métricas. **No prueba
+por sí solo la frescura ni la completitud del LCOV**: la procedencia depende
+del checkout limpio y de la ejecución exitosa del productor en esa corrida.
 
-- **`wct adopt lock --source <path>`**: genera `.wct-upstream.json` acoplando los paths al HEAD SHA y URL de origen del clon upstream.
-- **`wct adopt check --source <path> [--ref <ref>]`**: reporta en tres secciones:
-  1. *Drift*: clasificación de archivos locales vs upstream en el commit bloqueado (`identical`, `diverged`, `solo-local`, `solo-upstream`).
-  2. *Behind*: cambios en upstream entre el commit bloqueado y `--ref`.
-  3. *Conflict candidates*: archivos con divergencia local y cambios en upstream (`diverged ∩ changed`).
-- **`wct adopt sync --source <path> --ref <ref>`**: genera el unified diff patch (`build/tmp/wct-sync.patch`) y destaca candidatos a conflicto para revisión manual. **Propone, nunca ejecuta**: ningún archivo del proyecto se modifica automáticamente.
+### Qué se mide y dónde
 
-### Hotspots: dónde refactorizar primero
+Alcances del template incluido; no asumas que un gate cubre todo el repositorio:
 
-`wct hotspots` cruza el churn de `git log --numstat` con la complejidad
-cognitiva por archivo (Tornhill): el mejor predictor empírico de defectos
-publicado. Es asesor — exit 0 siempre — porque un umbral de churn castigaría
-a los módulos simplemente activos.
+| Control | Alcance configurado |
+|---|---|
+| Cobertura | `src/` y `tools/wct/`; property excluido de la medición |
+| Mutación diferencial | Código de ejemplo en `src/example`; no mutación general de `tools/wct/` |
+| Gherkin (`G-ACCEPT`) | Parseo y validación estructural de features; no ejecución automática de todos sus escenarios |
+| Aceptación mutada por defecto | `features/example.feature` y su ejecutor de ejemplo |
+| Red team | 30 adversarios conocidos; resultado del corpus, no garantía sobre ataques no incluidos |
 
-### Formateo acotado al changeset
-
-`wct fmt` formatea SOLO el changeset (diff contra main/master más el árbol de
-trabajo); `wct fmt --staged` se limita a lo staged.
-
-> [!TIP]
-> En proyectos con G-FMT desactivado para adopción gradual, `wct fmt` es el
-> único formateo permitido para agentes: un `ruff format` global re-formatea
-> archivos legacy intactos y detona G-MUT-SITES en archivos ajenos a la tarea.
-
-### Manifiesto de mutación y bless atómico
-
-`wct mutate update-manifest` regenera el manifiesto diferencial: las funciones
-se identifican por fingerprint semántico `archivo::qualname`, no por línea
-(insertar un import ya no invalida medio archivo). Con aprobación humana
-explícita regenera también el lock en el mismo paso, así G-META-1 nunca
-observa un manifiesto fresco con un lock desfasado.
-
-### Split preventivo propuesto
-
-`wct split-plan <archivo>` propone (nunca ejecuta) la partición fachada de
-TEST-007 para un archivo sobre el presupuesto de sitios de mutación: partes
-con sus funciones y sitios, imports de re-exportación para la fachada, y
-rechazo explícito cuando una función sola excede el límite (entonces toca
-partir la función, no el archivo).
-
-### Webhooks
-
-`wct webhook` emite un envelope JSON v1 firmado con HMAC-SHA256; URL y secreto
-solo del entorno, HTTP rechazado salvo localhost. El contrato está en
-`governance/adapters/webhook.schema.json` y el uso, en el
-[runbook](docs/runbook.md#webhooks).
-
-## Arquitectura de ejemplo
-
-```text
-entrypoints → adapters → application → domain
-```
-
-`domain` no conoce IO ni frameworks. `application` define los puertos que usa;
-los adaptadores los implementan. `.importlinter` hace cumplir la dirección y
-`wct archmetrics` calcula fan-in, fan-out, `I`, `A`, `D` y ciclos. Los imports
-bajo `if TYPE_CHECKING:` no cuentan como dependencia; la dinámica que oculte
-módulos del proyecto se reporta como evasión. Las excepciones documentadas de
-wiring diferido viven en `governance/thresholds.yaml` →
-`architecture.cycle_allowlist`.
-
-## Skills y agentes
-
-Las 14 skills canónicas viven en `skills/`; `.claude/skills/` contiene la
-copia para Claude y `plugins/write-check-trust/skills/` la distribución Codex.
-Los roles de `.claude/agents/` son `specifier`, `coder`, `cleaner`,
-`architect`, `hardener` y `verifier`. El verificador carece de Edit/Write:
-quien produjo el cambio no modifica la evidencia de aprobación.
-
-## Adopción en un repositorio existente
-
-Primero un inventario read-only: `uv run wct adopt ../mi-proyecto`. Después
-configura capas y rutas, mide baselines reales y conserva dos reglas:
-
-- código cambiado usa el perfil estricto;
-- deuda legacy solo puede mejorar mediante ratchets.
-
-> [!WARNING]
-> No copies los baselines verdes de este ejemplo a un sistema legacy: medir
-> una ficción equivale a desactivar los gates.
-
-## CI y bypasses
-
-- `.pre-commit-config.yaml` ejecuta fast tier y valida Conventional Commits.
-- `.github/workflows/quality.yml` corre `wct integrity check` tras el
-  `uv sync --frozen` — una PR que toque rutas protegidas sin bless falla en
-  CI, no solo en local — y añade commit tier, aceptación mutada y red-team.
-- `full-hardening.yml` ejecuta el tier completo semanalmente y bajo demanda.
-- Claude Code aplica hooks PreToolUse, PostToolUse, PostToolBatch, Stop,
-  SubagentStart/Stop, ConfigChange y PostCompact.
-- `git commit --no-verify`, ediciones directas de archivos protegidos y
-  comandos indirectos contra el plano de control se bloquean.
-- El Stop hook tiene dos válvulas anti-deadlock: con `WCT_HOOK_ROLE=observer`
-  los roles de solo lectura (verificador, resumidor) advierten en vez de
-  bloquear; y la tercera bloqueada consecutiva pasa con advertencia
-  `DEADLOCK GUARD` y la obligación de declarar el árbol rojo en el handoff.
-  Pasar por una válvula no verdea el árbol: la CI de PR sigue siendo la
-  frontera dura.
-
-El runbook del mantenedor (bless con baseline, Dependabot en bloque, ratchets,
-flaky tests) está en [docs/runbook.md](docs/runbook.md).
-
-## Verificación del harness
+Para una suite completa y el flujo de hardening:
 
 ```bash
 uv run pytest -q
-uv run wct selftest redteam   # 30 adversarios, F1–F15
-uv run wct gate --tier full
+uv run wct selftest redteam
+make harden
 ```
+
+`make harden` ejecuta mutación → aceptación mutada → tier full, deteniéndose
+ante un fallo. No reemplaza la [matriz de release](docs/evolution/plans/RELEASE-BETA2/PLAN.md):
+faltan, entre otras evidencias, el smoke desde clon limpio y el orden aleatorio.
+
+## Adopción en un proyecto existente
+
+Empieza con un inventario de solo lectura:
+
+```bash
+uv run wct adopt ../mi-proyecto
+```
+
+Después define las capas y rutas del proyecto, instala las herramientas y
+mide sus propios baselines. **No copies los baselines verdes del ejemplo
+a un sistema legacy.** El código nuevo se verifica con el perfil estricto;
+la deuda existente se gestiona con ratchets y decisiones explícitas.
+
+Para proyectos que ya integran el arnés y tienen `.wct-upstream.json`,
+desde la raíz del proyecto adoptante:
+
+```bash
+uv run wct adopt check --source ../write-check-trust --ref HEAD
+uv run wct adopt sync --source ../write-check-trust --ref HEAD
+```
+
+La ruta identifica tu clon upstream. `HEAD` significa el commit actual de
+ese clon; usa un tag publicado o SHA revisado para una actualización concreta.
+`check` muestra divergencias y candidatos a conflicto. `sync` escribe una
+**propuesta de parche**, no aplica la actualización a los archivos integrados.
+El registro inicial se hace con `adopt lock`; consulta
+`uv run wct adopt --help` y los [adoptadores documentados](ADOPTERS.md).
+
+## Gobernanza y revisión
+
+Las instrucciones orientan; los verificadores aportan evidencia. La política
+vive en `governance/`, y las copias por proveedor se generan con
+`wct rules build`. La arquitectura de ejemplo sigue:
+`entrypoints → adapters → application → domain`.
+
+Un flujo de trabajo recomendado es especificar el cambio, escribir tests
+que detecten una implementación incorrecta, implementar, revisar la evidencia
+con un verificador independiente y someter la PR a CI.
+
+> [!IMPORTANT]
+> Cambiar rutas protegidas requiere aprobación humana y bless con referencia
+> a la aprobación. Un bless registra una decisión sobre el plano de control;
+> no arregla un test fallido ni autoriza por sí solo una release. Los agentes
+> no deben ejecutarlo en nombre del mantenedor.
+
+No edites las instrucciones generadas ni los manifiestos a mano. Los pasos
+operativos, hooks y válvulas anti-deadlock están en el
+[runbook](docs/runbook.md); pasar una válvula nunca convierte un árbol rojo
+en verde.
+
+## Límites y madurez
+
+- **Beta, no GA.** La política exige evidencia adicional de adopción,
+  continuidad y estabilidad antes de declarar `1.0.0` estable.
+- **Análisis estáticos con límites.** DRY, métricas arquitectónicas e
+  introvert requieren interpretación. Un test por subprocess puede ser
+  legítimo aunque el analizador no trace sus aserciones al SUT.
+- **Mutación sin promesas adicionales.** Un delta vacío no demuestra
+  ejecución de mutantes. Las mejoras de frescura, completitud y aislamiento
+  de [G1b](docs/evolution/plans/G1/README.md) no se consideran entregadas.
+- **Aceptación acotada.** El parser no acepta todavía narrativa libre
+  bajo `Feature:`; se usan comentarios ([#35](https://github.com/Yosoyepa/write-check-trust/issues/35)).
+- **Sin garantía universal.** Los gates no prueban requisitos omitidos,
+  usabilidad, rendimiento real ni seguridad completa. Tampoco se ha probado
+  un aumento causal de calidad o ahorro de modelos atribuible a WCT.
 
 ## Documentación
 
-| Documento | Contenido |
+| Para… | Empieza aquí |
 |---|---|
-| [docs/STATUS.md](docs/STATUS.md) | Estado real del proyecto, verificable por comando — léelo primero: distingue implementado de pendiente. |
-| [docs/gates.md](docs/gates.md) | Catálogo completo: 34 gates en 4 tiers con verificador y comando. |
-| [docs/architecture.md](docs/architecture.md) | Persuasión vs prueba, capas, métricas A/I/D, lock de integridad. |
-| [docs/runbook.md](docs/runbook.md) | Bless, manifiesto de mutación, Dependabot, ratchets, webhooks, CI. |
-| [docs/README.md](docs/README.md) | Índice: assets, ADRs y documentación de proyecto. |
-| [PLAN.md](PLAN.md) | Decisiones, fases, límites y evolución del harness. |
-| [RESEARCH.md](RESEARCH.md) | Investigación fuente detrás de cada decisión. |
+| Ver cambios y actualizar desde beta.1 | [CHANGELOG](CHANGELOG.md) |
+| Entender el estado y derivarlo con comandos | [Estado del proyecto](docs/STATUS.md) |
+| Consultar controles y arquitectura | [Gates](docs/gates.md) · [Arquitectura](docs/architecture.md) |
+| Operar integridad, ratchets y hooks | [Runbook del mantenedor](docs/runbook.md) |
+| Consultar versiones y madurez | [Política de releases](RELEASES.md) · [Releases publicadas](https://github.com/Yosoyepa/write-check-trust/releases) |
+| Explorar decisiones e investigación | [Índice de documentación](docs/README.md) · [Investigación](RESEARCH.md) |
 
-Para contribuir: [CONTRIBUTING.md](CONTRIBUTING.md). Vulnerabilidades:
-[SECURITY.md](SECURITY.md) (reporte privado). Comunidad:
-[código de conducta](CODE_OF_CONDUCT.md). Avisos de terceros:
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+## Contribuir
 
-## Límites honestos
-
-Ningún linter prueba requisitos omitidos, decisiones de producto, usabilidad,
-ética, rendimiento real, calibración de hardware o seguridad completa. Los
-análisis DRY, A/I/D e introvert son heurísticos; por eso combinan evidencia
-automática, ratchets y revisión independiente. Los gates reducen el riesgo y
-la superficie de autoengaño, no sustituyen la responsabilidad humana.
+Lee [CONTRIBUTING.md](CONTRIBUTING.md) y el
+[código de conducta](CODE_OF_CONDUCT.md). Para un falso positivo, incluye
+comando, versión, configuración relevante y una reproducción mínima.
+Reporta vulnerabilidades mediante el canal privado de [SECURITY.md](SECURITY.md).
 
 ## Licencia
 
 [MIT](LICENSE) © 2026 Write, Check, Trust contributors.
+Avisos de terceros: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -260,3 +260,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #39: G3a-1 ratchets exigibles + G-INTROVERT en commit; revisión propia 334 tests, fast 7/7, redteam 30/30, exigible 10/10, sin bloqueantes
 - Commit: 278d31be3e33ffecaac630e02250d730dac5a78e
+
+## 2026-09-06T06:03:18.009048+00:00
+
+- Approved by: yosoyepa
+- Reason: G3a-2 aprobado para bless: visto bueno del diff final tras 5 rondas de revisión (2 humanas + 3 verifier, 12 sondas rechazadas), 2026-09-06 — PR #40
+- Commit: ac5ba8a41f1a5f2183182af8e303c01b8cffcad7

@@ -76,10 +76,14 @@ esta versión corrige; la guía de actualización dice qué hacer al respecto.
    diff-review antes de aplicarlo; nunca se ejecuta solo.
 2. **Espera más rojos honestos**: G-MUT ahora falla con sobrevivientes
    reales, los ratchets exigibles fallan si no pueden medir (corre la
-   cobertura antes: `pytest --cov --cov-branch --cov-report=lcov:
-   build/coverage/lcov.info -q -m "not property"`), y G-INTROVERT en
-   commit exige aserciones que tracen al SUT. Un rojo nuevo de beta.2 es
-   un defecto que beta.1 no veía — arréglalo, no lo suprimas.
+   cobertura antes: `pytest --cov --cov-branch --cov-report=lcov:build/coverage/lcov.info -q -m "not property"`), y G-INTROVERT en
+   commit exige aserciones que tracen al SUT. Un rojo nuevo de beta.2
+   señala algo que beta.1 no veía: **diagnostícalo antes de actuar**.
+   El endurecimiento tiene limitaciones y falsos positivos conocidos
+   (p. ej. G-INTROVERT no traza tests que ejecutan el SUT por subprocess
+   — su limitación está documentada); si el hallazgo es real, arréglalo;
+   si es un falso positivo del instrumento, repórtalo con la evidencia —
+   en ningún caso lo suprimas sin diagnóstico.
 3. **Property tests separados**: si copias la cadena de CI del template,
    property queda fuera de la corrida de cobertura (TEST-008) y necesita
    su paso propio — sin él deja de correr en CI.

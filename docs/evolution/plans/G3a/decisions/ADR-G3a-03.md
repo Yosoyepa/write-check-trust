@@ -32,6 +32,34 @@ obligatorios; entrega sin commit en este encargo):
   (G-MUT, G-COV-TOTAL, G-ACCEPT-MUT, G-PROP…) requiere su propio análisis
   de dependencias/costo y autorización — backlog con medición, no paquete.
 
+## Addenda 2026-09-05 — G3a-2 con separación property (post-G3a-1)
+
+G3a-1 se fusionó (PR #39, `f449cd6`). Para G3a-2, el paso único descrito
+arriba se AMPLÍA a tres cambios en `quality.yml`, reconciliados con el
+hallazgo R03 de RELEASE-BETA2/READINESS.md:
+
+1. El paso de cobertura existente añade `-m "not property"`: alinea el
+   workflow con la receta productiva (`_COVERAGE_TOTAL_COMMAND`, ya
+   fijada por G3a-1) y con TEST-008. Hoy el workflow es la única receta
+   que INCLUYE property en coverage — segunda definición, patrón F05.
+2. Paso nuevo `Require measured ratchets` inmediatamente después del
+   productor (frescura por orden de pasos, sin `continue-on-error`).
+3. Paso nuevo `Run property tests separately`: necesario por (1) — G-TEST
+   de commit corre `tests/unit tests/integration -m "not property"`
+   (`gate/runner.py:369-372`), así que excluir property del productor sin
+   este paso dejaría a los property SIN ejecución en CI. El paso preserva
+   la ejecución que hoy vive dentro de cobertura; no añade una batería
+   nueva.
+
+La separación property es una ampliación explícita respecto del paso
+único original de este ADR: requirió aprobación humana del diff completo
+— **otorgada como Puerta 1 el 2026-09-05 (yosoyepa)**, aplicada
+byte a byte — y medición del costo del paso añadido (sin promesa de
+coste cero). El diff exacto, evidencia de viabilidad (exigible 2/2 sobre
+LCOV sin property, exit 0), tests de contrato con rojo honesto y su
+ejecución viven en
+[specs/SPEC-G3a-2](../specs/SPEC-G3a-2.md).
+
 ## Inventario de controles faltantes (para decisiones futuras, NO parte de G3a)
 
 | Control | Tier actual | Dependencia | Costo preliminar |

@@ -278,3 +278,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: G-DRY-TOK bloqueo de calificación: dedup real dry/parse_tree sin relajar presupuesto; PR #44 https://github.com/Yosoyepa/write-check-trust/pull/44
 - Commit: 75df709e7a9248a1122929b831894569c2a75f30
+
+## 2026-09-08T01:06:57.927155+00:00
+
+- Approved by: yosoyepa
+- Reason: Aprobación humana del diff CND-74E0 y contratos v2; PR #45; HEAD 4666927
+- Commit: 46669278ece7e3b7cc8059a5eff9ae27c2735284

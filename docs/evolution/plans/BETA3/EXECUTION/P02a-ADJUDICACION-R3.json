@@ -1,0 +1,463 @@
+{
+  "schema_version": 1,
+  "status": "proposal_pending_human_authorization_not_applied",
+  "scope": "P02a focal mutation only; not a productive gate PASS",
+  "candidate_manifest_sha256": "e4b25b2b16183de4da325f2c1264a53a1d5590e1eda1e1943635d1e3eb080570",
+  "base_candidate_head": "b414ba63f0de06477da7ef445e4ccec7624fb578",
+  "runtime": {
+    "python": "3.13.14",
+    "git": "2.55.0",
+    "mutmut": "3.7.0",
+    "platform": "Linux"
+  },
+  "raw_results": {
+    "generated": 1564,
+    "killed": 1510,
+    "survived": 54,
+    "timeout": 0,
+    "other_or_missing": 0
+  },
+  "raw_results_sha256": "bfba4ba3f119aa47e92499819c71bd8e782bf218fec1fe622671501c45d4c24c",
+  "counts": {
+    "E": 47,
+    "D": 7,
+    "R": 0,
+    "U": 0,
+    "I": 0
+  },
+  "source_provenance": "12 source files byte-identical to R1; R3 changes are tests only. E/D reviewed independently; human exception NOT authorized. D timing interpretation reviewed against Linux EpollSelector.",
+  "entries": [
+    {
+      "id": "tools.wct.evidence.input_file_read.x__open__mutmut_25",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_file_read.py",
+      "source_sha256": "754c625c266a5722a3dff224e36bc3cc2394c014909c408640e4d08776c00875",
+      "basis": "Fallback keys 0 and 1 are both absent from the errno map {ELOOP, ENOENT}; original errno field is unchanged.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -4,3 +4,3 @@\n     except OSError as error:\n         codes = {errno.ELOOP: 'symlink_input', errno.ENOENT: 'unstable_inputs'}\n-        raise InputCaptureError(codes.get(error.errno or 0, 'io_error'), path, error.errno) from error\n+        raise InputCaptureError(codes.get(error.errno or 1, 'io_error'), path, error.errno) from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_read.x_read_file__mutmut_11",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_file_read.py",
+      "source_sha256": "754c625c266a5722a3dff224e36bc3cc2394c014909c408640e4d08776c00875",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(parent: int, path: str, before: os.stat_result, available: int) -> InputFile:\n     \"\"\"Read bytes through a no-follow descriptor, validating before and after.\"\"\"\n-    descriptor = _open(parent, path.rsplit('/', 1)[-1], path)\n+    descriptor = _open(parent, path.rsplit('/')[-1], path)\n     try:\n         observed = os.fstat(descriptor)"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_read.x_read_file__mutmut_14",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_file_read.py",
+      "source_sha256": "754c625c266a5722a3dff224e36bc3cc2394c014909c408640e4d08776c00875",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(parent: int, path: str, before: os.stat_result, available: int) -> InputFile:\n     \"\"\"Read bytes through a no-follow descriptor, validating before and after.\"\"\"\n-    descriptor = _open(parent, path.rsplit('/', 1)[-1], path)\n+    descriptor = _open(parent, path.rsplit('/', 2)[-1], path)\n     try:\n         observed = os.fstat(descriptor)"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_root.x__directory__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_file_root.py",
+      "source_sha256": "8375ab59e5e69204eb4d681d6321847b2efdddc40b95a3c5a868df44fa9e9136",
+      "basis": "Independent review adjudicated False and None as equivalent for os.stat follow_symlinks on the stated Linux/CPython 3.13 profile, supported by a paired real-symlink observation rather than kwargs assertions. This does not claim equivalence on other runtimes; human authorization of the exception remains pending.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(parent: int, name: str) -> int:\n-    before = os.stat(name, dir_fd=parent, follow_symlinks=False)\n+    before = os.stat(name, dir_fd=parent, follow_symlinks=None)\n     if stat.S_ISLNK(before.st_mode):\n         raise InputCaptureError('symlink_input')"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_root.x__directory_error__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_file_root.py",
+      "source_sha256": "8375ab59e5e69204eb4d681d6321847b2efdddc40b95a3c5a868df44fa9e9136",
+      "basis": "Independent review adjudicated False and None as equivalent for os.stat follow_symlinks on the stated Linux/CPython 3.13 profile, supported by a paired real-symlink observation rather than kwargs assertions. This does not claim equivalence on other runtimes; human authorization of the exception remains pending.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(parent: int, name: str, error: OSError) -> str:\n     try:\n-        current = os.stat(name, dir_fd=parent, follow_symlinks=False)\n+        current = os.stat(name, dir_fd=parent, follow_symlinks=None)\n     except FileNotFoundError:\n         return 'unstable_inputs'"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_root.x__regular_executable__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_file_root.py",
+      "source_sha256": "8375ab59e5e69204eb4d681d6321847b2efdddc40b95a3c5a868df44fa9e9136",
+      "basis": "Independent review adjudicated False and None as equivalent for os.stat follow_symlinks on the stated Linux/CPython 3.13 profile, supported by a paired real-symlink observation rather than kwargs assertions. This does not claim equivalence on other runtimes; human authorization of the exception remains pending.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(parent: int, name: str) -> None:\n-    observed = os.stat(name, dir_fd=parent, follow_symlinks=False)\n+    observed = os.stat(name, dir_fd=parent, follow_symlinks=None)\n     if not stat.S_ISREG(observed.st_mode):\n         raise InputCaptureError('git_unavailable')"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_root.x_validate_executable__mutmut_3",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_file_root.py",
+      "source_sha256": "8375ab59e5e69204eb4d681d6321847b2efdddc40b95a3c5a868df44fa9e9136",
+      "basis": "Variacion diagnostica permitida: TypeError cambia su texto pero conserva identificacion del argumento; el contrato no fija sus bytes. No es equivalencia literal ni se extiende al catalogo cerrado InputCaptureError.code.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Require the caller-reviewed executable rather than searching PATH.\"\"\"\n     if not isinstance(executable, Path):\n-        raise TypeError('git_executable')\n+        raise TypeError('XXgit_executableXX')\n     try:\n         with open_root(executable.parent) as parent:"
+    },
+    {
+      "id": "tools.wct.evidence.input_file_root.x_validate_root__mutmut_3",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_file_root.py",
+      "source_sha256": "8375ab59e5e69204eb4d681d6321847b2efdddc40b95a3c5a868df44fa9e9136",
+      "basis": "Variacion diagnostica permitida: TypeError cambia su texto pero conserva identificacion del argumento; el contrato no fija sus bytes. No es equivalencia literal ni se extiende al catalogo cerrado InputCaptureError.code.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Validate the root value before invoking Git or walking inputs.\"\"\"\n     if not isinstance(root, Path):\n-        raise TypeError('root')\n+        raise TypeError('XXrootXX')\n     if sys.platform != 'linux':\n         raise InputCaptureError('unsupported_platform')"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_directory__mutmut_5",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(self, parent: int, path: str, before: os.stat_result) -> None:\n-    name = path.rsplit('/', 1)[-1]\n+    name = path.rsplit('/')[-1]\n     descriptor = open_directory(parent, name, path)\n     self.stack.callback(os.close, descriptor)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_directory__mutmut_8",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(self, parent: int, path: str, before: os.stat_result) -> None:\n-    name = path.rsplit('/', 1)[-1]\n+    name = path.rsplit('/', 2)[-1]\n     descriptor = open_directory(parent, name, path)\n     self.stack.callback(os.close, descriptor)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_entry__mutmut_11",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(self, parent: int, path: str) -> None:\n     self.visited += 1\n-    name = path.rsplit('/', 1)[-1]\n+    name = path.rsplit('/', 2)[-1]\n     before = os.stat(name, dir_fd=parent, follow_symlinks=False)\n     kind = _kind(before.st_mode, path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_entry__mutmut_17",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "Independent review adjudicated False and None as equivalent for os.stat follow_symlinks on the stated Linux/CPython 3.13 profile, supported by a paired real-symlink observation rather than kwargs assertions. This does not claim equivalence on other runtimes; human authorization of the exception remains pending.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     self.visited += 1\n     name = path.rsplit('/', 1)[-1]\n-    before = os.stat(name, dir_fd=parent, follow_symlinks=False)\n+    before = os.stat(name, dir_fd=parent, follow_symlinks=None)\n     kind = _kind(before.st_mode, path)\n     rule = exclusion_rule(path, kind)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_entry__mutmut_8",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(self, parent: int, path: str) -> None:\n     self.visited += 1\n-    name = path.rsplit('/', 1)[-1]\n+    name = path.rsplit('/')[-1]\n     before = os.stat(name, dir_fd=parent, follow_symlinks=False)\n     kind = _kind(before.st_mode, path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_selected__mutmut_5",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(self, parent: int, path: str, before: os.stat_result, kind: str) -> None:\n-    name = path.rsplit('/', 1)[-1]\n+    name = path.rsplit('/')[-1]\n     if name == '.git':\n         raise InputCaptureError('unsupported_git_state', path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁ_selected__mutmut_8",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(self, parent: int, path: str, before: os.stat_result, kind: str) -> None:\n-    name = path.rsplit('/', 1)[-1]\n+    name = path.rsplit('/', 2)[-1]\n     if name == '.git':\n         raise InputCaptureError('unsupported_git_state', path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_files.xǁ_Traversalǁverify__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_files.py",
+      "source_sha256": "09a8a0ec706a4590f8c7bb1762f7e6968eb7429ac1f02671545ee78a98b56144",
+      "basis": "Independent review adjudicated False and None as equivalent for os.stat follow_symlinks on the stated Linux/CPython 3.13 profile, supported by a paired real-symlink observation rather than kwargs assertions. This does not claim equivalence on other runtimes; human authorization of the exception remains pending.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(self) -> None:\n     for parent, name, path, before in self.observed:\n-        after = os.stat(name, dir_fd=parent, follow_symlinks=False)\n+        after = os.stat(name, dir_fd=parent, follow_symlinks=None)\n         input_file_read.same_metadata(before, after, path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_preflight.x__config__mutmut_15",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_preflight.py",
+      "source_sha256": "2646ac1db3c16d181173f335514bf96ce30b9efd134e7bcad3f6a6ad3d907aa0",
+      "basis": "Git configuration key/regexp case aliases; uppercase filter probe returned filter.p02.clean with exit0, filter-uppercase-probe.txt. Scope is installed Git2.55.0, not all implementations.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(root: Path, executable: Path) -> None:\n-    result = query(root, executable, ('config', '--bool', '--get', 'core.sparseCheckout'))\n+    result = query(root, executable, ('config', '--bool', '--get', 'core.sparsecheckout'))\n     if result not in ((1, b'', b''), (0, b'false\\n', b'')):\n         raise InputCaptureError('unsupported_git_state')"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_preflight.x__config__mutmut_16",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_preflight.py",
+      "source_sha256": "2646ac1db3c16d181173f335514bf96ce30b9efd134e7bcad3f6a6ad3d907aa0",
+      "basis": "Git configuration key/regexp case aliases; uppercase filter probe returned filter.p02.clean with exit0, filter-uppercase-probe.txt. Scope is installed Git2.55.0, not all implementations.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(root: Path, executable: Path) -> None:\n-    result = query(root, executable, ('config', '--bool', '--get', 'core.sparseCheckout'))\n+    result = query(root, executable, ('config', '--bool', '--get', 'CORE.SPARSECHECKOUT'))\n     if result not in ((1, b'', b''), (0, b'false\\n', b'')):\n         raise InputCaptureError('unsupported_git_state')"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_preflight.x__config__mutmut_46",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_preflight.py",
+      "source_sha256": "2646ac1db3c16d181173f335514bf96ce30b9efd134e7bcad3f6a6ad3d907aa0",
+      "basis": "Git configuration key/regexp case aliases; uppercase filter probe returned filter.p02.clean with exit0, filter-uppercase-probe.txt. Scope is installed Git2.55.0, not all implementations.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -3,5 +3,5 @@\n     if result not in ((1, b'', b''), (0, b'false\\n', b'')):\n         raise InputCaptureError('unsupported_git_state')\n-    filters = query(root, executable, ('config', '--includes', '--null', '--name-only', '--get-regexp', '^filter\\\\.'))\n+    filters = query(root, executable, ('config', '--includes', '--null', '--name-only', '--get-regexp', '^FILTER\\\\.'))\n     if filters != (1, b'', b''):\n         raise InputCaptureError('unsupported_git_state')"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_process.x__drain__mutmut_11",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_process.py",
+      "source_sha256": "36f1b54a43ce5e880277bfd2c6a23fedab484ab5b6849077bf8ec4f2e2b91c09",
+      "basis": "typing.cast returns its second argument unchanged; first argument is runtime-irrelevant.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -4,5 +4,5 @@\n     with selectors.DefaultSelector() as selector:\n         for index, pipe in enumerate((process.stdout, process.stderr)):\n-            selector.register(cast(BinaryIO, pipe), selectors.EVENT_READ, index)\n+            selector.register(cast(None, pipe), selectors.EVENT_READ, index)\n         while selector.get_map():\n             for key, _ in selector.select(_remaining(deadline)):"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_process.x__drain__mutmut_31",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_git_process.py",
+      "source_sha256": "36f1b54a43ce5e880277bfd2c6a23fedab484ab5b6849077bf8ec4f2e2b91c09",
+      "basis": "Variacion temporal permitida: EOF desregistra antes de break; segundo pipe sigue listo en epoll level-triggered. Maximo una vuelta adicional, sin perdida de bytes ni bypass de limite/reap. No se promete batching exacto o exito a N ns del deadline.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -10,5 +10,5 @@\n                 if not chunk:\n                     selector.unregister(key.fileobj)\n-                    continue\n+                    break\n                 total += len(chunk)\n                 if total > GIT_OUTPUT_LIMIT:"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_protocol.x_decode_path__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_protocol.py",
+      "source_sha256": "37356400b72c8adf77650d9b04535c3f24d174546dd4d757bf0c4dfd9447fa73",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Decode one strict relative path without replacement or normalization.\"\"\"\n     try:\n-        return validate_path(raw.decode('utf-8', errors='strict'))\n+        return validate_path(raw.decode(errors='strict'))\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_path') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_protocol.x_decode_path__mutmut_5",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_protocol.py",
+      "source_sha256": "37356400b72c8adf77650d9b04535c3f24d174546dd4d757bf0c4dfd9447fa73",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Decode one strict relative path without replacement or normalization.\"\"\"\n     try:\n-        return validate_path(raw.decode('utf-8', errors='strict'))\n+        return validate_path(raw.decode('utf-8'))\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_path') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_protocol.x_decode_path__mutmut_7",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_protocol.py",
+      "source_sha256": "37356400b72c8adf77650d9b04535c3f24d174546dd4d757bf0c4dfd9447fa73",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Decode one strict relative path without replacement or normalization.\"\"\"\n     try:\n-        return validate_path(raw.decode('utf-8', errors='strict'))\n+        return validate_path(raw.decode('UTF-8', errors='strict'))\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_path') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_protocol.x_scalar__mutmut_15",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_protocol.py",
+      "source_sha256": "37356400b72c8adf77650d9b04535c3f24d174546dd4d757bf0c4dfd9447fa73",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -4,5 +4,5 @@\n         raise InputCaptureError('unsupported_git_state')\n     try:\n-        value = wire[:-1].decode('utf-8', errors='strict')\n+        value = wire[:-1].decode(errors='strict')\n     except UnicodeError as error:\n         raise InputCaptureError('unsupported_git_state') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_protocol.x_scalar__mutmut_16",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_protocol.py",
+      "source_sha256": "37356400b72c8adf77650d9b04535c3f24d174546dd4d757bf0c4dfd9447fa73",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -4,5 +4,5 @@\n         raise InputCaptureError('unsupported_git_state')\n     try:\n-        value = wire[:-1].decode('utf-8', errors='strict')\n+        value = wire[:-1].decode('utf-8')\n     except UnicodeError as error:\n         raise InputCaptureError('unsupported_git_state') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_protocol.x_scalar__mutmut_20",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_protocol.py",
+      "source_sha256": "37356400b72c8adf77650d9b04535c3f24d174546dd4d757bf0c4dfd9447fa73",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -4,5 +4,5 @@\n         raise InputCaptureError('unsupported_git_state')\n     try:\n-        value = wire[:-1].decode('utf-8', errors='strict')\n+        value = wire[:-1].decode('UTF-8', errors='strict')\n     except UnicodeError as error:\n         raise InputCaptureError('unsupported_git_state') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__in_scope__mutmut_3",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Sentinel values unknown/None/XXunknownXX/UNKNOWN all differ from regular and directory; selected_path only distinguishes those two labels.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(path: str, typed: dict[str, str], kinds: dict[str, str]) -> bool:\n-    if not selected_path(path, 'unknown'):\n+    if not selected_path(path, None):\n         return False\n     kind = typed.get(path, kinds.get(path))"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__in_scope__mutmut_6",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Sentinel values unknown/None/XXunknownXX/UNKNOWN all differ from regular and directory; selected_path only distinguishes those two labels.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(path: str, typed: dict[str, str], kinds: dict[str, str]) -> bool:\n-    if not selected_path(path, 'unknown'):\n+    if not selected_path(path, 'XXunknownXX'):\n         return False\n     kind = typed.get(path, kinds.get(path))"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__in_scope__mutmut_7",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Sentinel values unknown/None/XXunknownXX/UNKNOWN all differ from regular and directory; selected_path only distinguishes those two labels.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,4 +1,4 @@\n def observed_function(path: str, typed: dict[str, str], kinds: dict[str, str]) -> bool:\n-    if not selected_path(path, 'unknown'):\n+    if not selected_path(path, 'UNKNOWN'):\n         return False\n     kind = typed.get(path, kinds.get(path))"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__kind__mutmut_1",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Historical symlink label is consumed only by projection selection; these labels remain neither regular nor directory and do not enter output GitChange. Counterargument: do not extend this claim to filesystem kind validation.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,2 +1,2 @@\n def observed_function(entry: dict[str, Any]) -> str:\n-    return 'symlink' if entry['mode'] == '120000' else 'regular'\n+    return 'XXsymlinkXX' if entry['mode'] == '120000' else 'regular'"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__kind__mutmut_2",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Historical symlink label is consumed only by projection selection; these labels remain neither regular nor directory and do not enter output GitChange. Counterargument: do not extend this claim to filesystem kind validation.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,2 +1,2 @@\n def observed_function(entry: dict[str, Any]) -> str:\n-    return 'symlink' if entry['mode'] == '120000' else 'regular'\n+    return 'SYMLINK' if entry['mode'] == '120000' else 'regular'"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__status_row__mutmut_10",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     try:\n         codes = row[:2].decode('ascii')\n-        path = row[3:].decode('utf-8', 'strict')\n+        path = row[3:].decode('utf-8')\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_path') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__status_row__mutmut_13",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     try:\n         codes = row[:2].decode('ascii')\n-        path = row[3:].decode('utf-8', 'strict')\n+        path = row[3:].decode('UTF-8', 'strict')\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_path') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_git_scope.x__status_row__mutmut_5",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_git_scope.py",
+      "source_sha256": "954b846221eb92ff8fe38adb5ee4b71c94dd434612ba6fe6718d44e790a76ec2",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(row: bytes) -> tuple[str, str, str]:\n     try:\n-        codes = row[:2].decode('ascii')\n+        codes = row[:2].decode('ASCII')\n         path = row[3:].decode('utf-8', 'strict')\n     except UnicodeError as error:"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__identity__mutmut_19",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Hex escape x1f/x1F and x7f/x7F designate identical regex codepoints.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -4,4 +4,4 @@\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_spec') from error\n-    if not value or re.search('[\\\\x00-\\\\x1f\\\\x7f]', value):\n+    if not value or re.search('[\\\\x00-\\\\x1F\\\\x7F]', value):\n         raise InputCaptureError('invalid_spec')"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__identity__mutmut_3",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(value: str) -> None:\n     try:\n-        value.encode('utf-8', errors='strict')\n+        value.encode(errors='strict')\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_spec') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__identity__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(value: str) -> None:\n     try:\n-        value.encode('utf-8', errors='strict')\n+        value.encode('utf-8')\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_spec') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__identity__mutmut_6",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(value: str) -> None:\n     try:\n-        value.encode('utf-8', errors='strict')\n+        value.encode('UTF-8', errors='strict')\n     except UnicodeError as error:\n         raise InputCaptureError('invalid_spec') from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__required__mutmut_20",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "UTF-8 lexicographic ordering preserves Unicode scalar ordering for already validated strict strings; sorting without encode has same order.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -6,3 +6,3 @@\n     if not paths or len(paths) != len(set(paths)):\n         raise InputCaptureError('invalid_spec')\n-    return tuple(sorted(paths, key=lambda path: path.encode()))\n+    return tuple(sorted(paths, key=None))"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__required__mutmut_22",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "UTF-8 lexicographic ordering preserves Unicode scalar ordering for already validated strict strings; sorting without encode has same order.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -6,3 +6,3 @@\n     if not paths or len(paths) != len(set(paths)):\n         raise InputCaptureError('invalid_spec')\n-    return tuple(sorted(paths, key=lambda path: path.encode()))\n+    return tuple(sorted(paths))"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__required__mutmut_4",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Variacion diagnostica permitida: TypeError cambia su texto pero conserva identificacion del argumento; el contrato no fija sus bytes. No es equivalencia literal ni se extiende al catalogo cerrado InputCaptureError.code.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     for path in paths:\n         if type(path) is not str:\n-            raise TypeError('required path')\n+            raise TypeError('XXrequired pathXX')\n         validate_path(path, 'invalid_spec')\n     if not paths or len(paths) != len(set(paths)):"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x__typed_fields__mutmut_5",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "typing.cast returns its second argument unchanged; first argument is runtime-irrelevant.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     if type(value) is not expected:\n         raise TypeError(name)\n-    for field in fields(cast(Any, value)):\n+    for field in fields(cast(None, value)):\n         item = getattr(value, field.name)\n         kind: type = int if field.name == 'schema_version' else str"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_canonical_json__mutmut_4",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Parent independently compared eight vectors and read JSONEncoder: False/None select the same non-ASCII encoder. This is not authorization to exclude.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,3 +1,3 @@\n def observed_function(value: Any) -> bytes:\n     \"\"\"Serialize a JSON value without process or filesystem observations.\"\"\"\n-    return (json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')) + '\\n').encode()\n+    return (json.dumps(value, sort_keys=True, ensure_ascii=None, separators=(',', ':')) + '\\n').encode()"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_arguments__mutmut_15",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Variacion diagnostica permitida: TypeError cambia su texto pero conserva identificacion del argumento; el contrato no fija sus bytes. No es equivalencia literal ni se extiende al catalogo cerrado InputCaptureError.code.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Validate explicit values before any input reads.\"\"\"\n     _typed_fields(spec, InputSpec, 'spec')\n-    _typed_fields(context, ContextRef, 'context')\n+    _typed_fields(context, ContextRef, 'XXcontextXX')\n     _versions(spec, context)\n     _identity(context.review_id)"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_arguments__mutmut_7",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Variacion diagnostica permitida: TypeError cambia su texto pero conserva identificacion del argumento; el contrato no fija sus bytes. No es equivalencia literal ni se extiende al catalogo cerrado InputCaptureError.code.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(spec: InputSpec, context: ContextRef) -> InputSpec:\n     \"\"\"Validate explicit values before any input reads.\"\"\"\n-    _typed_fields(spec, InputSpec, 'spec')\n+    _typed_fields(spec, InputSpec, 'XXspecXX')\n     _typed_fields(context, ContextRef, 'context')\n     _versions(spec, context)"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_arguments__mutmut_8",
+      "classification": "D",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Variacion diagnostica permitida: TypeError cambia su texto pero conserva identificacion del argumento; el contrato no fija sus bytes. No es equivalencia literal ni se extiende al catalogo cerrado InputCaptureError.code.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -1,5 +1,5 @@\n def observed_function(spec: InputSpec, context: ContextRef) -> InputSpec:\n     \"\"\"Validate explicit values before any input reads.\"\"\"\n-    _typed_fields(spec, InputSpec, 'spec')\n+    _typed_fields(spec, InputSpec, 'SPEC')\n     _typed_fields(context, ContextRef, 'context')\n     _versions(spec, context)"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_path__mutmut_18",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Hex escape case changes identical regex codepoints, not pattern semantics.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -5,5 +5,5 @@\n     except UnicodeError as error:\n         raise InputCaptureError(code) from error\n-    invalid = re.search('[\\\\x00-\\\\x1f\\\\x7f\\\\\\\\]', path)\n+    invalid = re.search('[\\\\x00-\\\\x1F\\\\x7F\\\\\\\\]', path)\n     if invalid or any((part in {'', '.', '..'} for part in path.split('/'))):\n         raise InputCaptureError(code)"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_path__mutmut_5",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Reject unrepresentable relative paths without normalizing them.\"\"\"\n     try:\n-        path.encode('utf-8', errors='strict')\n+        path.encode(errors='strict')\n     except UnicodeError as error:\n         raise InputCaptureError(code) from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_path__mutmut_6",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Reject unrepresentable relative paths without normalizing them.\"\"\"\n     try:\n-        path.encode('utf-8', errors='strict')\n+        path.encode('utf-8')\n     except UnicodeError as error:\n         raise InputCaptureError(code) from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_manifest.x_validate_path__mutmut_8",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_manifest.py",
+      "source_sha256": "f61b77bf04dd5df14bbfc161a677c2ddd9e1629fe7450517b3b25e0cde76b7ca",
+      "basis": "Python encode/decode defaults are UTF-8 and strict; codec names are case-insensitive. No changed accepted values or output bytes in this profile.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Reject unrepresentable relative paths without normalizing them.\"\"\"\n     try:\n-        path.encode('utf-8', errors='strict')\n+        path.encode('UTF-8', errors='strict')\n     except UnicodeError as error:\n         raise InputCaptureError(code) from error"
+    },
+    {
+      "id": "tools.wct.evidence.input_selection.x__directory_rule__mutmut_22",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_selection.py",
+      "source_sha256": "daf18becfdaa77d40a0328e4fb2dbdaf089a6457d1629caa9ab4c694bd3c9ec0",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     root_rules = {'build': 'root-output', '.venv': 'root-environment'}\n     caches = {'__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache'}\n-    if path.rsplit('/', 1)[-1] in caches:\n+    if path.rsplit('/')[-1] in caches:\n         return 'cache-directory'\n     return root_rules.get(path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_selection.x__directory_rule__mutmut_25",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_selection.py",
+      "source_sha256": "daf18becfdaa77d40a0328e4fb2dbdaf089a6457d1629caa9ab4c694bd3c9ec0",
+      "basis": "rsplit maxsplit 1/2/omitted retains the same last component for every valid nonempty POSIX path; only allocation differs.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     root_rules = {'build': 'root-output', '.venv': 'root-environment'}\n     caches = {'__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache'}\n-    if path.rsplit('/', 1)[-1] in caches:\n+    if path.rsplit('/', 2)[-1] in caches:\n         return 'cache-directory'\n     return root_rules.get(path)"
+    },
+    {
+      "id": "tools.wct.evidence.input_selection.x_selected_path__mutmut_6",
+      "classification": "E",
+      "source_path": "tools/wct/evidence/input_selection.py",
+      "source_sha256": "daf18becfdaa77d40a0328e4fb2dbdaf089a6457d1629caa9ab4c694bd3c9ec0",
+      "basis": "Extra empty-prefix iteration asks exclusion_rule('', directory), which returns None without side effects; remaining prefixes are unchanged.",
+      "delta_from_preserved_R1": "--- original\n+++ survived\n@@ -2,5 +2,5 @@\n     \"\"\"Project historical paths by structural ancestors and final type.\"\"\"\n     parts = path.split('/')\n-    for length in range(1, len(parts)):\n+    for length in range(len(parts)):\n         if exclusion_rule('/'.join(parts[:length]), 'directory'):\n             return False"
+    }
+  ]
+}

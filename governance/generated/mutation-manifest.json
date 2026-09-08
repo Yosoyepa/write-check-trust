@@ -1,14 +1,14 @@
 {
   "functions": {
-    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.__init__": "1cd58a4cb416d0886d95670f0a494c308647792918bc5e3a04bc80e956c4465a",
-    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.get": "0ee7e15d2bfe27371a5aa9c7b682dbfcb16c858ae4770394e9f3e52f1ad01252",
-    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.save": "f02d0028a0da32e7b30f1398af93215f16fa28535b6f87d55838e123de33666e",
-    "src/example/application/reserve_stock.py::InventoryRepository.get": "7a442887d10135d775b74d96ea15a7946e47d6636f5b7a5c44113cf54675bb5e",
-    "src/example/application/reserve_stock.py::InventoryRepository.save": "21a1a981290d2b0d7f9cae80ea3dc1a6a682494c4b63a00a148b7d136611c269",
-    "src/example/application/reserve_stock.py::ReserveStock.__init__": "1ba67af42e4b39ff398b1f50bbe5bb0fb92a63e15e1f36f3bfd0c4ab9ada2408",
-    "src/example/application/reserve_stock.py::ReserveStock.execute": "eb2a1078b1aef63a51cb74525f8917beb427cacce9d7ece4610d1ba0c13462cb",
-    "src/example/domain/inventory.py::Inventory.reserve": "6333e4afe671e87b198e123ad10fd927d40a422b33a37a659643371a8c437995",
-    "src/example/entrypoints/cli.py::main": "9c7cfd1e82ccbbb67d4bfeff2b66e933c8375ff2d6a3fc913806d491d0ca1953"
+    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.__init__": "501eb835c2916967cc69e76ee05c720f51d1690f7718a383893a31f95cebc2b3",
+    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.get": "f04981407c1ff6b0d3fd5763874315c5f139f3629f7c6c737c4d9f98525165cb",
+    "src/example/adapters/memory_inventory.py::MemoryInventoryRepository.save": "59fb42d1acda19d5c7e34580358c1f04013df8d519a9cac45c9764995c2dcfbc",
+    "src/example/application/reserve_stock.py::InventoryRepository.get": "9652c29ffa95c750364917747f6ac93b6662c79b5da0dbf75e197cc62cdd1404",
+    "src/example/application/reserve_stock.py::InventoryRepository.save": "c22114f8a713ff3bc5e80dd0dd2b42d48604055352440499f6d0451ce319ef9a",
+    "src/example/application/reserve_stock.py::ReserveStock.__init__": "a16d3ae90d91ac0a8dd055db364c6345c5eae830b9786a3f15fbcacc89acdf57",
+    "src/example/application/reserve_stock.py::ReserveStock.execute": "9e4f2d7e379ea7b33cf7f44859e718e165ac84bc6e57867363c451384dbdd46e",
+    "src/example/domain/inventory.py::Inventory.reserve": "9c35339e6e5d6a29587d29668d043ad730892de3f4d691b2275de4fd9845c2d8",
+    "src/example/entrypoints/cli.py::main": "e912f1ef0f20d935b6ed86d94b57bad7a21bd75a5ce38ef2076355de5876b096"
   },
   "schema_version": 2
 }

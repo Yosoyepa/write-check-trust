@@ -1,5 +1,5 @@
 {
-  "commit": "75df709e7a9248a1122929b831894569c2a75f30",
+  "commit": "46669278ece7e3b7cc8059a5eff9ae27c2735284",
   "files": {
     ".claude/agents/architect.md": "6cc0e84aef88676f0a578ad8ffa709dca75b6fb560f4745abf1ffc2b61435345",
     ".claude/agents/cleaner.md": "58e6084e0654b91590a714feeec7aed1db777c5e02ac00952d20d771741c8c22",
@@ -59,8 +59,8 @@
     "governance/decisions/ADR-001-ponytail.md": "6c03fe60f11015040234ef82e16b84ee2668718cdf9d32c435c8d1c503e9d1ad",
     "governance/decisions/ADR-002-ruff.md": "db1c65720c305b0572482d8fd76311c48b2f52fc8dc900de79c764a21c80d298",
     "governance/decisions/ADR-003-crap-threshold.md": "3c604d392cce1098e943cb2c68198784899cf018b105fe3acb078c1331f5288f",
-    "governance/generated/mutation-manifest.json": "3f5c6257bdc5547fc13108c6254cf6b4a304728eb670a4a9bf62be93fd86f216",
-    "governance/integrity-log.md": "5e7d27a9409b0c033254d59b55a282951b34d7772abbc3f4a616f7b1608d3a75",
+    "governance/generated/mutation-manifest.json": "04bf135aefe3aa7d3e578b7e541d03e01559740d6507e21bb25ea0cafaf953e8",
+    "governance/integrity-log.md": "dfff5b152e0762831e9f03e975458ddb0220676f0c8d0d00397680cdae07bff0",
     "governance/lint/legacy/.flake8": "aabe4353c6dac04f085a8cf44a91b104344ea61f4c49bd1b44a1a26c5b6bea11",
     "governance/lint/legacy/.isort.cfg": "dd606fb2bece67d3ffdd19410cd70c709e904ff7fd385fcbb3a1042274663665",
     "governance/lint/legacy/black.toml": "40b9ad163b0956f87d1d8a30e965ac59b433b28a72a871763c6799cbbb88937c",
@@ -156,6 +156,8 @@
     "tools/wct/dry/__init__.py": "ce6e519fb43b6b1d8ed29f6aed977e652270b5036019d374468cb8937c5c1818",
     "tools/wct/dry/analyzer.py": "af252499efd134c652dcd317b22dd7b90572b8dd9893fa002069d9ec85955499",
     "tools/wct/dry/tpl.py": "2fc526598e26e748f2b5d41d83060fcb0020f12fca317c081200571f8f85f33d",
+    "tools/wct/evidence/__init__.py": "d89be6c7fa40a8f6ed21953414140c223a335a9477fdeb8145595e5c80829e5e",
+    "tools/wct/evidence/identities.py": "b7594a3c22f165655308272f680da32c8849640f3e271aa56e405b1f46dc867f",
     "tools/wct/fmt/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "tools/wct/fmt/engine.py": "866443d5afaaa5bde7acc5354f5029139ce30a1cfd7579c45b933de7b9efbe5f",
     "tools/wct/gate/__init__.py": "ab61d8711275bf4617d547845478d0294df26b64624c754d7d6d1fa823da7704",

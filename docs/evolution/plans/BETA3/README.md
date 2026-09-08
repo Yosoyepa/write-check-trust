@@ -1,4 +1,10 @@
-> **Entrada vigente tras R1 de P01:** [integración y próximas puertas](SELF-HOSTING/INTEGRACION-P01.md).
+> **Estado operativo más reciente:** [ejecución beta.3](EXECUTION/README.md)
+> y [evidencia de cierre P01](EXECUTION/EVIDENCE.md). PR #45 integrada en
+> `0228acc`, CI de main verde. P02–P10 no están implementadas ni beta.3 publicada.
+> La coordinación multiagente es una cohorte de desarrollo separada del
+> experimento ciego R0/R1; no prueba ahorro de inferencia.
+
+> **Entrada histórica tras R1 de P01:** [integración y próximas puertas](SELF-HOSTING/INTEGRACION-P01.md).
 > El proceso del siguiente encargo usa [entrega v2](SELF-HOSTING/ENTREGA-v2.md)
 > y [molde local v2](SELF-HOSTING/MOLDE-WCT-v2.md). Los estados y prompts que
 > siguen son antecedentes fechados, no autorización para repetir P01 ni ejecutar

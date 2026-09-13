@@ -20,6 +20,7 @@ import pytest
 
 from tests.conftest import git_isolated
 from tools.wct.accept.parsing import parse_feature
+from tools.wct.config import load_config
 from tools.wct.gate.semgrep import SemgrepScopeError, classify, gate_sast_semgrep, required_sources
 from tools.wct.model import Status
 from tools.wct.selftest.fixtures_tools import SEMGREP_RULES, f9_a
@@ -36,6 +37,7 @@ APPROVED_SCENARIOS = (
     "Un modulo no testeable sigue sujeto a seguridad",
     "El fixture adversarial usa una raiz Git propia",
     "El aislamiento Git restaura el entorno en el mismo proceso",
+    "La gobernanza del fixture adversarial es cargable por el lector productivo",
 )
 
 
@@ -486,3 +488,17 @@ def test_binding_aislamiento_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert os.environ["GIT_CEILING_DIRECTORIES"] == "/outer/ceiling"
     assert os.environ["GIT_DIR"] == "/outer/git"
     assert os.environ["GIT_WORK_TREE"] == "/outer/worktree"
+
+
+def test_binding_gobernanza_del_fixture_cargable_por_load_config(tmp_path: Path) -> None:
+    """Contrato mínimo ratificado: la raíz de f9_a es cargable por load_config.
+
+    El escenario usa filesystem y Git mediante f9_a; no requiere Semgrep.
+    """
+    root = f9_a(tmp_path)
+
+    project, policy, thresholds = load_config(root)
+
+    assert project == root
+    assert isinstance(policy, dict)
+    assert isinstance(thresholds, dict)

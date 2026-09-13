@@ -45,3 +45,9 @@ Feature: Alcance verificable del analisis SAST
     When entra y sale el fixture de aislamiento Git
     Then durante el fixture solo queda el ceiling del temporal
     And al terminar se restauran los tres valores originales
+
+  Scenario: La gobernanza del fixture adversarial es cargable por el lector productivo
+    Given el fixture adversarial f9_a plantado en un temporal mediante filesystem y Git, sin Semgrep
+    When cargo su raiz con el load_config productivo
+    Then el proyecto retornado es esa misma raiz
+    And policy y thresholds son mapas sin ConfigError

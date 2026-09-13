@@ -31,16 +31,28 @@ revierte. Ratificar NO convierte el `survived` histórico en `killed`.
 |---|---|---|---|
 | A1 | `campaign.x__attempt__mutmut_4` | `ensure_ascii=False` → `None` | `None` es falsy: mismo parámetro efectivo en CPython |
 | A2 | `campaign.x__attempt__mutmut_9` | `encode("utf-8")` → `encode("UTF-8")` | alias canónico del códec (precedente L1) |
-| A3 | `process.x__execute__mutmut_30` | guarda del `finally`: `is None` → `is not None` | en la ruta con `reason`, `_terminate` ya se invocó antes; sobre proceso muerto `_terminate` es inocuo |
+| A3 | `process.x__execute__mutmut_30` | guarda del `finally`: `is None` → `is not None` | **JUSTIFICACIÓN PENDIENTE DE REVISIÓN** — no es equivalencia demostrada: el resumen («ya se invocó antes; inocuo sobre muerto») requiere revisión antes de cualquier ratificación |
 | A4–A11 | `process.x__observe__mutmut_7/11/12/13/22/26/27/28` | `cast("BinaryIO")` → `XX…XX`/`binaryio`/`BINARYIO`/`None` (stdout y stderr) | `typing.cast` es identidad en runtime |
-| A12 | `process.x__read__mutmut_12` | `min(65536→65537, remaining + 1)` | el mínimo efectivo sigue siendo `remaining + 1` |
-| A13 | `process.x__read__mutmut_14` | EOF de un stream: `continue` → `break` | el `while` exterior re-selecciona; mismo drenaje en ≥2 vueltas |
-| A14 | `process.x__read__mutmut_17` | `selector.select(timeout=0.05)` → `1.05` | latencia interna de sondeo dentro del presupuesto del SUT |
+| A12 | `process.x__read__mutmut_12` | `min(65536→65537, remaining + 1)` | **JUSTIFICACIÓN PENDIENTE DE REVISIÓN** — el mínimo NO siempre es `remaining + 1`: difiere cuando `remaining ≥ 65536` (pide 65537 en lugar de 65536); no es equivalencia demostrada |
+| A13 | `process.x__read__mutmut_14` | EOF de un stream: `continue` → `break` | **JUSTIFICACIÓN PENDIENTE DE REVISIÓN** — el resumen («re-selección en la siguiente vuelta») no cubre todos los órdenes de eventos; no es equivalencia demostrada |
+| A14 | `process.x__read__mutmut_17` | `selector.select(timeout=0.05)` → `1.05` | **JUSTIFICACIÓN PENDIENTE DE REVISIÓN** — el resumen («latencia dentro del presupuesto») no está demostrado para todos los caminos; no es equivalencia demostrada |
 
-Efecto de ratificar: quedan registradas como equivalentes en alcance acotado
-(mecanismo del precedente H-01); el ajustado de r3 pasa a 450/450 no
-equivalentes muertos. Efecto de rechazar: quedan como huecos abiertos y el
-lote sigue FAIL.
+Contabilidad en tres capas (separadas, sin agregaciones):
+
+- **Bruto histórico r3**: 497 = 450 killed + 47 survived. Inmutable.
+- **Demostraciones posteriores** (sin recampaña): los 11 funcionales tienen
+  regresiones que los matan en demostración (`6e4398e`, `fa3558d`); eso es
+  sensibilidad de tests, no veredicto de campaña.
+- **Decisiones pendientes**: excluyendo las 14 de esta sección, el inventario
+  497 deja **483 sitios no cubiertos por esta decisión**; de los 47
+  supervivientes brutos quedan 33 clasificados (11 funcionales con regresión
+  demostrada + 15 no contratados + 7 limitaciones), ninguno convertido en
+  killed.
+
+Efecto de ratificar estas 14: quedan registradas como equivalentes en alcance
+acotado (precedente H-01) y el remanente sin decisión baja a 33 supervivientes
+clasificados; **no** se afirma «450/450 muertos» ni cierre del lote. Efecto de
+rechazar: quedan como huecos abiertos y el lote sigue FAIL.
 
 ## B. Comportamiento no contratado — 15 IDs (decisión D-B, por familia)
 
@@ -59,11 +71,14 @@ test se añade y ningún ID se convierte en equivalente por omisión.
 
 ## C. Limitaciones instrumentales — 7 IDs (decisión D-C, por grupo)
 
-Primero decidir si el límite exacto es **contrato operativo**. Si lo es,
-autorizar un adaptador/doble de subprocess inyectable (cambio de producto con
-TDD propio, incremento separado) que lo observe sin matar procesos ajenos.
-Si no lo es, quedan sin ratificar — no se convierten en equivalentes por
-omisión y no se fabrican estados imposibles.
+Primero decidir si el límite exacto es **contrato operativo**. Si lo es, la
+vía prioritaria es un **doble por los puntos de sustitución existentes**
+(`process_transport.subprocess` / `selectors`, como en T5 y en la prueba de
+reloj controlado) — **sin cambio de producto**. Sólo si esos puntos
+demostraran ser insuficientes se propondría un adaptador inyectable, y siempre
+como incremento separado con TDD propio. Si el límite no es contrato, los IDs
+quedan sin ratificar — no se convierten en equivalentes por omisión y no se
+fabrican estados imposibles.
 
 | # | Grupo | IDs | Límite en cuestión |
 |---|---|---|---|
@@ -84,18 +99,45 @@ decoradores ni altera API; no es campaña.
 
 ## E. Cadena restante de AC1 — decisiones de programa (decisión D-E)
 
-| # | Pendiente | Desbloquea |
-|---|---|---|
-| E1 | Autorizar el lote de mutación `gate/{checks,runner,semgrep,semgrep_schema,semgrep_scope,semgrep_verdict}.py` + `selftest/fixtures_tools.py` (receta y foco por presentar antes de ejecutar, estándar r3: preflight H-04 + verifier) | Cierre de fuentes AC1 |
-| E2 | Ordenar las puertas posteriores una vez cerrados los lotes: mutación de aceptación → cobertura/CRAP → DRY → tier full | Calificación de integración |
-| E3 | Revisión humana del drift de integridad pre-bless (20 rutas protegidas `tools/wct/**`) declarado en la PR #53 | Cualquier bless futuro |
-| E4 | Convención de versión/tag de beta.3 (vigente `1.0.0-beta.2`) | Release, si llega a ser elegible |
-| E5 | Revisión del diff completo y salida de borrador de la PR #53 | Merge, sólo con E1–E3 cerrados |
+**Fuentes externas** (checkout principal, FUERA del worktree de esta rama;
+consultadas en modo sólo lectura con corte 2026-09-13; no se copian ni
+stagean aquí): `docs/evolution/plans/BETA3/EXECUTION/` del checkout principal:
+`PREPARACION-LOTE-GATE-SELFTEST-AC1-2026-09-13.md`,
+`ADENDA-PREPARACION-LOTE-GATE-SELFTEST-2026-09-13.md`,
+`RECETA-FASE-G-GATE-SELFTEST-2026-09-13.md`,
+`ADJUDICACION-FASE-E-GATE-SELFTEST-2026-09-13.md` y
+`CIERRE-ADJUDICACION-FASE-E-2026-09-13.md`. El estado formal de cada decisión
+es el que consta en esos documentos; esta matriz no convierte propuestas en
+ratificaciones.
+
+| # | Pendiente | Estado según fuente | Desbloquea |
+|---|---|---|---|
+| E1 | **Fase G** (generación y asociaciones del lote gate/selftest): 959 mutantes generados; subconjunto objetivo de 31 IDs de `checks._declared` y `fixtures_tools.f9_a`; **no ejecutó mutantes** | Registrado en la receta de Fase G | Fase E y siguientes |
+| E2 | **Fase E** (ejecución de los 31 IDs): bruto **27 killed + 4 survived**; adjudicación posterior de ocho kills por excepción y cuatro comportamientos no contratados; **los 928 restantes no fueron ejecutados** | Cierre en `CIERRE-ADJUDICACION-FASE-E`; consultar estado formal ahí | Decidir el destino de los 928 no ejecutados y de los 4 no contratados |
+| E3 | **GS-1**: `semgrep_schema.py` + `semgrep_verdict.py` | Lote PROPUESTO, no ejecutado | Cobertura de mutación de esos módulos |
+| E4 | **GS-2**: `semgrep_scope.py` | Lote PROPUESTO, no ejecutado | Ídem |
+| E5 | **GS-3**: `semgrep.py` | Lote PROPUESTO, no ejecutado | Ídem |
+| E6 | **GS-4** (denominación original del pendiente sobre archivos preexistentes): el delta de REGISTRY en `runner.py` necesita su comprobación conductual **separada** | Pendiente; G/E sólo avanzaron la medición de `_declared` y `f9_a` | Cierre del alcance preexistente |
+| E7 | **TEST-007**: obligación de tamaño por sitios WCT de archivos cambiados | Abierta; **no** se resuelve seleccionando sólo 31 mutantes ni mediante su adjudicación | Conformidad de límites |
+| E8 | Puertas posteriores una vez cerrados los lotes: mutación de aceptación → cobertura/CRAP → DRY → tier full | No iniciadas | Calificación de integración |
+| E9 | Revisión humana del drift de integridad pre-bless (20 rutas protegidas `tools/wct/**`) declarado en la PR #53 | Pendiente | Cualquier bless futuro |
+| E10 | Convención de versión/tag de beta.3 (vigente `1.0.0-beta.2`) | Pendiente | Release, si llega a ser elegible |
+| E11 | Revisión del diff completo y salida de borrador de la PR #53 | Pendiente | Merge, sólo con E1–E9 conformes |
+
+## Registro de incidente de staging (punto 6 del cierre de T5)
+
+El fichero ajeno `PREPARACION-SALIDA-INCREMENTAL-BETA3.1-2026-09-13.md` fue
+**publicado accidentalmente** en `5f1ae51` (ya estaba en el índice antes del
+`git add` explícito) y **retirado del seguimiento** en `38bdf88`; el diff final
+de la rama no lo contiene y el fichero permanece en disco sin seguimiento.
+Se registra como publicación accidental corregida en el diff final — **no**
+como ausencia de publicación.
 
 ## Recomendación de orden
 
 D-B (definir contratos) antes que D-A (ratificar equivalencias) si se quiere
 decidir con la política de mensajes ya fijada; D-C y D-D son independientes y
-pueden resolverse en paralelo; E1 puede autorizarse en cuanto D-A/D-C tengan
-dictamen para no arrastrar huecos abiertos al lote siguiente. Ninguna decisión
+pueden resolverse en paralelo; el lote GS-1/2/3 puede
+planificarse en cuanto D-A/D-C tengan dictamen y el destino de los 928 no
+ejecutados de la Fase E esté decidido, para no arrastrar huecos abiertos. Ninguna decisión
 de esta matriz habilita por sí sola bless, merge, bump, tag ni release.

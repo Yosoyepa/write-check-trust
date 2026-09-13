@@ -1,0 +1,2694 @@
+{
+  "alternative_hook_check": {
+    "acceptance_criteria": [
+      "Control: receipt válido, events completos y resultado esperado para pass/mismatch/error.",
+      "Cada copia defectuosa: al menos un observable difiere del control y el contraste/validador lo rechaza o lo clasifica de forma demostrablemente distinta.",
+      "La ejecución acredita el hook por dispatch real de pytest, no por llamar al generador wrapper directamente."
+    ],
+    "execution_recipe": [
+      "Crear cada copia desde bytes del plugin original bajo build/tmp; no tocar tools/wct/accept/pytest_receipt.py del worktree ni tests permanentes.",
+      "Ejecutar pytest real con PYTHONPATH que priorice una sola copia aislada y -p/PYTEST_PLUGINS del plugin real; generar un test compatible con el nombre esperado y un SemanticMismatch controlado.",
+      "Correr control, defecto makereport y defecto sessionfinish en directorios únicos; comparar exit de pytest, receipt.json, receipt.events.json y validate_receipt contra el mismo IR/hash/attempt_id esperado.",
+      "Usar Popen(start_new_session=True), timeout exterior de 30 s y finally con killpg únicamente del PID del pytest creado por la sonda; conservar stdout/stderr parciales y limpiar rutas temporales cooperativas."
+    ],
+    "human_decisions": [
+      "Aprobar los defectos sembrados concretos y los casos de pytest antes de ejecución.",
+      "Aceptar o ajustar timeout, plataforma Linux y criterios de comparación de receipt/events.",
+      "Revisar después la evidencia separada; la no-instrumentabilidad por sí sola no cierra ninguno de los hooks."
+    ],
+    "isolated_layout": [
+      "build/tmp/ac1-r2-qualification/r3-hook-alternative/<run>/control/tools/wct/accept/pytest_receipt.py",
+      "build/tmp/ac1-r2-qualification/r3-hook-alternative/<run>/makereport-defect/tools/wct/accept/pytest_receipt.py",
+      "build/tmp/ac1-r2-qualification/r3-hook-alternative/<run>/sessionfinish-defect/tools/wct/accept/pytest_receipt.py",
+      "build/tmp/ac1-r2-qualification/r3-hook-alternative/<run>/project/test_generated.py"
+    ],
+    "prohibitions": [
+      "No retirar decoradores ni cambiar firmas/API para mutmut.",
+      "No ejecutar mutmut run ni crear lote nuevo.",
+      "No reutilizar el resultado para convertir los hooks en killed/equivalentes automáticamente.",
+      "No modificar producto, tests permanentes, gobernanza, workflows, pyproject.toml, bless, merge, versión, tag o release."
+    ],
+    "seeded_copy_defects": [
+      {
+        "expected_discrimination": "pytest sigue devolviendo el exit real; events.json/receipt.json clasifican erróneamente la fila y validate_receipt/contraste de recibo detectan la contradicción frente al control.",
+        "hook": "pytest_runtest_makereport",
+        "id": "HOOK-MR-01",
+        "isolated_defect": "En la copia, convertir sólo una fase call con SemanticMismatch de mismatch a pass después de yield, conservando decorador wrapper=True, tryfirst=True y firma."
+      },
+      {
+        "expected_discrimination": "El control produce receipt y events completos; la copia produce receipt ausente/corrupto/contradictorio y validate_receipt no devuelve la disposición control.",
+        "hook": "pytest_sessionfinish",
+        "id": "HOOK-SF-01",
+        "isolated_defect": "En la copia, omitir la persistencia obligatoria de errors/cases de un escenario incompleto o alterar exit antes de json.dump, conservando decorador wrapper=True, tryfirst=True y firma."
+      }
+    ],
+    "status": "PROPUESTA_NO_EJECUTADA_PENDIENTE_DE_APROBACION_HUMANA",
+    "targets": [
+      "tools.wct.accept.pytest_receipt._Recorder.pytest_runtest_makereport",
+      "tools.wct.accept.pytest_receipt._Recorder.pytest_sessionfinish"
+    ],
+    "why": "mutmut 3.7.0 excluyó ambas funciones decoradas; ello es una limitación instrumental, no una acreditación de los hooks."
+  },
+  "human_decisions_pending": [
+    "Ratificar o rechazar cada equivalencia acotada sin reutilizar autorizaciones de otros lotes.",
+    "Decidir qué presentaciones/mensajes/nombre de plugin son contratos observables.",
+    "Autorizar por separado las reparaciones TDD propuestas para los defectos funcionales y huecos de oráculo.",
+    "Aprobar antes de ejecutar la comprobación alternativa de hooks decorados."
+  ],
+  "integrity": {
+    "historical_artifacts": [
+      {
+        "label": "Plan r3 (con preflight y autorización)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-plan.json",
+        "sha256": "5dc2655ae13534a55295be2d7dcb712460b9a66edce5d68e76dc66d211760f0d"
+      },
+      {
+        "label": "Log de solo-generación (497 not-checked)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-genonly.log",
+        "sha256": "0cf4a7a9cc8b1551f9f76fe7f388f2c63b999993ee4a3fd066bd75c2d6546a4e"
+      },
+      {
+        "label": "Resultados del solo-generación",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-genonly-results.log",
+        "sha256": "bde2cf8f3375fd2848e9a8ca856d8bc05819d8f8f5e17f62e1e9319a714fed4b"
+      },
+      {
+        "label": "Log crudo de campaña r3",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-run.log",
+        "sha256": "88b904fae6c335c1fea539c5e8b14095a6204e9945f239079013e1b1e7c87a7d"
+      },
+      {
+        "label": "Cola y estado de salida de campaña",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-run-tail.log",
+        "sha256": "4cd05df6c5884a1b6ee71468ab972f2cdf9ce98a757de3725ddb5a4a2952afaf"
+      },
+      {
+        "label": "Resultados completos r3",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-results-all.log",
+        "sha256": "d4a7c29f02aebb6459deaedeebfe10166ee4ea742d5313a93bcedd82fea335e6"
+      },
+      {
+        "label": "Diffs de supervivientes r3 (47)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-survivor-diffs.log",
+        "sha256": "51d99c9bdb45679dbed1300f2959bfb96ee27f0178cb5d48a669bf634c204b21"
+      },
+      {
+        "label": "Reconciliación r3",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-reconciliation.json",
+        "sha256": "18a26f4ea51cf8fad39cc89333529666e72ce768ffcb5d5b776c10805e06d044"
+      },
+      {
+        "label": "Metadatos de corrida r3",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/evidence/mutation-code-lot-r3-run.json",
+        "sha256": "ee72658d9a91f4a045fc658fbc6b5c4c9967810ec21eff99d1841861522a67c7"
+      },
+      {
+        "label": "Preflight final r3 (PASS)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/preflight-h04/r3-preflight-final.json",
+        "sha256": "b0f212730d67e04aba63cf01cd1e01cfb8a883326b35010e1369c3350b76752f"
+      },
+      {
+        "label": "Diagnóstico JSON (uninstrumentables)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/preflight-h04/r3-diagnosed.json",
+        "sha256": "7cfe6ff69f5ea2947089da85cab487b0071eedceb46d8259dc2a0f07fdaaee34"
+      },
+      {
+        "label": "Evidencia uninstrumentable",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/preflight-h04/r3-uninstrumentable-evidence.md",
+        "sha256": "2c448ea3cf2e7009be6dc58ac1c5e2df742714d2e5fd6361acc00fa6f46c6ff4"
+      },
+      {
+        "label": "Hardened r2 (FAIL esperado)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/preflight-h04/r2-preflight-hardened.json",
+        "sha256": "e2ee217038c118a3a80f318646706a166024330bd0c03909179174292be43776"
+      },
+      {
+        "label": "Hardened r2b (PASS esperado)",
+        "matches_historical_table": true,
+        "path": "build/tmp/ac1-r2-qualification/preflight-h04/r2b-preflight-hardened.json",
+        "sha256": "06c0d03be0f66bb4155f0082dd3bf6a4038d54c43c3177ed43e69809b5552377"
+      }
+    ],
+    "historical_hashes_verified": 14,
+    "inventory": {
+      "ast_function_count": 17,
+      "instrumented_function_count": 15,
+      "pipeline_functions": [],
+      "uninstrumentable_functions": [
+        "tools.wct.accept.pytest_receipt.xǁ_Recorderǁpytest_runtest_makereport",
+        "tools.wct.accept.pytest_receipt.xǁ_Recorderǁpytest_sessionfinish"
+      ],
+      "uninstrumentable_reason": "mutmut 3.7.0 excluye funciones decoradas (file_mutation.py _skip_node_and_children); ambos hooks son @pytest.hookimpl(wrapper=True) generadores"
+    },
+    "manifest_path": "build/tmp/ac1-r2-qualification/r3-adjudication/r3-adjudication-manifest.json",
+    "manifest_sha256": "b7964b8377beb71e2baea90d50412f2d7724d05459276f24b98688eed6fd6352",
+    "order_relations": {
+      "all_survivor_sets_equal": true,
+      "raw_status_equals_diff_blocks": true,
+      "reconciliation_json_equals_lexical_sort_of_raw_status": true
+    },
+    "private_config_candidate_sha256": "5c1c7d9e69bf7db6e363edf037faa6c49b575d21d8ea0f5532c0e73b29030be5",
+    "private_config_current_sha256": "b10f99b8afc457663c7af28776305a38a572b92938d03eb807827dcf9092a7cd",
+    "qualified_sources_and_tests_match_current_worktree": 7
+  },
+  "probe": {
+    "canaries": [
+      {
+        "baseline_case": "campaign-valid",
+        "differs_from_original": true,
+        "id": "tools.wct.accept.campaign.x__attempt__mutmut_8",
+        "trial": {
+          "case": "campaign-valid",
+          "exit_code": 1,
+          "mutant": "tools.wct.accept.campaign.x__attempt__mutmut_8",
+          "payload": null,
+          "stderr_sha256": "016a82c133a19bbe1b3a6c114904d500b44a15a35e3e550211f2264008f4c5b2",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "timed_out": false,
+          "wall_seconds": 0.723107
+        }
+      },
+      {
+        "baseline_case": "campaign-invalid",
+        "differs_from_original": true,
+        "id": "tools.wct.accept.campaign.x__results__mutmut_1",
+        "trial": {
+          "case": "campaign-invalid",
+          "exit_code": 1,
+          "mutant": "tools.wct.accept.campaign.x__results__mutmut_1",
+          "payload": null,
+          "stderr_sha256": "e8c9faec6f28f55922d9b5f203283d9d6f2cb2b4dc2e1792c4ca82fd7c6a91ed",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "timed_out": false,
+          "wall_seconds": 0.839489
+        }
+      },
+      {
+        "baseline_case": "process",
+        "differs_from_original": true,
+        "id": "tools.wct.accept.process.x__observe__mutmut_1",
+        "trial": {
+          "case": "process",
+          "exit_code": 0,
+          "mutant": "tools.wct.accept.process.x__observe__mutmut_1",
+          "payload": {
+            "already_exited_terminate": "returned",
+            "descendant_after_leader": {
+              "controller_finished": false,
+              "coordination": {
+                "pidfd_supported": true
+              },
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "process error: Invalid file object: None",
+              "stderr_length": 0,
+              "stdout": ""
+            },
+            "eof_then_stderr": {
+              "duration_bucket": "plausible",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "process error: Invalid file object: None",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "limit_plus_one": {
+              "duration_bucket": "plausible",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "process error: Invalid file object: None",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "silent_timeout": {
+              "duration_bucket": "within-silent-budget",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "process error: Invalid file object: None",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "stdin": {
+              "duration_bucket": "plausible",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "process error: Invalid file object: None",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "zero_budget": {
+              "duration_bucket": "plausible",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "campaign timeout",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "zero_marker_exists": false
+          },
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "8313f9860040c3bbe4f2d51b484c72909b5375ee09dac8522656d3a708e50b60",
+          "timed_out": false,
+          "wall_seconds": 3.654688
+        }
+      },
+      {
+        "baseline_case": "process",
+        "differs_from_original": true,
+        "id": "tools.wct.accept.process.x__execute__mutmut_2",
+        "trial": {
+          "case": "process",
+          "exit_code": 0,
+          "mutant": "tools.wct.accept.process.x__execute__mutmut_2",
+          "payload": {
+            "already_exited_terminate": "returned",
+            "descendant_after_leader": {
+              "controller_finished": true,
+              "coordination": {
+                "descendant_release_sent": true,
+                "leader_exit_seen_by_pidfd": true,
+                "pidfd_supported": true
+              },
+              "exit": 0,
+              "reap": "already-reaped",
+              "reason": "",
+              "stderr_length": 0,
+              "stdout": "descendant-late\n"
+            },
+            "eof_then_stderr": {
+              "duration_bucket": "plausible",
+              "exit": 0,
+              "reap": "already-reaped",
+              "reason": "",
+              "stderr": {
+                "length": 9,
+                "sha256": "f35ed652e6e0f2d54a145c35c24ae5461cbaa1ae1329ba760f82b246224db0b6"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "limit_plus_one": {
+              "duration_bucket": "plausible",
+              "exit": -9,
+              "reap": "already-reaped",
+              "reason": "output limit exceeded",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 1048576,
+                "prefix": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "sha256": "8f990ba0b577b51cf009ea049368c16bbda1b21e1b93be07a824758bb253c39b"
+              }
+            },
+            "silent_timeout": {
+              "duration_bucket": "within-silent-budget",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "campaign timeout",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "stdin": {
+              "duration_bucket": "plausible",
+              "exit": 0,
+              "reap": "already-reaped",
+              "reason": "",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 3,
+                "prefix": "EOF",
+                "sha256": "abc56510a66445b4c3fcfc48fb4f0de7c91baf299ad83dd2a2b86f7f90ce9e5b"
+              }
+            },
+            "zero_budget": {
+              "duration_bucket": "plausible",
+              "exit": null,
+              "reap": "child-did-not-record-pid",
+              "reason": "campaign timeout",
+              "stderr": {
+                "length": 0,
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "length": 0,
+                "prefix": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            },
+            "zero_marker_exists": false
+          },
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "a82b469dfbc86a8dbaac3936438a474d266f816d24fa40e474cd029e6655ea85",
+          "timed_out": false,
+          "wall_seconds": 0.806624
+        }
+      },
+      {
+        "baseline_case": "pytest-valid",
+        "differs_from_original": true,
+        "id": "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_1",
+        "trial": {
+          "case": "pytest-valid",
+          "exit_code": 0,
+          "mutant": "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_1",
+          "payload": {
+            "events_exists": false,
+            "pytest_exit": 0,
+            "receipt": null,
+            "receipt_validation": null,
+            "stable_plugin_name": {
+              "stable_name_present": false
+            },
+            "wrong_hash_message": ""
+          },
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "a070d3c591f0f005e7076e5685b7b959003f158539f9728b7d7c2e446a040566",
+          "timed_out": false,
+          "wall_seconds": 0.808346
+        }
+      },
+      {
+        "baseline_case": "pytest-bad-hash",
+        "differs_from_original": true,
+        "id": "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_1",
+        "trial": {
+          "case": "pytest-bad-hash",
+          "exit_code": 0,
+          "mutant": "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_1",
+          "payload": {
+            "events_exists": false,
+            "pytest_exit": 3,
+            "receipt": null,
+            "receipt_validation": null,
+            "stable_plugin_name": null,
+            "wrong_hash_message": ""
+          },
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f91162f9579dfea0b7a81a5b842a9473d61a19bc6029e3568b75227218797649",
+          "timed_out": false,
+          "wall_seconds": 0.922057
+        }
+      }
+    ],
+    "driver": {
+      "path": "build/tmp/ac1-r2-qualification/r3-adjudication/probe_driver.py",
+      "sha256": "842caf46af3601fdaeb79e62b0ed914909fa5d8512051de8c8bbe3f1213a1004"
+    },
+    "runtime": {
+      "executable": "/home/jandradeu/Documents/well_code_template/build/tmp/sh-p01-CND-80B8/.venv/bin/python",
+      "version": "Python 3.13.14"
+    },
+    "safety": {
+      "descendant_sync": "pidfd/select before controlled descendant release",
+      "new_mutation_campaign": false,
+      "outer_timeout_seconds": 20,
+      "process_cleanup": "only test-owned process groups identified by child PID"
+    },
+    "source": {
+      "lot": "build/tmp/ac1-r2-qualification/mutation-code-lot-r3",
+      "mutants_pythonpath": [
+        "build/tmp/ac1-r2-qualification/mutation-code-lot-r3/mutants",
+        "build/tmp/ac1-r2-qualification/mutation-code-lot-r3/mutants/src"
+      ],
+      "selection": "MUTANT_UNDER_TEST"
+    },
+    "summary": {
+      "canaries_discriminated": 6,
+      "survivor_matches_original": 21,
+      "survivor_observable_differences": 26,
+      "survivors_executed": 47
+    }
+  },
+  "purpose": "technical adjudication of existing AC1 r3 survivors; no human ratification",
+  "schema_version": 1,
+  "status": {
+    "historical_status_changed": false,
+    "human_ratifications": 0,
+    "new_mutation_campaign": false,
+    "product_or_permanent_test_changes": false,
+    "survivors_adjudicated": 47
+  },
+  "survivors": [
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o rechazar la equivalencia sólo para el runtime y la API descritos; no se extrapola a otros runtimes ni a una norma de estilo inexistente.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No introducir una prueba artificial para distinguir salidas iguales. Si se quiere fijar la grafía del literal, hacerlo como decisión explícita de estilo/política en un incremento separado.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "En el runtime original Python 3.13.14, ensure_ascii=None es falsy igual que False; la sonda Unicode controlada produjo la misma carga normalizada."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-    raw = json.dumps(ir, ensure_ascii=False).encode(\"utf-8\")",
+        "+    raw = json.dumps(ir, ensure_ascii=None).encode(\"utf-8\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_4",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar o rechazar el test de regresión de bytes UTF-8; no ampliar contratos de mensajes ni modificar el producto en esta adjudicación.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/campaign.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, añadir una aserción de transporte con caracteres no ASCII que compare los bytes de ir.json y el hash propagado al recibo. El producto actual ya expresa la conducta deseada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "La sonda Unicode conserva el mismo IR semántico pero cambia los bytes UTF-8 preservados: el escape ASCII altera la representación y, por tanto, la identidad SHA-256 del intento. El contrato exige conservar el IR original por bytes."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-    raw = json.dumps(ir, ensure_ascii=False).encode(\"utf-8\")",
+        "+    raw = json.dumps(ir, ).encode(\"utf-8\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_6",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.ir_utf8_text: '{\"scenarios\": [{\"name\": \"Café Ñ\", \"examples\": [{\"valor\": \"é\"}]}]}' → '{\"scenarios\": [{\"name\": \"Caf\\\\u00e9 \\\\u00d1\", \"examples\": [{\"valor\": \"\\\\u00e9\"}]}]}'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "0c5a931d8834b6aae0c2088736bc174d89e530bd6e583da35e25fe3641de46f4",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar o rechazar el test de regresión de bytes UTF-8; no ampliar contratos de mensajes ni modificar el producto en esta adjudicación.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/campaign.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, añadir una aserción de transporte con caracteres no ASCII que compare los bytes de ir.json y el hash propagado al recibo. El producto actual ya expresa la conducta deseada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "La sonda Unicode conserva el mismo IR semántico pero cambia los bytes UTF-8 preservados: el escape ASCII altera la representación y, por tanto, la identidad SHA-256 del intento. El contrato exige conservar el IR original por bytes."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-    raw = json.dumps(ir, ensure_ascii=False).encode(\"utf-8\")",
+        "+    raw = json.dumps(ir, ensure_ascii=True).encode(\"utf-8\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_7",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.ir_utf8_text: '{\"scenarios\": [{\"name\": \"Café Ñ\", \"examples\": [{\"valor\": \"é\"}]}]}' → '{\"scenarios\": [{\"name\": \"Caf\\\\u00e9 \\\\u00d1\", \"examples\": [{\"valor\": \"\\\\u00e9\"}]}]}'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "0c5a931d8834b6aae0c2088736bc174d89e530bd6e583da35e25fe3641de46f4",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el formato textual de attempt.json es un contrato de evidencia o una elección de presentación.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No escribir una aserción de formato sólo para matar este mutante. Si la legibilidad o el hash textual del expediente deben ser contractuales, aprobar primero esa regla y entonces fijarla en una prueba documental/de transporte separada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda demuestra una diferencia de presentación de attempt.json (indentación/líneas), sin cambiar los campos JSON observados. El contrato exige persistir el intento, pero no fija hoy una indentación exacta."
+      },
+      "diff": [
+        "@@ -25,5 +25,5 @@",
+        "-    (directory / \"attempt.json\").write_text(json.dumps(result, indent=2) + \"\\n\")",
+        "+    (directory / \"attempt.json\").write_text(json.dumps(result, indent=None) + \"\\n\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_86",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.attempt_json_style.indentation: 2 → 0",
+          "payload.attempt_json_style.line_count: 13 → 1"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "c35a781f4a42585e14a08c643b39cefa4838985a2fbcf2bbbc82c2074d9e204a",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el formato textual de attempt.json es un contrato de evidencia o una elección de presentación.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No escribir una aserción de formato sólo para matar este mutante. Si la legibilidad o el hash textual del expediente deben ser contractuales, aprobar primero esa regla y entonces fijarla en una prueba documental/de transporte separada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda demuestra una diferencia de presentación de attempt.json (indentación/líneas), sin cambiar los campos JSON observados. El contrato exige persistir el intento, pero no fija hoy una indentación exacta."
+      },
+      "diff": [
+        "@@ -25,5 +25,5 @@",
+        "-    (directory / \"attempt.json\").write_text(json.dumps(result, indent=2) + \"\\n\")",
+        "+    (directory / \"attempt.json\").write_text(json.dumps(result, ) + \"\\n\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_88",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.attempt_json_style.indentation: 2 → 0",
+          "payload.attempt_json_style.line_count: 13 → 1"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "c35a781f4a42585e14a08c643b39cefa4838985a2fbcf2bbbc82c2074d9e204a",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el formato textual de attempt.json es un contrato de evidencia o una elección de presentación.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No escribir una aserción de formato sólo para matar este mutante. Si la legibilidad o el hash textual del expediente deben ser contractuales, aprobar primero esa regla y entonces fijarla en una prueba documental/de transporte separada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda demuestra una diferencia de presentación de attempt.json (indentación/líneas), sin cambiar los campos JSON observados. El contrato exige persistir el intento, pero no fija hoy una indentación exacta."
+      },
+      "diff": [
+        "@@ -25,5 +25,5 @@",
+        "-    (directory / \"attempt.json\").write_text(json.dumps(result, indent=2) + \"\\n\")",
+        "+    (directory / \"attempt.json\").write_text(json.dumps(result, indent=3) + \"\\n\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_89",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.attempt_json_style.indentation: 2 → 3"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f032338d7bb6fe75bf78bd9d8ec1a01beb83fd61555ded9b7d972d9e358d7871",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o rechazar la equivalencia sólo para el runtime y la API descritos; no se extrapola a otros runtimes ni a una norma de estilo inexistente.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No introducir una prueba artificial para distinguir salidas iguales. Si se quiere fijar la grafía del literal, hacerlo como decisión explícita de estilo/política en un incremento separado.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "En el runtime original Python 3.13.14, los nombres de codec UTF-8 y utf-8 resuelven al mismo codec; la sonda Unicode no observó diferencia."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-    raw = json.dumps(ir, ensure_ascii=False).encode(\"utf-8\")",
+        "+    raw = json.dumps(ir, ensure_ascii=False).encode(\"UTF-8\")"
+      ],
+      "id": "tools.wct.accept.campaign.x__attempt__mutmut_9",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__results__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar el oráculo de no-fuga de IR y confirmar que la proyección de resultados no debe transportar el IR completo.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/campaign.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, comprobar que cada resultado y report.json omiten ir aun cuando el baseline sea inválido y todos los mutantes queden not_run. El producto actual ya excluye esa clave.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Con baseline inválido, la sonda muestra que el resultado y report.json incorporan la clave interna ir. Esa proyección contradice la separación deliberada entre metadata del resultado y el IR completo, aumenta el expediente y expone contenido interno."
+      },
+      "diff": [
+        "@@ -8,7 +8,7 @@",
+        "-        result = {key: value for key, value in mutation.items() if key != \"ir\"}",
+        "+        result = {key: value for key, value in mutation.items() if key != \"XXirXX\"}"
+      ],
+      "id": "tools.wct.accept.campaign.x__results__mutmut_11",
+      "probe": {
+        "case": "campaign-invalid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.report_json_style.line_count: 35 → 47",
+          "payload.result.has_internal_ir: False → True",
+          "payload.result.keys: longitud 9 → 10"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "700349ff862ab99765b69652704bedd2fb6908c6c6d17872238e6c962b2b714c",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "eebea139d9cbf03a535a4dd55333fddcdeacb52595e1050aa4befe3d38cca3f7",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__results__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar el oráculo de no-fuga de IR y confirmar que la proyección de resultados no debe transportar el IR completo.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/campaign.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, comprobar que cada resultado y report.json omiten ir aun cuando el baseline sea inválido y todos los mutantes queden not_run. El producto actual ya excluye esa clave.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Con baseline inválido, la sonda muestra que el resultado y report.json incorporan la clave interna ir. Esa proyección contradice la separación deliberada entre metadata del resultado y el IR completo, aumenta el expediente y expone contenido interno."
+      },
+      "diff": [
+        "@@ -8,7 +8,7 @@",
+        "-        result = {key: value for key, value in mutation.items() if key != \"ir\"}",
+        "+        result = {key: value for key, value in mutation.items() if key != \"IR\"}"
+      ],
+      "id": "tools.wct.accept.campaign.x__results__mutmut_12",
+      "probe": {
+        "case": "campaign-invalid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.report_json_style.line_count: 35 → 47",
+          "payload.result.has_internal_ir: False → True",
+          "payload.result.keys: longitud 9 → 10"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "700349ff862ab99765b69652704bedd2fb6908c6c6d17872238e6c962b2b714c",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "eebea139d9cbf03a535a4dd55333fddcdeacb52595e1050aa4befe3d38cca3f7",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__results__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si la literal exacta de reason es parte de una API de diagnóstico o sólo texto informativo.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No ampliar el contrato de diagnósticos para matar esta literal. Si consumidores humanos o máquinas dependen del texto exacto, especificar primero el campo/semántica deseados y añadir el test sólo después.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda invalida el baseline y observa que sólo cambia el texto de reason para not_run; no hay contrato aprobado para esa literal exacta, aunque el campo y la causa siguen presentes."
+      },
+      "diff": [
+        "@@ -10,7 +10,7 @@",
+        "-            id=index, status=\"not_run\", exit=None, reason=\"prior attempt did not pass protocol\"",
+        "+            id=index, status=\"not_run\", exit=None, reason=\"XXprior attempt did not pass protocolXX\""
+      ],
+      "id": "tools.wct.accept.campaign.x__results__mutmut_22",
+      "probe": {
+        "case": "campaign-invalid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.result.reason: 'prior attempt did not pass protocol' → 'XXprior attempt did not pass protocolXX'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "700349ff862ab99765b69652704bedd2fb6908c6c6d17872238e6c962b2b714c",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5308974c0725e2c08373c807a236bf55a1767396e28c5777c80f8b12f95331e5",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__results__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si la literal exacta de reason es parte de una API de diagnóstico o sólo texto informativo.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No ampliar el contrato de diagnósticos para matar esta literal. Si consumidores humanos o máquinas dependen del texto exacto, especificar primero el campo/semántica deseados y añadir el test sólo después.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda invalida el baseline y observa que sólo cambia el texto de reason para not_run; no hay contrato aprobado para esa literal exacta, aunque el campo y la causa siguen presentes."
+      },
+      "diff": [
+        "@@ -10,7 +10,7 @@",
+        "-            id=index, status=\"not_run\", exit=None, reason=\"prior attempt did not pass protocol\"",
+        "+            id=index, status=\"not_run\", exit=None, reason=\"PRIOR ATTEMPT DID NOT PASS PROTOCOL\""
+      ],
+      "id": "tools.wct.accept.campaign.x__results__mutmut_23",
+      "probe": {
+        "case": "campaign-invalid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.result.reason: 'prior attempt did not pass protocol' → 'PRIOR ATTEMPT DID NOT PASS PROTOCOL'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "700349ff862ab99765b69652704bedd2fb6908c6c6d17872238e6c962b2b714c",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "aa57f8a6c35216f92e86a4fe92636ed9d7c3b84d107807904e452a0187e36e55",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si report.json requiere una representación textual estable además de su esquema JSON.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No añadir un golden textual sin una decisión humana de que el layout del reporte es contrato. Mantener el reporte estructurado como la evidencia semántica actual.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda observa sólo la presentación de report.json (indentación/líneas); la estructura y las cuentas permanecen disponibles al parsear JSON. El contrato no fija la serialización bonita exacta."
+      },
+      "diff": [
+        "@@ -22,5 +22,5 @@",
+        "-    (directory / \"report.json\").write_text(json.dumps(report, indent=2) + \"\\n\")",
+        "+    (directory / \"report.json\").write_text(json.dumps(report, indent=None) + \"\\n\")"
+      ],
+      "id": "tools.wct.accept.campaign.x_run_mutations__mutmut_89",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.report_json_style.indentation: 2 → 0",
+          "payload.report_json_style.line_count: 35 → 1"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ec7a353462743564854066ea75143029c0bc97241e136ee9d50696ca942131e3",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si report.json requiere una representación textual estable además de su esquema JSON.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No añadir un golden textual sin una decisión humana de que el layout del reporte es contrato. Mantener el reporte estructurado como la evidencia semántica actual.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda observa sólo la presentación de report.json (indentación/líneas); la estructura y las cuentas permanecen disponibles al parsear JSON. El contrato no fija la serialización bonita exacta."
+      },
+      "diff": [
+        "@@ -22,5 +22,5 @@",
+        "-    (directory / \"report.json\").write_text(json.dumps(report, indent=2) + \"\\n\")",
+        "+    (directory / \"report.json\").write_text(json.dumps(report, ) + \"\\n\")"
+      ],
+      "id": "tools.wct.accept.campaign.x_run_mutations__mutmut_91",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.report_json_style.indentation: 2 → 0",
+          "payload.report_json_style.line_count: 35 → 1"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ec7a353462743564854066ea75143029c0bc97241e136ee9d50696ca942131e3",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.campaign.x__attempt__mutmut_8"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si report.json requiere una representación textual estable además de su esquema JSON.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No añadir un golden textual sin una decisión humana de que el layout del reporte es contrato. Mantener el reporte estructurado como la evidencia semántica actual.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "La sonda observa sólo la presentación de report.json (indentación/líneas); la estructura y las cuentas permanecen disponibles al parsear JSON. El contrato no fija la serialización bonita exacta."
+      },
+      "diff": [
+        "@@ -22,5 +22,5 @@",
+        "-    (directory / \"report.json\").write_text(json.dumps(report, indent=2) + \"\\n\")",
+        "+    (directory / \"report.json\").write_text(json.dumps(report, indent=3) + \"\\n\")"
+      ],
+      "id": "tools.wct.accept.campaign.x_run_mutations__mutmut_92",
+      "probe": {
+        "case": "campaign-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.report_json_style.indentation: 2 → 3"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f010e3a89a522db5e368d3105896d08a0ccc77d59b70599740605239a563660e",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "79c6042f2a32441472e5d15e67b8258b14d977c3dc45e1c01285e0cf47a98d9f",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar el oráculo de no-lanzamiento al presupuesto cero.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, usar un hijo propio con marcador y seconds=0; afirmar la razón prelaunch y que no hay lanzamiento observable, con limpieza de grupo en finally.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Para seconds=0, el control rechaza antes de lanzar con campaign timeout; el mutante crea el hijo y termina con señal/timeout. El presupuesto vencido antes del lanzamiento es un caso explícito del contrato."
+      },
+      "diff": [
+        "@@ -1,7 +1,7 @@",
+        "-    if seconds <= 0:",
+        "+    if seconds < 0:"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_1",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.zero_budget.exit: tipo NoneType → int",
+          "payload.zero_budget.reason: 'campaign timeout' → 'timeout'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "61f70811f22e3dc63a3aff128e4071ee15762769a8a049e538d069ac523104db",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar la regresión de aislamiento de stdin.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, alimentar stdin del proceso de prueba por pipe y verificar que el hijo de run_process recibe EOF, no el byte del padre.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Con un byte controlado en stdin del supervisor, el control entrega EOF mediante DEVNULL y el mutante entrega PARENT-STANDARD-IN al hijo. Se rompe el aislamiento de entrada del transporte."
+      },
+      "diff": [
+        "@@ -6,7 +6,6 @@",
+        "-        stdin=subprocess.DEVNULL,"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_14",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.stdin.stdout.length: 3 → 19",
+          "payload.stdin.stdout.prefix: 'EOF' → 'PARENT-STANDARD-IN\\n'",
+          "payload.stdin.stdout.sha256: 'abc56510a66445b4c3fcfc48fb4f0de7c91baf299ad83dd2a2b86f7f90ce9e5b' → 'cd17be30b1b8b340258c398df7321dccfa727ceb9d9e11846d3476013be14b09'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "a2aa1a08fb9938437fd5be936a6c5acc1032b248ab62d1408d618d294185c839",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el timeout exacto de wait forma parte del contrato operativo y si se autoriza una estrategia de prueba segura para esa frontera.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No ratificar equivalencia. Si el límite de espera es contrato, diseñar y aprobar un doble de subprocess o una prueba de frontera que pueda observarlo sin matar procesos ajenos; conservar timeout y limpieza garantizada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "Tras SIGKILL de un grupo propio, procesos POSIX normales completan el reaping antes de que los límites 1, 2 o None sean observables. La sonda iguala control y mutante, pero eso no prueba equivalencia de un presupuesto de limpieza contractual."
+      },
+      "diff": [
+        "@@ -15,7 +15,7 @@",
+        "-        return process.wait(timeout=1), reason",
+        "+        return process.wait(timeout=None), reason"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_28",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el timeout exacto de wait forma parte del contrato operativo y si se autoriza una estrategia de prueba segura para esa frontera.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No ratificar equivalencia. Si el límite de espera es contrato, diseñar y aprobar un doble de subprocess o una prueba de frontera que pueda observarlo sin matar procesos ajenos; conservar timeout y limpieza garantizada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "Tras SIGKILL de un grupo propio, procesos POSIX normales completan el reaping antes de que los límites 1, 2 o None sean observables. La sonda iguala control y mutante, pero eso no prueba equivalencia de un presupuesto de limpieza contractual."
+      },
+      "diff": [
+        "@@ -15,7 +15,7 @@",
+        "-        return process.wait(timeout=1), reason",
+        "+        return process.wait(timeout=2), reason"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_29",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a Popen POSIX observado.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No introducir una aserción interna de número de llamadas a terminate. Reabrir si se cambia el adaptador Popen o se fija una garantía observable de limpieza exacta.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "En los hijos normales y de timeout de la sonda, la condición invertida sólo intenta una limpieza adicional de un proceso ya terminado; suppress(ProcessLookupError) y wait mantienen resultado, logs y reaping. No se extrapola a un Popen no estándar."
+      },
+      "diff": [
+        "@@ -17,7 +17,7 @@",
+        "-        if process.poll() is None:",
+        "+        if process.poll() is not None:"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_30",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si las garantías de cleanup excepcional y cierre explícito forman parte del contrato y autorizar el enfoque de prueba correspondiente.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No ratificar. Si se exige cubrir esas defensas, aprobar un adaptador/doble de subprocess que preserve la prueba de comportamiento y no dependa de procesos ajenos ni de GC implícito.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "La rama final excepcional que llamaría _terminate(None), y el cierre explícito de streams, no se activan de manera aislable con los hijos POSIX normales sin sustituir internals. Coincidencia observada no acredita equivalencia de defensa/recursos."
+      },
+      "diff": [
+        "@@ -18,7 +18,7 @@",
+        "-            _terminate(process)",
+        "+            _terminate(None)"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_31",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si las garantías de cleanup excepcional y cierre explícito forman parte del contrato y autorizar el enfoque de prueba correspondiente.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No ratificar. Si se exige cubrir esas defensas, aprobar un adaptador/doble de subprocess que preserve la prueba de comportamiento y no dependa de procesos ajenos ni de GC implícito.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "La rama final excepcional que llamaría _terminate(None), y el cierre explícito de streams, no se activan de manera aislable con los hijos POSIX normales sin sustituir internals. Coincidencia observada no acredita equivalencia de defensa/recursos."
+      },
+      "diff": [
+        "@@ -20,5 +20,5 @@",
+        "-            if stream is not None:",
+        "+            if stream is None:"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_32",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar la regresión de aislamiento de stdin.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, alimentar stdin del proceso de prueba por pipe y verificar que el hijo de run_process recibe EOF, no el byte del padre.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Con un byte controlado en stdin del supervisor, el control entrega EOF mediante DEVNULL y el mutante entrega PARENT-STANDARD-IN al hijo. Se rompe el aislamiento de entrada del transporte."
+      },
+      "diff": [
+        "@@ -6,7 +6,7 @@",
+        "-        stdin=subprocess.DEVNULL,",
+        "+        stdin=None,"
+      ],
+      "id": "tools.wct.accept.process.x__execute__mutmut_8",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.stdin.stdout.length: 3 → 19",
+          "payload.stdin.stdout.prefix: 'EOF' → 'PARENT-STANDARD-IN\\n'",
+          "payload.stdin.stdout.sha256: 'abc56510a66445b4c3fcfc48fb4f0de7c91baf299ad83dd2a2b86f7f90ce9e5b' → 'cd17be30b1b8b340258c398df7321dccfa727ceb9d9e11846d3476013be14b09'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "a2aa1a08fb9938437fd5be936a6c5acc1032b248ab62d1408d618d294185c839",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stdout), selectors.EVENT_READ, \"stdout\")",
+        "+        selector.register(cast(\"XXBinaryIOXX\", process.stdout), selectors.EVENT_READ, \"stdout\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_11",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stdout), selectors.EVENT_READ, \"stdout\")",
+        "+        selector.register(cast(\"binaryio\", process.stdout), selectors.EVENT_READ, \"stdout\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_12",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stdout), selectors.EVENT_READ, \"stdout\")",
+        "+        selector.register(cast(\"BINARYIO\", process.stdout), selectors.EVENT_READ, \"stdout\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_13",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -3,7 +3,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stderr), selectors.EVENT_READ, \"stderr\")",
+        "+        selector.register(cast(None, process.stderr), selectors.EVENT_READ, \"stderr\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_22",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -3,7 +3,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stderr), selectors.EVENT_READ, \"stderr\")",
+        "+        selector.register(cast(\"XXBinaryIOXX\", process.stderr), selectors.EVENT_READ, \"stderr\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_26",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -3,7 +3,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stderr), selectors.EVENT_READ, \"stderr\")",
+        "+        selector.register(cast(\"binaryio\", process.stderr), selectors.EVENT_READ, \"stderr\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_27",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -3,7 +3,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stderr), selectors.EVENT_READ, \"stderr\")",
+        "+        selector.register(cast(\"BINARYIO\", process.stderr), selectors.EVENT_READ, \"stderr\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_28",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar la prueba Linux específica de drenaje post-líder y decidir su estrategia de portabilidad.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, llevar la misma coordinación FIFO/pidfd a una prueba de transporte para conservar salida de descendiente hasta EOF, con timeout exterior y finally que mate sólo el grupo propio.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Con sincronización pidfd, el líder termina y sólo después el descendiente propio escribe. El control conserva descendant-late; or→and termina la observación al morir el líder y pierde esa salida. La diferencia no depende sólo de sleep y la limpieza queda restringida al grupo creado."
+      },
+      "diff": [
+        "@@ -4,7 +4,7 @@",
+        "-        while selector.get_map() or process.poll() is None:",
+        "+        while selector.get_map() and process.poll() is None:"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_31",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.descendant_after_leader.controller_finished: True → False",
+          "payload.descendant_after_leader.coordination.descendant_release_sent: presencia True → False",
+          "payload.descendant_after_leader.stdout: 'descendant-late\\n' → ''"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "3e64c4be8b6e7d597c5defe3cb4d5b2a21d2c75cbc33d1c6e91d17ee70438bf3",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el límite inclusivo del deadline es contractual y si se autoriza un control de reloj seguro.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No añadir sleep ni un test frágil para forzar la igualdad. Si la semántica de deadline inclusivo es contractual, aprobar una técnica de reloj controlado aislada antes de cambiar tests/producto.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "La diferencia >= frente a > sólo se observa en la igualdad exacta con monotonic(). Las sondas con procesos reales no fabrican ese instante sin reemplazar el reloj o introducir un doble interno; no se declara equivalente."
+      },
+      "diff": [
+        "@@ -5,7 +5,7 @@",
+        "-            if time.monotonic() >= deadline:",
+        "+            if time.monotonic() > deadline:"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_33",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia limitada a cast de typing en el runtime actual.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No crear oráculos de implementación para cast. Si se migra a chequeo runtime o cambia la frontera de tipos, especificar ese comportamiento antes de añadir pruebas.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "typing.cast se borra en el runtime original; las variantes de tipo/literal no afectan al descriptor registrado ni a los observables de la sonda de procesos."
+      },
+      "diff": [
+        "@@ -2,7 +2,7 @@",
+        "-        selector.register(cast(\"BinaryIO\", process.stdout), selectors.EVENT_READ, \"stdout\")",
+        "+        selector.register(cast(None, process.stdout), selectors.EVENT_READ, \"stdout\")"
+      ],
+      "id": "tools.wct.accept.process.x__observe__mutmut_7",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia solamente bajo las precondiciones de transporte documentadas.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No añadir una prueba artificial de tamaño de read o continue/break mientras el contrato observable (bytes hasta límite, causa y limpieza) permanezca igual. Reabrir si cambia OUTPUT_LIMIT o la semántica de lectura.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "Con límite combinado exacto/+1 y EOF seguido de stderr, las cargas, causas, logs y reaping coinciden. El resultado queda acotado a los límites y planificación de pipes observados; no afirma equivalencia universal del bucle interno."
+      },
+      "diff": [
+        "@@ -1,6 +1,6 @@",
+        "-        chunk = os.read(key.fd, min(65536, remaining + 1))",
+        "+        chunk = os.read(key.fd, min(65537, remaining + 1))"
+      ],
+      "id": "tools.wct.accept.process.x__read__mutmut_12",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia solamente bajo las precondiciones de transporte documentadas.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No añadir una prueba artificial de tamaño de read o continue/break mientras el contrato observable (bytes hasta límite, causa y limpieza) permanezca igual. Reabrir si cambia OUTPUT_LIMIT o la semántica de lectura.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "Con límite combinado exacto/+1 y EOF seguido de stderr, las cargas, causas, logs y reaping coinciden. El resultado queda acotado a los límites y planificación de pipes observados; no afirma equivalencia universal del bucle interno."
+      },
+      "diff": [
+        "@@ -1,6 +1,6 @@",
+        "-        chunk = os.read(key.fd, min(65536, remaining + 1))",
+        "+        chunk = os.read(key.fd, min(65536, remaining + 2))"
+      ],
+      "id": "tools.wct.accept.process.x__read__mutmut_14",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Ratificar o mantener pendiente la equivalencia solamente bajo las precondiciones de transporte documentadas.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No añadir una prueba artificial de tamaño de read o continue/break mientras el contrato observable (bytes hasta límite, causa y limpieza) permanezca igual. Reabrir si cambia OUTPUT_LIMIT o la semántica de lectura.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "EQUIVALENCIA_ACOTADA",
+        "secondary_classifications": [],
+        "technical_rationale": "Con límite combinado exacto/+1 y EOF seguido de stderr, las cargas, causas, logs y reaping coinciden. El resultado queda acotado a los límites y planificación de pipes observados; no afirma equivalencia universal del bucle interno."
+      },
+      "diff": [
+        "@@ -3,7 +3,7 @@",
+        "-            continue",
+        "+            break"
+      ],
+      "id": "tools.wct.accept.process.x__read__mutmut_17",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar una aserción temporal con margen documentado y entorno Linux controlado.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, fijar un proceso silencioso sincronizado por señal/FIFO y una cota temporal externa que detecte que select no puede sobrepasar materialmente el deadline.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Un hijo propio bloqueado por señal, con presupuesto de 0.18 s, vuelve within-silent-budget en control y selector-wait-exceeded-budget con el timeout 1.05. Se viola la ejecución acotada."
+      },
+      "diff": [
+        "@@ -1,5 +1,5 @@",
+        "-    for key, _events in selector.select(timeout=0.05):",
+        "+    for key, _events in selector.select(timeout=1.05):"
+      ],
+      "id": "tools.wct.accept.process.x__read__mutmut_2",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.silent_timeout.duration_bucket: 'within-silent-budget' → 'selector-wait-exceeded-budget'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "9d48f746bb6927a288a5b3bdee95300c229ad826ed2758001c2ab3c09cd51c9e",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar el caso de carrera de limpieza como regresión del transporte.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, añadir un proceso propio ya recolectado y verificar que la limpieza no eleva error, no toca grupos ajenos y conserva el estado de reaping.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "Sobre un líder ya terminado del grupo propio, la sonda controlada cambia retorno normal por TypeError al construir suppress(None). El contrato exige terminar/recolectar sin convertir una carrera normal de desaparición en error instrumental."
+      },
+      "diff": [
+        "@@ -1,4 +1,4 @@",
+        "-    with suppress(ProcessLookupError):",
+        "+    with suppress(None):"
+      ],
+      "id": "tools.wct.accept.process.x__terminate__mutmut_1",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.already_exited_terminate: 'returned' → 'TypeError: issubclass() arg 2 must be a class, a tuple of classes, or a union'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "46b5bf6836b1c9a965eb8f2682f83c4b725409d0015e2f00e48e3fffcdf4ef0a",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el timeout exacto de wait forma parte del contrato operativo y si se autoriza una estrategia de prueba segura para esa frontera.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No ratificar equivalencia. Si el límite de espera es contrato, diseñar y aprobar un doble de subprocess o una prueba de frontera que pueda observarlo sin matar procesos ajenos; conservar timeout y limpieza garantizada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "Tras SIGKILL de un grupo propio, procesos POSIX normales completan el reaping antes de que los límites 1, 2 o None sean observables. La sonda iguala control y mutante, pero eso no prueba equivalencia de un presupuesto de limpieza contractual."
+      },
+      "diff": [
+        "@@ -1,4 +1,4 @@",
+        "-    process.wait(timeout=1)",
+        "+    process.wait(timeout=None)"
+      ],
+      "id": "tools.wct.accept.process.x__terminate__mutmut_6",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el timeout exacto de wait forma parte del contrato operativo y si se autoriza una estrategia de prueba segura para esa frontera.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "No ratificar equivalencia. Si el límite de espera es contrato, diseñar y aprobar un doble de subprocess o una prueba de frontera que pueda observarlo sin matar procesos ajenos; conservar timeout y limpieza garantizada.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "LIMITACION_INSTRUMENTAL",
+        "secondary_classifications": [],
+        "technical_rationale": "Tras SIGKILL de un grupo propio, procesos POSIX normales completan el reaping antes de que los límites 1, 2 o None sean observables. La sonda iguala control y mutante, pero eso no prueba equivalencia de un presupuesto de limpieza contractual."
+      },
+      "diff": [
+        "@@ -1,4 +1,4 @@",
+        "-    process.wait(timeout=1)",
+        "+    process.wait(timeout=2)"
+      ],
+      "id": "tools.wct.accept.process.x__terminate__mutmut_7",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "carga controlada idéntica al original"
+        ],
+        "matches_original": true,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.process.x__observe__mutmut_1",
+        "tools.wct.accept.process.x__execute__mutmut_2"
+      ],
+      "classification": {
+        "human_decision_required": "Autorizar una cota de duración estable para el resultado de run_process.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_campaign.py",
+            "tools/wct/accept/process.py"
+          ],
+          "proposal": "En un incremento TDD autorizado, ejecutar un hijo inmediato y afirmar una duración no negativa y razonablemente acotada; evitar una igualdad de reloj frágil.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "DEFECTO_FUNCIONAL",
+        "secondary_classifications": [
+          "HUECO_DE_ORACULO"
+        ],
+        "technical_rationale": "La sonda marca duraciones implausibles al sumar monotonic()+started en vez de restar. Duration es parte del resultado persistido del transporte y deja de representar duración real."
+      },
+      "diff": [
+        "@@ -10,4 +10,4 @@",
+        "-    return {\"exit\": code, \"reason\": reason, \"duration\": time.monotonic() - started}",
+        "+    return {\"exit\": code, \"reason\": reason, \"duration\": time.monotonic() + started}"
+      ],
+      "id": "tools.wct.accept.process.x_run_process__mutmut_25",
+      "probe": {
+        "case": "process",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.eof_then_stderr.duration_bucket: 'plausible' → 'implausible-duration'",
+          "payload.limit_plus_one.duration_bucket: 'plausible' → 'implausible-duration'",
+          "payload.silent_timeout.duration_bucket: 'within-silent-budget' → 'implausible-duration'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4512b84b81fefed1f7c7a093836ce35cb6922c79fc19703804fa409a45928532",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "853bc3a92fe68fab460a505509428b7fe71f4709f64d7fdfe5eb611730c878f0",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el nombre de registro es una API de cooperación estable o detalle interno.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_pytest.py",
+            "tools/wct/accept/pytest_receipt.py"
+          ],
+          "proposal": "No fijar el nombre sólo para matar este mutante. Si se aprueba como API cooperativa, añadir una prueba de plugin real que consulte pluginmanager, sin sustituir el observer bajo prueba.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El plugin real sigue escribiendo/validando receipt, pero un plugin cooperante no encuentra el nombre estable wct-accept-receipt-observer. El nombre es observable por pytest, aunque el contrato AC1 no lo declara aún API pública."
+      },
+      "diff": [
+        "@@ -2,4 +2,4 @@",
+        "-    config.pluginmanager.register(_Recorder(), \"wct-accept-receipt-observer\")",
+        "+    config.pluginmanager.register(_Recorder(), None)"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_5",
+      "probe": {
+        "case": "pytest-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.stable_plugin_name.stable_name_present: True → False"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "151e3a45861e003600f63f6d7dc31ec1e73e8a39cc5ade3f23a0e60ffd2d4345",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "90f9ab99d10068993ac874188239dcb67097bb067a8af57261e237b36124896b",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el nombre de registro es una API de cooperación estable o detalle interno.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_pytest.py",
+            "tools/wct/accept/pytest_receipt.py"
+          ],
+          "proposal": "No fijar el nombre sólo para matar este mutante. Si se aprueba como API cooperativa, añadir una prueba de plugin real que consulte pluginmanager, sin sustituir el observer bajo prueba.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El plugin real sigue escribiendo/validando receipt, pero un plugin cooperante no encuentra el nombre estable wct-accept-receipt-observer. El nombre es observable por pytest, aunque el contrato AC1 no lo declara aún API pública."
+      },
+      "diff": [
+        "@@ -2,4 +2,4 @@",
+        "-    config.pluginmanager.register(_Recorder(), \"wct-accept-receipt-observer\")",
+        "+    config.pluginmanager.register(_Recorder(), )"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_7",
+      "probe": {
+        "case": "pytest-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.stable_plugin_name.stable_name_present: True → False"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "151e3a45861e003600f63f6d7dc31ec1e73e8a39cc5ade3f23a0e60ffd2d4345",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "90f9ab99d10068993ac874188239dcb67097bb067a8af57261e237b36124896b",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el nombre de registro es una API de cooperación estable o detalle interno.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_pytest.py",
+            "tools/wct/accept/pytest_receipt.py"
+          ],
+          "proposal": "No fijar el nombre sólo para matar este mutante. Si se aprueba como API cooperativa, añadir una prueba de plugin real que consulte pluginmanager, sin sustituir el observer bajo prueba.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El plugin real sigue escribiendo/validando receipt, pero un plugin cooperante no encuentra el nombre estable wct-accept-receipt-observer. El nombre es observable por pytest, aunque el contrato AC1 no lo declara aún API pública."
+      },
+      "diff": [
+        "@@ -2,4 +2,4 @@",
+        "-    config.pluginmanager.register(_Recorder(), \"wct-accept-receipt-observer\")",
+        "+    config.pluginmanager.register(_Recorder(), \"XXwct-accept-receipt-observerXX\")"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_8",
+      "probe": {
+        "case": "pytest-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.stable_plugin_name.stable_name_present: True → False"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "151e3a45861e003600f63f6d7dc31ec1e73e8a39cc5ade3f23a0e60ffd2d4345",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "90f9ab99d10068993ac874188239dcb67097bb067a8af57261e237b36124896b",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el nombre de registro es una API de cooperación estable o detalle interno.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [
+            "tests/unit/test_accept_pytest.py",
+            "tools/wct/accept/pytest_receipt.py"
+          ],
+          "proposal": "No fijar el nombre sólo para matar este mutante. Si se aprueba como API cooperativa, añadir una prueba de plugin real que consulte pluginmanager, sin sustituir el observer bajo prueba.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El plugin real sigue escribiendo/validando receipt, pero un plugin cooperante no encuentra el nombre estable wct-accept-receipt-observer. El nombre es observable por pytest, aunque el contrato AC1 no lo declara aún API pública."
+      },
+      "diff": [
+        "@@ -2,4 +2,4 @@",
+        "-    config.pluginmanager.register(_Recorder(), \"wct-accept-receipt-observer\")",
+        "+    config.pluginmanager.register(_Recorder(), \"WCT-ACCEPT-RECEIPT-OBSERVER\")"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.x_pytest_configure__mutmut_9",
+      "probe": {
+        "case": "pytest-valid",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.stable_plugin_name.stable_name_present: True → False"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "151e3a45861e003600f63f6d7dc31ec1e73e8a39cc5ade3f23a0e60ffd2d4345",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "90f9ab99d10068993ac874188239dcb67097bb067a8af57261e237b36124896b",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el texto exacto de hash mismatch es API de diagnóstico o información humana no contratada.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No endurecer el mensaje exacto sólo para matar el mutante. Si un consumidor necesita una causa estable, especificar un código/estructura de error antes de una prueba adicional.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El pytest real con hash incorrecto sigue rechazando antes de observar el recibo; sólo cambia la literal de ValueError. El contrato exige invalidar identidad incorrecta, no fija hoy capitalización/prefijos del mensaje."
+      },
+      "diff": [
+        "@@ -1,7 +1,7 @@",
+        "-        raise ValueError(\"AC1 original IR hash mismatch\")",
+        "+        raise ValueError(\"XXAC1 original IR hash mismatchXX\")"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_10",
+      "probe": {
+        "case": "pytest-bad-hash",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.wrong_hash_message: 'INTERNALERROR>     raise ValueError(\"AC1 original IR hash mismatch\")' → 'INTERNALERROR>     raise ValueError(\"XXAC1 original IR hash mismatchXX\")'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2d56302b619c598fea3452dc971d361afd42b96a41074cb884e8def39588d493",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "124b63af31373f0f24730f993a7cb2002147e4be747ad7f14e22f5635c9e65fb",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el texto exacto de hash mismatch es API de diagnóstico o información humana no contratada.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No endurecer el mensaje exacto sólo para matar el mutante. Si un consumidor necesita una causa estable, especificar un código/estructura de error antes de una prueba adicional.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El pytest real con hash incorrecto sigue rechazando antes de observar el recibo; sólo cambia la literal de ValueError. El contrato exige invalidar identidad incorrecta, no fija hoy capitalización/prefijos del mensaje."
+      },
+      "diff": [
+        "@@ -1,7 +1,7 @@",
+        "-        raise ValueError(\"AC1 original IR hash mismatch\")",
+        "+        raise ValueError(\"ac1 original ir hash mismatch\")"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_11",
+      "probe": {
+        "case": "pytest-bad-hash",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.wrong_hash_message: 'INTERNALERROR>     raise ValueError(\"AC1 original IR hash mismatch\")' → 'INTERNALERROR>     raise ValueError(\"ac1 original ir hash mismatch\")'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2d56302b619c598fea3452dc971d361afd42b96a41074cb884e8def39588d493",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "abccc720bdebb5b4eccedec67331c84fae092c3f5ac0d046a32ad4675d6d8898",
+          "timed_out": false
+        }
+      }
+    },
+    {
+      "canaries": [
+        "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_1"
+      ],
+      "classification": {
+        "human_decision_required": "Decidir si el texto exacto de hash mismatch es API de diagnóstico o información humana no contratada.",
+        "human_status": "PENDIENTE_DECISION_HUMANA; esta clasificación técnica no cambia el estado histórico survived ni autoriza una exención.",
+        "implementation_now": "No implementado en este cambio documental.",
+        "minimal_future_proposal": {
+          "exact_paths": [],
+          "proposal": "No endurecer el mensaje exacto sólo para matar el mutante. Si un consumidor necesita una causa estable, especificar un código/estructura de error antes de una prueba adicional.",
+          "requires_separate_authorization": true
+        },
+        "primary_classification": "COMPORTAMIENTO_NO_CONTRATADO",
+        "secondary_classifications": [],
+        "technical_rationale": "El pytest real con hash incorrecto sigue rechazando antes de observar el recibo; sólo cambia la literal de ValueError. El contrato exige invalidar identidad incorrecta, no fija hoy capitalización/prefijos del mensaje."
+      },
+      "diff": [
+        "@@ -1,7 +1,7 @@",
+        "-        raise ValueError(\"AC1 original IR hash mismatch\")",
+        "+        raise ValueError(\"AC1 ORIGINAL IR HASH MISMATCH\")"
+      ],
+      "id": "tools.wct.accept.pytest_receipt.xǁ_Recorderǁ__init____mutmut_12",
+      "probe": {
+        "case": "pytest-bad-hash",
+        "comparison_basis": "exit_code, timed_out y carga JSON normalizada; hashes de stdout/stderr se conservan como custodia, no como oráculo de igualdad por contener rutas/nonce.",
+        "controlled_differences": [
+          "payload.wrong_hash_message: 'INTERNALERROR>     raise ValueError(\"AC1 original IR hash mismatch\")' → 'INTERNALERROR>     raise ValueError(\"AC1 ORIGINAL IR HASH MISMATCH\")'"
+        ],
+        "matches_original": false,
+        "original": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2d56302b619c598fea3452dc971d361afd42b96a41074cb884e8def39588d493",
+          "timed_out": false
+        },
+        "survivor": {
+          "exit_code": 0,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "b396c5d0208b563aacaadb3c98270b6db48c8aacaba208fd48a41fcab9edb8b1",
+          "timed_out": false
+        }
+      }
+    }
+  ]
+}

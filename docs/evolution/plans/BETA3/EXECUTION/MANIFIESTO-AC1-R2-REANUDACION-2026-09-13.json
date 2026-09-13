@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "record_date_utc": "2026-09-13",
+  "branch": "codex/beta3-ac1-r2-integration",
+  "base_commit": "932c835ac0eeb75010ec7a1071315b1c51f78eb6",
+  "current_release_version": "1.0.0-beta.2",
+  "status": {
+    "composition": "preserved-uncommitted",
+    "r2": "accepted-baseline-repair-only",
+    "ac1": "not-accredited",
+    "ac1_code_mutation_lot_r1": "FAIL-survivors-stop",
+    "p03a_phase_1": "out-of-scope",
+    "acceptance_mutation": "not-run-after-code-mutation-finding",
+    "coverage_crap": "not-run-after-code-mutation-finding",
+    "dry": "not-run-after-code-mutation-finding",
+    "release": "not-approved",
+    "bless": "not-requested"
+  },
+  "composition": {
+    "source_map_local_path": "build/tmp/ac1-r2-composition/evidence/composition-source-map.tsv",
+    "source_map_sha256": "6d3b89fc795b9d86532a164cfd111c27ebd94e9538e07de2a07c34d7f637a912",
+    "source_file_count": 39,
+    "functional_file_count": 34,
+    "contractual_or_handoff_document_count": 5,
+    "excluded": [
+      "P03a phase 1",
+      "unrelated beta.3 documentation",
+      "README/G1/POST-PR36/REVIEW-G1",
+      "historical build/tmp"
+    ]
+  },
+  "verified_seals": {
+    "ac1": {
+      "sha256": "d28c8991424c085ffb62e2713a053e03b27e8d8fe882dec3f278c391d7e06f9c",
+      "matched_entries": 23,
+      "total_entries": 23
+    },
+    "ac1_composed_base": {
+      "sha256": "3dfbeb35065c6e45b15a02622c57a16fd78c5980ef34675ddb6c527bfbc00213",
+      "matched_entries": 553,
+      "total_entries": 553
+    },
+    "r2_delta": {
+      "sha256": "496df51cba525373769c3118a8331294b020ec48ea058d0d1c5870376810a4c0",
+      "matched_entries": 12,
+      "total_entries": 12
+    },
+    "p03a_phase_1_excluded": {
+      "sha256": "c23d72736448ea5c3e97bb732d5a47bd4664cea2587bb38983a1913cc0bea20e",
+      "matched_entries": 23,
+      "total_entries": 23
+    }
+  },
+  "baseline": {
+    "collection": {
+      "tests_collected": 640,
+      "exit_code": 0
+    },
+    "non_property": {
+      "passed": 639,
+      "deselected": 1,
+      "exit_code": 0,
+      "artifact_sha256": "b5329be227608db6400561a60c7efd45813cdfda69afa3e245f1de29ad572c6f"
+    },
+    "property": {
+      "passed": 1,
+      "exit_code": 0,
+      "artifact_sha256": "803f7d9183e8e29d724a9f7ecbbe62a4c5388ce16d097e811a3a34a2513deb09"
+    },
+    "randomized_seeds": [20260910, 1234, 987654321, 42],
+    "pytest_randomly_version": "5.0.0",
+    "flakes_observed": false
+  },
+  "post_documentation_verification": {
+    "fast_gate": {
+      "command": "wct gate --tier fast",
+      "raw_exit_code": 0,
+      "passed_gates": 7,
+      "skipped_gates": 0,
+      "failed_or_error_gates": 0,
+      "duration_seconds": 2.6419801712036133,
+      "log_sha256": "47021d32099e5477edee7473f263adf248b3413024ca577710d1f4d717a9194e"
+    },
+    "integrity_pre_bless": {
+      "command": "wct integrity check",
+      "raw_exit_code": 1,
+      "protected_paths_with_expected_drift": 20,
+      "modified_protected_paths": 4,
+      "new_protected_paths": 16,
+      "bless_executed": false,
+      "lock_modified": false,
+      "log_sha256": "4bdb49e1997831017640c2f10e7b5e6dee65bbdd5ab6e46fd42c61d3bf33f4a4"
+    }
+  },
+  "mutation_code_lot_r1": {
+    "source_paths": [
+      "tools/wct/accept/receipt.py",
+      "tools/wct/accept/receipt_validation.py",
+      "tools/wct/accept/verdict.py",
+      "tools/wct/accept/verdict_validation.py"
+    ],
+    "test_paths": [
+      "tests/unit/test_accept_receipt.py",
+      "tests/unit/test_accept_verdict.py"
+    ],
+    "input_manifest_sha256": "29785105c94f8fcd94817233c14926f53fe4d47176bf4b4ea083914804ccc094",
+    "ast_inventory_sha256": "c981a3ccfac09c03e1d54f2774bd7507324394113bfc6dc1837900fb39b47bd1",
+    "ast_function_count": 23,
+    "instrumented_function_count": 23,
+    "test_function_association_count": 791,
+    "preflight_focal_tests_passed": 114,
+    "command": "timeout --signal=INT --kill-after=30s 1800s mutmut run --max-children 1 '*'",
+    "budget_seconds": 1800,
+    "duration_seconds": 44.896368919,
+    "raw_exit_code": 0,
+    "results": {
+      "total": 498,
+      "killed": 468,
+      "survived": 30,
+      "other_statuses": 0
+    },
+    "outcome": "FAIL-survivors-stop",
+    "survivor_groups": {
+      "receipt": 2,
+      "receipt_validation": 0,
+      "verdict": 12,
+      "verdict_validation": 16
+    }
+  },
+  "local_evidence": {
+    "root": "build/tmp/ac1-r2-qualification/evidence",
+    "external_custody_asserted": false,
+    "artifacts": {
+      "mutation_plan": "66dbf02f234fc18739a7c674464a103f2f6d971f158590d805ced9ad2444c991",
+      "mutation_preflight_log": "a01789168ddd55d902a5368c94e3f8ad1a2c0de5bfb06bb55ec5db41e2a57622",
+      "mutation_run_log": "ad6893d982a08fb4c922569c3be8e1a8ed95b180c16e21e27a67dd608de09c91",
+      "mutation_run_metadata": "1503078f3720615bb1513038758039afcc7276fd53aa8321051fca4ba358ca48",
+      "mutation_results_all": "38434d37bb900f7d0d691e708d2c00695e62879a420fa893b8c2e7fce72a3248",
+      "mutation_survivor_diffs": "0376c4949bf66ea832422ca8d415a36638965bb0af532be66f1a53e58c22824c",
+      "mutation_reconciliation": "b73a4d529ac7a245cd65306fa7a68c5a9f460deae29667a6d00f1d48644832c4"
+    }
+  },
+  "required_human_decisions_before_resume": [
+    "Whether diagnostic and report strings are observable contract requiring exact assertions.",
+    "Whether the UTF-8 codec alias and zip(strict=...) mutations are accepted equivalences/redundancies; no exception is granted here.",
+    "The exact beta.3 version/tag convention, if a release becomes eligible.",
+    "Any later bless, only after an exact reviewed diff and a real PR."
+  ]
+}

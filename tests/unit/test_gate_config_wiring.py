@@ -159,3 +159,31 @@ def test_unreadable_config_fails_naming_the_key(
 
     assert result.status is Status.FAIL
     assert "crap.changed_max" in result.summary
+
+
+def test_malformed_thresholds_fails_naming_the_key(
+    project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """thresholds.yaml ilegible en el root propio: FAIL nombrando la clave."""
+    _fake_tools(monkeypatch)
+    root = project_factory()
+    (root / "governance/thresholds.yaml").write_text("crap: [malformado\n", encoding="utf-8")
+
+    result = REGISTRY["G-CRAP"](root)
+
+    assert result.status is Status.FAIL
+    assert "crap.changed_max" in result.summary
+
+
+def test_missing_thresholds_file_fails_naming_the_key(
+    project_factory: Callable[..., Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sin thresholds.yaml el gate no hereda silenciosamente el de un ancestro."""
+    _fake_tools(monkeypatch)
+    root = project_factory()
+    (root / "governance/thresholds.yaml").unlink()
+
+    result = REGISTRY["G-CRAP"](root)
+
+    assert result.status is Status.FAIL
+    assert "crap.changed_max" in result.summary

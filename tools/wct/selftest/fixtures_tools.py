@@ -400,14 +400,21 @@ def f9_a(tmp_path: Path) -> Path:
     Re-declarado por adjudicación: el catcher productivo es la regla
     semgrep ``wct-io-in-domain`` (patrón ``subprocess.$ANY(...)`` con
     include ``src/*/domain/**``) — import-linter no ve módulos externos.
+    El fixture es su propia raíz Git (addenda de frontera): bajo el techo
+    del temporal, Semgrep descubre el proyecto propio y escanea la fuente
+    plantada en vez de salir con cero targets por el ignore de un ancestro.
+    Declara la gobernanza que el alcance exigible de G-SAST-SEMGREP lee.
     """
-    return _plant(
+    root = _plant(
         tmp_path,
         {
+            "governance/policy.yaml": "schema_version: 1\npaths:\n  source: [src]\n",
+            "governance/thresholds.yaml": "schema_version: 1\n",
             "governance/semgrep/wct-architecture.yaml": SEMGREP_RULES,
             "src/victim/domain/io.py": 'import subprocess\n\nsubprocess.run(["ls"])\n',
         },
     )
+    return _git_track(root)
 
 
 def f10_a(tmp_path: Path) -> Path:

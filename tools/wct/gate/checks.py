@@ -86,8 +86,12 @@ def _declared(root: Path, *path: str) -> Any:
     """Valor declarado en thresholds.yaml; None si falta o es ilegible.
 
     Contrato ADR-B-01 §3: el caller declara el None como FAIL nombrando la
-    clave — el gate nunca corre con un valor por defecto silencioso.
+    clave — el gate nunca corre con un valor por defecto silencioso. Un
+    root explícito sin gobernanza propia no asciende: leer los umbrales de
+    un ancestro declararía configuración ajena como propia (FI1).
     """
+    if not (root / "governance" / "policy.yaml").is_file():
+        return None
     try:
         _project, _policy, thresholds = load_config(root)
         value: Any = thresholds

@@ -113,7 +113,7 @@ ratificaciones.
 | # | Pendiente | Estado según fuente | Desbloquea |
 |---|---|---|---|
 | E1 | **Fase G** (generación y asociaciones del lote gate/selftest): 959 mutantes generados; subconjunto objetivo de 31 IDs de `checks._declared` y `fixtures_tools.f9_a`; **no ejecutó mutantes** | Registrado en la receta de Fase G | Fase E y siguientes |
-| E2 | **Fase E** (ejecución de los 31 IDs): bruto **27 killed + 4 survived**; adjudicación posterior de ocho kills por excepción y cuatro comportamientos no contratados; **los 928 restantes no fueron ejecutados** | Cierre en `CIERRE-ADJUDICACION-FASE-E`; consultar estado formal ahí | Decidir el destino de los 928 no ejecutados y de los 4 no contratados |
+| E2 | **Fase E** (ejecución de los 31 IDs): bruto **27 killed + 4 survived** (intacto); los ocho kills por excepción **ratificados** y el contrato mínimo de `f9_a`/`load_config` **aprobado**; los cuatro no contratados **detectados** (killed-por-oráculo) en la micro-campaña posterior de exactamente esos 4 IDs; **los 928 restantes no fueron ejecutados** | Ejecución y ratificación en `EJECUCION-INCREMENTO-F9A-LOADCONFIG-2026-09-13` (evidencias de fase E y micro separadas); cierre previo en `CIERRE-ADJUDICACION-FASE-E` | Decidir el destino de los 928 no ejecutados (GS-4); TEST-007 separado |
 | E3 | **GS-1**: `semgrep_schema.py` + `semgrep_verdict.py` | Lote PROPUESTO, no ejecutado | Cobertura de mutación de esos módulos |
 | E4 | **GS-2**: `semgrep_scope.py` | Lote PROPUESTO, no ejecutado | Ídem |
 | E5 | **GS-3**: `semgrep.py` | Lote PROPUESTO, no ejecutado | Ídem |

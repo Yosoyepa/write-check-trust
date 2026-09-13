@@ -12,7 +12,7 @@ import subprocess
 import sys
 import time
 import types
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -423,11 +423,13 @@ def test_run_process_child_receives_eof_not_parent_stdin(tmp_path: Path) -> None
 def test_transport_reads_pending_output_after_leader_terminates(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """Output pending after the reported leader termination is still captured."""
+    """Output pending behind a terminated leader's EOF is still captured."""
     late_read, late_write = os.pipe()
     os.write(late_write, b"descendant-late\n")
+    os.close(late_write)
+    late = os.fdopen(late_read, "rb", buffering=0)
     controlled = types.SimpleNamespace(
-        DefaultSelector=lambda: _ControlledSelector(time.monotonic() + 15.0, late_read),
+        DefaultSelector=lambda: _PendingOutputSelector(time.monotonic() + 15.0, late),
         EVENT_READ=1,
     )
     monkeypatch.setattr(process_transport, "selectors", controlled)
@@ -439,54 +441,78 @@ def test_transport_reads_pending_output_after_leader_terminates(
             10.0,
         )
     finally:
-        os.close(late_write)
-        os.close(late_read)
+        late.close()
     assert report["exit"] == 0
     assert report["reason"] == ""
     assert (tmp_path / "stdout.log").read_bytes() == b"leader-done\ndescendant-late\n"
 
 
-class _ControlledSelector:
-    """Doble de selector: secuencia fija de eventos sobre fds reales."""
+class _PendingOutputSelector:
+    """Doble fiel de selector: registro real, eventos sólo para registrados.
 
-    def __init__(self, deadline: float, late_fd: int) -> None:
+    Modela el estado realizable «líder terminado con salida pendiente»: el
+    canal del líder llega a EOF y, al retirarlo el SUT, el mismo canal queda
+    registrado por la tubería propia del test con los bytes del descendiente,
+    que se leen y después alcanzan su propio EOF.
+    """
+
+    def __init__(self, deadline: float, late: Any) -> None:
         self._deadline = deadline
-        self._stdout: Any = None
-        self._late = late_fd
-        self._steps = ["read-leader", "eof-confirm", "read-late", "end"]
-        self._map = True
+        self._late = late
+        self._registry: dict[Any, Any] = {}
+        self._steps = [
+            "read-leader",
+            "eof-leader",
+            "read-late",
+            "eof-late",
+            "eof-stderr",
+            "end",
+        ]
 
     def register(self, fileobj: Any, _events: Any = None, data: Any = None) -> None:
-        if data == "stdout":
-            self._stdout = fileobj
+        self._registry[fileobj] = data
 
-    def unregister(self, *_args: object) -> None:
-        return None
+    def unregister(self, fileobj: Any) -> None:
+        data = self._registry.pop(fileobj, None)
+        if data == "stdout" and "read-late" in self._steps:
+            self._registry[self._late] = "stdout"
+
+    _TARGETS: ClassVar[dict[str, str]] = {
+        "read-leader": "stdout",
+        "eof-leader": "stdout",
+        "read-late": "late",
+        "eof-late": "late",
+        "eof-stderr": "stderr",
+    }
+    _WAITERS: ClassVar[frozenset[str]] = frozenset({"eof-leader", "eof-late", "eof-stderr"})
 
     def select(self, timeout: float | None = None):
         self._requested_wait = timeout
         step = self._steps.pop(0)
-        if step == "read-leader":
-            key = types.SimpleNamespace(
-                fd=self._stdout.fileno(), fileobj=self._stdout, data="stdout"
-            )
-            return [(key, 1)]
-        if step == "eof-confirm":
-            wait = max(0.0, min(5.0, self._deadline - time.monotonic()))
-            if not select.select([self._stdout], [], [], wait)[0]:
-                raise TimeoutError("leader stdout never reached EOF")
-            key = types.SimpleNamespace(
-                fd=self._stdout.fileno(), fileobj=self._stdout, data="stdout"
-            )
-            return [(key, 1)]
-        if step == "read-late":
-            key = types.SimpleNamespace(fd=self._late, fileobj=self._late, data="stdout")
-            return [(key, 1)]
-        self._map = False
-        return []
+        if step == "end":
+            return []
+        target = (
+            self._late if self._TARGETS[step] == "late" else self._registered(self._TARGETS[step])
+        )
+        if step in self._WAITERS:
+            self._wait_readable(target)
+        return [(self._key(target), 1)]
 
     def get_map(self):
-        return {1: object()} if self._map else {}
+        return dict(self._registry)
+
+    def _registered(self, data: Any) -> Any:
+        return next(fileobj for fileobj, value in self._registry.items() if value == data)
+
+    def _key(self, fileobj: Any):
+        return types.SimpleNamespace(
+            fd=fileobj.fileno(), fileobj=fileobj, data=self._registry[fileobj]
+        )
+
+    def _wait_readable(self, fileobj: Any) -> None:
+        while not select.select([fileobj], [], [], 0.05)[0]:
+            if time.monotonic() > self._deadline:
+                raise TimeoutError("stream never reached readiness")
 
     def __enter__(self):
         return self

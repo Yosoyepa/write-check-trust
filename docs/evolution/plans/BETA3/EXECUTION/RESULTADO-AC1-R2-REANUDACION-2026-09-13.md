@@ -69,3 +69,42 @@ El manifiesto JSON contiguo enumera las identidades, resultados y referencias co
 ## Próxima decisión necesaria
 
 Antes de cualquier nueva campaña o avance de la cadena, una persona debe decidir el contrato de los diagnósticos y adjudicar los dos grupos potencialmente equivalentes. Si se autoriza una reparación, debe ser mínima, incluir pruebas discriminantes y volver a ejecutar únicamente la secuencia exigida desde mutación de código. La versión sigue siendo `1.0.0-beta.2`; cualquier convención/tag de beta.3 requiere decisión humana independiente. No hay comando de bless en este registro.
+
+## Addenda (2026-09-13, UTC) — corrección de narrativa y ratificación de equivalencias
+
+Esta addenda no reescribe el texto anterior; lo corrige y completa. Ninguna
+otra sección de este registro queda modificada.
+
+1. **Corrección del supuesto «hueco funcional» de lectura.** La sección
+   «Mutación de código AC1» clasificó el superviviente
+   `receipt.x__read__mutmut_23` (`RECEIPT_LIMIT + 1 → + 2`) como hueco
+   funcional a resolver con un recibo de tamaño exacto `RECEIPT_LIMIT + 1`.
+   Es incorrecto: el test de frontera ya existía
+   (`test_receipt_exact_byte_limit_and_one_byte_excess`,
+   `tests/unit/test_accept_receipt.py:89`) y pasa bajo el mutante — esa es
+   precisamente la razón de su supervivencia. Para un archivo regular,
+   `read(n)` con `n ≥ LIMIT + 1` es indistinguible bajo el chequeo posterior
+   `len(raw) > RECEIPT_LIMIT`: cualquier archivo mayor que LIMIT produce
+   `len(raw) > LIMIT` con cualquiera de los dos topes.
+2. **Decisión específica del mutante `+1 → +2`: EQUIVALENTE-DEMOSTRADO.** Los
+   cinco supervivientes del lote L1 quedan en esta categoría tras verificación
+   independiente adversarial sobre el runtime original de L1
+   (`sh-p01-CND-80B8`, Python 3.13.14, mutmut 3.7.0): sondas ampliadas (42/42
+   receipt, 24/24 verdict), canarios de detección de falsos equivalentes,
+   verificación de sincronía lote/worktree y revisión de precondiciones
+   estructurales (`read(n)=min(n,size)`; identidad del CodecInfo para el alias
+   UTF-8; poscondición de `_inventory` como única puerta del `zip`, sin
+   mutación entre chequeo y consumo, llamador único, ausencia de concurrencia).
+   Ningún contraejemplo. Evidencia del verifier (local, sin custodia externa):
+   `build/tmp/adjudicacion-ac1-l1/verifier/VEREDICTO.md`.
+3. **Autorización humana (2026-09-13).** Se aprobó el incremento acotado:
+   contrato exacto exclusivo de los 13 diagnósticos de §6 de
+   `ADJUDICACION-SUPERVIVIENTES-AC1-L1-2026-09-12.md`, verificación previa de
+   los cinco IDs por el verifier, repetición de L1 con receta comparable y
+   esta addenda. Con el dictamen favorable del verifier, las cinco
+   equivalencias quedan registradas como definitivas; `strict=True` se
+   conserva; no se modificaron gobernanza ni mecanismos de excepción.
+4. **Lote repetido.** `mutation-code-lot-r1b` cerró con 498 sitios:
+   **493 killed + 5 survived** (los cinco IDs del punto anterior) y cero
+   resultados de otras clases. El resultado bruto y las equivalencias se
+   conservan por separado en `RESULTADO-AC1-L1B-2026-09-13.md`.

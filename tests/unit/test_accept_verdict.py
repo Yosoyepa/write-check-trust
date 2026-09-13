@@ -53,53 +53,64 @@ def test_historical_false_green_is_rejected(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("field", "value", "cause"),
+    ("field", "value", "cause", "exact"),
     [
-        ("schema_version", True, ("schema",)),
-        ("schema_version", 2, ("schema",)),
-        ("planned", True, ("planned", "inventory")),
-        ("planned", 2, ("planned", "inventory")),
-        ("killed", 0, ("counter", "killed")),
-        ("survived", 1, ("counter", "survived")),
-        ("errors", -1, ("counter", "errors")),
-        ("not_run", False, ("counter", "not_run")),
-        ("results", [], ("results", "inventory")),
-        ("baseline", None, ("baseline",)),
-        ("evidence_dir", "", ("evidence", "directory")),
+        ("schema_version", True, ("schema",), None),
+        ("schema_version", 2, ("schema",), None),
+        ("planned", True, ("planned", "inventory"), "invalid campaign: planned inventory"),
+        ("planned", 2, ("planned", "inventory"), "invalid campaign: planned inventory"),
+        ("killed", 0, ("counter", "killed"), None),
+        ("survived", 1, ("counter", "survived"), None),
+        ("errors", -1, ("counter", "errors"), None),
+        ("not_run", False, ("counter", "not_run"), None),
+        ("results", [], ("results", "inventory"), "invalid campaign: results inventory"),
+        ("baseline", None, ("baseline",), "invalid campaign: missing/invalid baseline"),
+        (
+            "evidence_dir",
+            "",
+            ("evidence", "directory"),
+            "invalid campaign: missing evidence directory",
+        ),
     ],
 )
-def test_report_corruption_blocks(tmp_path: Path, field, value, cause) -> None:
+def test_report_corruption_blocks(tmp_path: Path, field, value, cause, exact) -> None:
     report = _report()
     report[field] = value
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
     assert len(messages) == 1
-    assert all(word in messages[0].lower() for word in cause)
+    if exact is None:
+        assert all(word in messages[0].lower() for word in cause)
+    else:
+        assert messages == [exact]
 
 
 @pytest.mark.parametrize(
-    ("field", "value", "cause"),
+    ("field", "value", "cause", "exact"),
     [
-        ("id", True, ("identity", "id")),
-        ("id", 1, ("identity", "id")),
-        ("row", 1, ("identity", "row")),
-        ("scenario", "other", ("identity", "scenario")),
-        ("field", "wrong", ("identity", "field")),
-        ("from", "3", ("identity", "from")),
-        ("to", "1", ("identity", "to")),
-        ("status", "unknown", ("result", "status")),
-        ("exit", 0, ("result", "exit", "status")),
-        ("exit", True, ("result", "exit", "type")),
-        ("reason", "", ("result", "reason")),
+        ("id", True, ("identity", "id"), None),
+        ("id", 1, ("identity", "id"), None),
+        ("row", 1, ("identity", "row"), None),
+        ("scenario", "other", ("identity", "scenario"), None),
+        ("field", "wrong", ("identity", "field"), None),
+        ("from", "3", ("identity", "from"), None),
+        ("to", "1", ("identity", "to"), None),
+        ("status", "unknown", ("result", "status"), "invalid campaign: result status"),
+        ("exit", 0, ("result", "exit", "status"), "invalid campaign: result exit/status"),
+        ("exit", True, ("result", "exit", "type"), "invalid campaign: result exit type"),
+        ("reason", "", ("result", "reason"), "invalid campaign: result reason"),
     ],
 )
-def test_result_identity_corruption_blocks(tmp_path: Path, field, value, cause) -> None:
+def test_result_identity_corruption_blocks(tmp_path: Path, field, value, cause, exact) -> None:
     report = _report()
     report["results"][0][field] = value
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
     assert len(messages) == 1
-    assert all(word in messages[0].lower() for word in cause)
+    if exact is None:
+        assert all(word in messages[0].lower() for word in cause)
+    else:
+        assert messages == [exact]
 
 
 def test_survivor_is_retained_and_blocks(tmp_path: Path) -> None:
@@ -139,8 +150,32 @@ def test_zero_mutations_has_vacuous_warning(tmp_path: Path) -> None:
     report.update(results=[], planned=0, killed=0)
     failed, messages = accept_verdict(ir, report)
     assert failed
-    assert "TEST-010" in messages[0]
+    assert messages == [
+        "0 mutaciones ejecutadas: TEST-010 exige Examples",
+        "escenarios sin Examples: S",
+    ]
     assert report["vacuous"] == ["S"]
+
+
+def test_zero_mutations_names_every_vacuous_scenario(tmp_path: Path) -> None:
+    path = tmp_path / "two.feature"
+    path.write_text(
+        "Feature: F\n"
+        "Scenario Outline: S1\nGiven v <x>\nExamples:\n| x |\n| 2 |\n"
+        "Scenario Outline: S2\nGiven w <y>\nExamples:\n| y |\n| 3 |\n"
+    )
+    ir = parse_feature(path)
+    for scenario in ir["scenarios"]:
+        scenario["examples"] = []
+    report = _report()
+    report.update(results=[], planned=0, killed=0)
+    failed, messages = accept_verdict(ir, report)
+    assert failed
+    assert messages == [
+        "0 mutaciones ejecutadas: TEST-010 exige Examples",
+        "escenarios sin Examples: S1, S2",
+    ]
+    assert report["vacuous"] == ["S1", "S2"]
 
 
 def test_duplicate_results_do_not_hide_inventory(tmp_path: Path) -> None:
@@ -155,7 +190,7 @@ def test_results_requires_list_even_when_tuple_inventory_matches(tmp_path: Path)
     report["results"] = tuple(report["results"])
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
-    assert "results inventory" in messages[0].lower()
+    assert messages == ["invalid campaign: results inventory"]
 
 
 @pytest.mark.parametrize("reason", ["", 1, True, ["reported"], None])
@@ -164,7 +199,7 @@ def test_baseline_reason_is_nonempty_text(tmp_path: Path, reason) -> None:
     report["baseline"]["reason"] = reason
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
-    assert "baseline reason" in messages[0].lower()
+    assert messages == ["invalid campaign: baseline reason"]
 
 
 @pytest.mark.parametrize(
@@ -186,6 +221,7 @@ def test_valid_residual_is_not_misreported_as_invalid_instrument(
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
     assert len(messages) == 1
+    assert messages == ["campaign has survived/error/not_run results"]
     assert "invalid" not in messages[0].lower()
     assert status in messages[0].lower()
 
@@ -210,6 +246,7 @@ def test_residual_exit_contradiction_is_instrument_invalid(
     report["results"][0].update(status=status, exit=code)
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
+    assert messages == ["invalid campaign: result exit/status"]
     assert "invalid campaign" in messages[0].lower()
     assert "exit/status" in messages[0].lower()
 
@@ -235,4 +272,5 @@ def test_non_object_result_names_the_shape_defect(tmp_path: Path) -> None:
     report["results"] = [None]
     failed, messages = accept_verdict(_ir(tmp_path), report)
     assert failed
+    assert messages == ["invalid campaign: result must be an object"]
     assert all(word in messages[0].lower() for word in ("result", "object"))

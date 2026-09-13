@@ -5,14 +5,12 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import select
 import selectors
 import signal
 import subprocess
 import sys
-import time
 import types
-from typing import Any, ClassVar
+from typing import Any
 
 import pytest
 
@@ -423,16 +421,26 @@ def test_run_process_child_receives_eof_not_parent_stdin(tmp_path: Path) -> None
 def test_transport_reads_pending_output_after_leader_terminates(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """Output pending behind a terminated leader's EOF is still captured."""
-    late_read, late_write = os.pipe()
-    os.write(late_write, b"descendant-late\n")
-    os.close(late_write)
-    late = os.fdopen(late_read, "rb", buffering=0)
-    controlled = types.SimpleNamespace(
-        DefaultSelector=lambda: _PendingOutputSelector(time.monotonic() + 15.0, late),
-        EVENT_READ=1,
+    """A terminated process with pending pipe output is drained completely."""
+    stdout_read, stdout_write = os.pipe()
+    os.write(stdout_write, b"leader-done\ndescendant-late\n")
+    os.close(stdout_write)
+    stderr_read, stderr_write = os.pipe()
+    os.close(stderr_write)
+    terminated = _TerminatedProcessDouble(
+        stdout=os.fdopen(stdout_read, "rb", buffering=0),
+        stderr=os.fdopen(stderr_read, "rb", buffering=0),
     )
-    monkeypatch.setattr(process_transport, "selectors", controlled)
+    monkeypatch.setattr(
+        process_transport,
+        "subprocess",
+        types.SimpleNamespace(
+            Popen=lambda *_args, **_kwargs: terminated,
+            DEVNULL=subprocess.DEVNULL,
+            PIPE=subprocess.PIPE,
+            SubprocessError=subprocess.SubprocessError,
+        ),
+    )
     try:
         report = run_process(
             [sys.executable, "-c", "print('leader-done')"],
@@ -441,87 +449,36 @@ def test_transport_reads_pending_output_after_leader_terminates(
             10.0,
         )
     finally:
-        late.close()
+        terminated.close_streams()
     assert report["exit"] == 0
     assert report["reason"] == ""
     assert (tmp_path / "stdout.log").read_bytes() == b"leader-done\ndescendant-late\n"
 
 
-class _PendingOutputSelector:
-    """Doble fiel de selector: registro real, eventos sólo para registrados.
+class _TerminatedProcessDouble:
+    """Doble de Popen: proceso ya terminado cuyos pipes guardan salida pendiente.
 
-    Modela el estado realizable «líder terminado con salida pendiente»: el
-    canal del líder llega a EOF y, al retirarlo el SUT, el mismo canal queda
-    registrado por la tubería propia del test con los bytes del descendiente,
-    que se leen y después alcanzan su propio EOF.
+    Los buffers se preparan antes de invocar el SUT y ambos extremos escritores
+    están cerrados: los bytes son legibles y el siguiente read es EOF. poll() y
+    wait() informan terminación; no se lanza ningún proceso real y el selector
+    que usa el SUT es el DefaultSelector real, sin sustituciones de canal.
     """
 
-    def __init__(self, deadline: float, late: Any) -> None:
-        self._deadline = deadline
-        self._late = late
-        self._registry: dict[Any, Any] = {}
-        self._steps = [
-            "read-leader",
-            "eof-leader",
-            "read-late",
-            "eof-late",
-            "eof-stderr",
-            "end",
-        ]
+    def __init__(self, stdout: Any, stderr: Any) -> None:
+        self.stdout = stdout
+        self.stderr = stderr
+        self.pid = -1
 
-    def register(self, fileobj: Any, _events: Any = None, data: Any = None) -> None:
-        self._registry[fileobj] = data
+    def poll(self) -> int:
+        return 0
 
-    def unregister(self, fileobj: Any) -> None:
-        data = self._registry.pop(fileobj, None)
-        if data == "stdout" and "read-late" in self._steps:
-            self._registry[self._late] = "stdout"
+    def wait(self, timeout: float | None = None) -> int:
+        del timeout  # terminado de antemano: la espera no consume el presupuesto
+        return 0
 
-    _TARGETS: ClassVar[dict[str, str]] = {
-        "read-leader": "stdout",
-        "eof-leader": "stdout",
-        "read-late": "late",
-        "eof-late": "late",
-        "eof-stderr": "stderr",
-    }
-    _WAITERS: ClassVar[frozenset[str]] = frozenset({"eof-leader", "eof-late", "eof-stderr"})
-
-    def select(self, timeout: float | None = None):
-        self._requested_wait = timeout
-        step = self._steps.pop(0)
-        if step == "end":
-            return []
-        target = (
-            self._late if self._TARGETS[step] == "late" else self._registered(self._TARGETS[step])
-        )
-        if step in self._WAITERS:
-            self._wait_readable(target)
-        return [(self._key(target), 1)]
-
-    def get_map(self):
-        return dict(self._registry)
-
-    def _registered(self, data: Any) -> Any:
-        return next(fileobj for fileobj, value in self._registry.items() if value == data)
-
-    def _key(self, fileobj: Any):
-        return types.SimpleNamespace(
-            fd=fileobj.fileno(), fileobj=fileobj, data=self._registry[fileobj]
-        )
-
-    def _wait_readable(self, fileobj: Any) -> None:
-        while not select.select([fileobj], [], [], 0.05)[0]:
-            if time.monotonic() > self._deadline:
-                raise TimeoutError("stream never reached readiness")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_args: object) -> None:
-        return None
-
-    def close(self) -> None:
-        return None
+    def close_streams(self) -> None:
+        for stream in (self.stdout, self.stderr):
+            stream.close()
 
 
 def test_silent_attempt_duration_tracks_budget_with_controlled_clock(

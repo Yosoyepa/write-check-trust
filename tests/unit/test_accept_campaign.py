@@ -5,15 +5,18 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import selectors
 import signal
+import subprocess
 import sys
+import types
 
 import pytest
 
 from tests.acceptance.steps import execute_scenario
-from tools.wct.accept import campaign
+from tools.wct.accept import campaign, process as process_transport
 from tools.wct.accept.pipeline import accept_verdict, parse_feature, run_mutations
-from tools.wct.accept.process import run_process
+from tools.wct.accept.process import _terminate, run_process
 from tools.wct.accept.semantic import SemanticMismatch
 
 
@@ -327,3 +330,181 @@ def test_campaign_preserves_child_plugin_declarations_exactly(
     assert os.environ["PYTEST_PLUGINS"] == existing
     assert os.environ["PYTEST_DEBUG_TEMPROOT"] == str(parent_temporaries)
     assert os.environ["TMPDIR"] == str(parent_temporaries)
+
+
+def test_campaign_transports_ir_bytes_as_utf8_without_ascii_escaping(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The persisted IR keeps non-ASCII text literal and its hash travels intact."""
+    runner = Path(__file__).parents[1] / "acceptance/protocol_runner.py"
+    ir = example_ir()
+    ir["scenarios"][0]["name"] = "Café Ñ"
+    ir["scenarios"][0]["examples"][0]["value"] = "é"
+    monkeypatch.chdir(tmp_path)
+    report = run_mutations(ir, [sys.executable, str(runner), "pass", "pass"])
+    assert report["baseline"]["status"] == "pass"
+    raw = (Path(report["evidence_dir"]) / "baseline/ir.json").read_bytes()
+    assert "Café Ñ".encode() in raw
+    assert b"\\u00e9" not in raw
+    receipt = json.loads((Path(report["evidence_dir"]) / "baseline/receipt.json").read_text())
+    assert receipt["ir_sha256"] == hashlib.sha256(raw).hexdigest()
+
+
+def test_report_and_results_omit_internal_ir_even_when_baseline_invalid(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """No result row transports the internal IR, even when everything is not_run."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    report = run_mutations(example_ir(), [sys.executable, "-c", "raise SystemExit(1)"])
+    assert report["baseline"]["status"] == "invalid"
+    assert report["not_run"] == report["planned"] == 1
+    assert all("ir" not in result for result in report["results"])
+    persisted = json.loads((Path(report["evidence_dir"]) / "report.json").read_text())
+    assert all("ir" not in result for result in persisted["results"])
+
+
+def test_zero_budget_reports_timeout_without_launching(tmp_path: Path) -> None:
+    """A zero budget fails prelaunch: no process is ever started."""
+    marker = tmp_path / "launched.marker"
+    command = [
+        sys.executable,
+        "-c",
+        "import sys\nfrom pathlib import Path\n"
+        "Path(sys.argv[1]).write_text('launched')\nraise SystemExit(7)",
+        str(marker),
+    ]
+    report = run_process(command, dict(os.environ), tmp_path, 0.0)
+    assert report["exit"] is None
+    assert report["reason"] == "campaign timeout"
+    assert not marker.exists()
+
+
+def test_run_process_child_receives_eof_not_parent_stdin(tmp_path: Path) -> None:
+    """The transport child reads DEVNULL, never the caller's standard input."""
+    harness = tmp_path / "stdin_harness.py"
+    harness.write_text(
+        "import json, sys\nfrom pathlib import Path\n"
+        "from tools.wct.accept.process import run_process\n"
+        "logs = Path(sys.argv[1])\n"
+        "logs.mkdir(parents=True, exist_ok=True)\n"
+        "result = run_process(\n"
+        "    [sys.executable, '-c',"
+        " \"import sys; print('EOF' if sys.stdin.read() == '' else sys.stdin.read())\"],\n"
+        "    {}, logs, 10.0,\n"
+        ")\n"
+        "print(json.dumps(result))\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "direct").mkdir()
+    direct = run_process(
+        [sys.executable, "-c", "print('ok')"], dict(os.environ), tmp_path / "direct", 10.0
+    )
+    assert direct["exit"] == 0
+    assert direct["reason"] == ""
+    proc = subprocess.run(
+        [sys.executable, str(harness), str(tmp_path / "logs")],
+        input="PARENT-STANDARD-IN\n",
+        capture_output=True,
+        text=True,
+        timeout=60.0,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    result = json.loads(proc.stdout)
+    assert result["exit"] == 0
+    assert result["reason"] == ""
+    assert (tmp_path / "logs" / "stdout.log").read_text() == "EOF\n"
+
+
+def test_transport_captures_descendant_output_after_leader_exit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Output written by a group descendant after the leader exits is still read."""
+    body = (
+        "import subprocess, sys\n"
+        "from pathlib import Path\n"
+        "script = Path('descendant.py')\n"
+        "script.write_text('import time, sys; time.sleep(0.3); "
+        'sys.stdout.buffer.write(b"descendant-late"); sys.stdout.buffer.flush()\')\n'
+        "subprocess.Popen([sys.executable, str(script)])\n"
+        "print('leader-done', flush=True)\n"
+    )
+    command, pid_path = _transport_child(tmp_path, body)
+    try:
+        monkeypatch.chdir(tmp_path)
+        report = run_process(command, dict(os.environ), tmp_path, 5.0)
+        assert report["exit"] == 0
+        stdout = (tmp_path / "stdout.log").read_bytes()
+        assert b"leader-done\n" in stdout
+        assert b"descendant-late" in stdout
+        assert not (Path(__file__).parents[2] / "descendant.py").exists()
+    finally:
+        _cleanup_transport_child(pid_path)
+
+
+def test_silent_attempt_duration_tracks_budget_with_controlled_clock(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """With a clock advanced by each select wait, a silent attempt never overshoots."""
+    clock = {"now": 0.0}
+
+    def fake_monotonic() -> float:
+        return clock["now"]
+
+    class FakeSelector:
+        def __init__(self) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def register(self, *_args: object) -> None:
+            return None
+
+        def unregister(self, *_args: object) -> None:
+            return None
+
+        def select(self, timeout: float | None):
+            clock["now"] += timeout if timeout is not None else 0.0
+            return []
+
+        def get_map(self):
+            return {"still-registered": object()}
+
+        def close(self) -> None:
+            return None
+
+    fake_selectors = types.SimpleNamespace(
+        DefaultSelector=FakeSelector, EVENT_READ=selectors.EVENT_READ
+    )
+    monkeypatch.setattr(process_transport, "time", types.SimpleNamespace(monotonic=fake_monotonic))
+    monkeypatch.setattr(process_transport, "selectors", fake_selectors)
+    report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 0.2)
+    assert report["reason"] == "timeout"
+    assert 0.0 <= report["duration"] <= 0.25
+
+
+def test_terminate_an_already_exited_process_does_not_raise() -> None:
+    """Terminating a reaped child is a no-op, not a TypeError."""
+    child = subprocess.Popen([sys.executable, "-c", "pass"], start_new_session=True)
+    child.wait()
+    assert child.poll() is not None
+    _terminate(child)
+
+
+def test_duration_is_a_measurement_not_an_accumulation(tmp_path: Path, monkeypatch) -> None:
+    """run_process duration is end-start under a controlled clock."""
+    calls = {"count": 0}
+
+    def fake_monotonic() -> float:
+        calls["count"] += 1
+        return 10.0 if calls["count"] <= 3 else 10.5
+
+    monkeypatch.setattr(process_transport, "time", types.SimpleNamespace(monotonic=fake_monotonic))
+    report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 0.5)
+    assert report["exit"] == 0
+    assert report["duration"] == 0.5

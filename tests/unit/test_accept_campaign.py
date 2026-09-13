@@ -5,11 +5,14 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import select
 import selectors
 import signal
 import subprocess
 import sys
+import time
 import types
+from typing import Any
 
 import pytest
 
@@ -417,30 +420,82 @@ def test_run_process_child_receives_eof_not_parent_stdin(tmp_path: Path) -> None
     assert (tmp_path / "logs" / "stdout.log").read_text() == "EOF\n"
 
 
-def test_transport_captures_descendant_output_after_leader_exit(
+def test_transport_reads_pending_output_after_leader_terminates(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """Output written by a group descendant after the leader exits is still read."""
-    body = (
-        "import subprocess, sys\n"
-        "from pathlib import Path\n"
-        "script = Path('descendant.py')\n"
-        "script.write_text('import time, sys; time.sleep(0.3); "
-        'sys.stdout.buffer.write(b"descendant-late"); sys.stdout.buffer.flush()\')\n'
-        "subprocess.Popen([sys.executable, str(script)])\n"
-        "print('leader-done', flush=True)\n"
+    """Output pending after the reported leader termination is still captured."""
+    late_read, late_write = os.pipe()
+    os.write(late_write, b"descendant-late\n")
+    controlled = types.SimpleNamespace(
+        DefaultSelector=lambda: _ControlledSelector(time.monotonic() + 15.0, late_read),
+        EVENT_READ=1,
     )
-    command, pid_path = _transport_child(tmp_path, body)
+    monkeypatch.setattr(process_transport, "selectors", controlled)
     try:
-        monkeypatch.chdir(tmp_path)
-        report = run_process(command, dict(os.environ), tmp_path, 5.0)
-        assert report["exit"] == 0
-        stdout = (tmp_path / "stdout.log").read_bytes()
-        assert b"leader-done\n" in stdout
-        assert b"descendant-late" in stdout
-        assert not (Path(__file__).parents[2] / "descendant.py").exists()
+        report = run_process(
+            [sys.executable, "-c", "print('leader-done')"],
+            dict(os.environ),
+            tmp_path,
+            10.0,
+        )
     finally:
-        _cleanup_transport_child(pid_path)
+        os.close(late_write)
+        os.close(late_read)
+    assert report["exit"] == 0
+    assert report["reason"] == ""
+    assert (tmp_path / "stdout.log").read_bytes() == b"leader-done\ndescendant-late\n"
+
+
+class _ControlledSelector:
+    """Doble de selector: secuencia fija de eventos sobre fds reales."""
+
+    def __init__(self, deadline: float, late_fd: int) -> None:
+        self._deadline = deadline
+        self._stdout: Any = None
+        self._late = late_fd
+        self._steps = ["read-leader", "eof-confirm", "read-late", "end"]
+        self._map = True
+
+    def register(self, fileobj: Any, _events: Any = None, data: Any = None) -> None:
+        if data == "stdout":
+            self._stdout = fileobj
+
+    def unregister(self, *_args: object) -> None:
+        return None
+
+    def select(self, timeout: float | None = None):
+        self._requested_wait = timeout
+        step = self._steps.pop(0)
+        if step == "read-leader":
+            key = types.SimpleNamespace(
+                fd=self._stdout.fileno(), fileobj=self._stdout, data="stdout"
+            )
+            return [(key, 1)]
+        if step == "eof-confirm":
+            wait = max(0.0, min(5.0, self._deadline - time.monotonic()))
+            if not select.select([self._stdout], [], [], wait)[0]:
+                raise TimeoutError("leader stdout never reached EOF")
+            key = types.SimpleNamespace(
+                fd=self._stdout.fileno(), fileobj=self._stdout, data="stdout"
+            )
+            return [(key, 1)]
+        if step == "read-late":
+            key = types.SimpleNamespace(fd=self._late, fileobj=self._late, data="stdout")
+            return [(key, 1)]
+        self._map = False
+        return []
+
+    def get_map(self):
+        return {1: object()} if self._map else {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    def close(self) -> None:
+        return None
 
 
 def test_silent_attempt_duration_tracks_budget_with_controlled_clock(

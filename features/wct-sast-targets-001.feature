@@ -51,3 +51,15 @@ Feature: Alcance verificable del analisis SAST
     When cargo su raiz con el load_config productivo
     Then el proyecto retornado es esa misma raiz
     And policy y thresholds son mapas sin ConfigError
+
+  Scenario Outline: Los resumenes SAST conservan las fuentes omitidas
+    Given fuentes Python exigibles para el resumen "<required>"
+    And rutas Python informadas como escaneadas para el resumen "<scanned>"
+    And una respuesta para el resumen "<payload>" con exit "<exit>"
+    When clasifico el resultado SAST para el resumen
+    Then obtengo estado "<status>" y resumen exacto "<resumen>"
+
+    Examples:
+      | required                       | scanned  | payload        | exit | status | resumen |
+      | src/a.py;tools/b.py;tests/c.py | src/a.py | finding-valido | 1    | FAIL   | governance.semgrep.wct-io-in-domain src/a.py:3 (omitidas: tests/c.py, tools/b.py) |
+      | src/a.py;tools/b.py;tests/c.py | src/a.py | limpio-valido  | 0    | ERROR  | falta tests/c.py, tools/b.py |

@@ -30,6 +30,7 @@ FEATURE = Path(__file__).resolve().parents[2] / "features" / "wct-sast-targets-0
 RULE = "governance.semgrep.wct-io-in-domain"
 VICTIM = "src/a.py"
 OUTLINE = "Clasificar una respuesta Semgrep por rutas normalizadas"
+OUTLINE_OMITIDAS = "Los resumenes SAST conservan las fuentes omitidas"
 APPROVED_SCENARIOS = (
     OUTLINE,
     "Una fuente ignorada sigue siendo exigible",
@@ -38,6 +39,7 @@ APPROVED_SCENARIOS = (
     "El fixture adversarial usa una raiz Git propia",
     "El aislamiento Git restaura el entorno en el mismo proceso",
     "La gobernanza del fixture adversarial es cargable por el lector productivo",
+    OUTLINE_OMITIDAS,
 )
 
 
@@ -70,17 +72,38 @@ def _payload(name: str, scanned: list[str]) -> str:
             scanned, errors=[{"message": "error interno del instrumento"}]
         ),
         "json-malformado": lambda: '{"errors": [',
+        "scanned-no-lista": lambda: json.dumps(
+            {"errors": [], "paths": {"scanned": VICTIM}, "results": []}
+        ),
+        "errors-no-lista": lambda: json.dumps(
+            {"errors": {}, "paths": {"scanned": scanned}, "results": []}
+        ),
+        "mensaje-no-string": lambda: json.dumps(
+            {"errors": [{"message": 42}], "paths": {"scanned": scanned}, "results": []}
+        ),
+        "results-no-lista": lambda: json.dumps(
+            {"errors": [], "paths": {"scanned": scanned}, "results": "x"}
+        ),
+        "resultado-no-dict": lambda: json.dumps(
+            {"errors": [], "paths": {"scanned": scanned}, "results": ["x"]}
+        ),
+        "ruta-con-escape": lambda: _document(scanned, findings=[_finding(path="../fuera.py")]),
+        "linea-cero": lambda: _document(scanned, findings=[_finding(start={"line": 0})]),
+        "linea-uno": lambda: _document(scanned, findings=[_finding(start={"line": 1})]),
     }
     return builders.get(name, lambda: _document(scanned))()
 
 
 def _expect(verdict: object, status: str, diagnostic: str) -> None:
     assert verdict.status is Status[status]
+    assert isinstance(verdict.details, tuple)
     if diagnostic == "regla y archivo":
         assert RULE in verdict.summary
         assert VICTIM in verdict.summary
     else:
         assert verdict.summary.startswith(diagnostic)
+    if diagnostic == "error del instrumento":
+        assert any("error interno del instrumento" in item for item in verdict.details)
 
 
 @pytest.mark.parametrize(
@@ -160,6 +183,38 @@ def _expect(verdict: object, status: str, diagnostic: str) -> None:
             ),
             id="exit-sin-finding",
         ),
+        pytest.param(
+            (["src/a.py"], [], "scanned-no-lista", 0, "ERROR", "esquema incompleto"),
+            id="scanned-no-lista",
+        ),
+        pytest.param(
+            (["src/a.py"], [], "errors-no-lista", 0, "ERROR", "esquema incompleto"),
+            id="errors-no-lista",
+        ),
+        pytest.param(
+            (["src/a.py"], [], "mensaje-no-string", 0, "ERROR", "esquema incompleto"),
+            id="mensaje-no-string",
+        ),
+        pytest.param(
+            (["src/a.py"], [], "results-no-lista", 0, "ERROR", "esquema incompleto"),
+            id="results-no-lista",
+        ),
+        pytest.param(
+            (["src/a.py"], [], "resultado-no-dict", 0, "ERROR", "esquema incompleto"),
+            id="resultado-no-dict",
+        ),
+        pytest.param(
+            (["src/a.py"], [], "ruta-con-escape", 0, "ERROR", "esquema incompleto"),
+            id="ruta-con-escape",
+        ),
+        pytest.param(
+            (["src/a.py"], ["src/a.py"], "linea-cero", 1, "ERROR", "esquema incompleto"),
+            id="linea-cero",
+        ),
+        pytest.param(
+            (["src/a.py"], ["src/a.py"], "linea-uno", 1, "FAIL", "regla y archivo"),
+            id="linea-uno",
+        ),
     ],
 )
 def test_matriz_literal(case: tuple[list[str], list[str], str, int, str, str]) -> None:
@@ -173,6 +228,7 @@ def test_exit_cero_con_hallazgos_es_incoherente() -> None:
 
     assert verdict.status is Status.ERROR
     assert verdict.summary == "exit incoherente con hallazgos"
+    assert verdict.details == ()
 
 
 def test_exit_fuera_de_contrato() -> None:
@@ -180,6 +236,7 @@ def test_exit_fuera_de_contrato() -> None:
 
     assert verdict.status is Status.ERROR
     assert verdict.summary == "exit fuera de contrato"
+    assert verdict.details == ("exit observado: 2",)
 
 
 def test_hallazgo_sin_regla_no_se_atribuye() -> None:
@@ -231,6 +288,8 @@ def test_fail_con_omision_no_oculta_el_defecto() -> None:
     assert verdict.status is Status.FAIL
     assert RULE in verdict.summary
     assert "tools/b.py" in verdict.summary
+    assert any(RULE in item for item in verdict.details)
+    assert any("omitida: tools/b.py" in item for item in verdict.details)
 
 
 def _policy(source: list[str], **extra: Any) -> dict[str, Any]:
@@ -420,6 +479,51 @@ def test_binding_ejecuta_la_matriz_del_gherkin() -> None:
         scanned = [item for item in row["scanned"].split(";") if item]
         verdict = classify(required, _payload(row["payload"], scanned), int(row["exit"]))
         _expect(verdict, row["status"], row["diagnostic"])
+
+
+def test_binding_los_resumenes_conservan_las_omitidas() -> None:
+    """Contrato ratificado: solo los resumenes que enumeran fuentes omitidas.
+
+    Las rutas omitidas se conservan, ordenadas y separadas por coma y espacio.
+    """
+    ir = parse_feature(FEATURE)
+    outline = next(scenario for scenario in ir["scenarios"] if scenario["name"] == OUTLINE_OMITIDAS)
+
+    assert outline["outline"] is True
+    assert [step["text"] for step in outline["steps"]] == [
+        'fuentes Python exigibles para el resumen "<required>"',
+        'rutas Python informadas como escaneadas para el resumen "<scanned>"',
+        'una respuesta para el resumen "<payload>" con exit "<exit>"',
+        "clasifico el resultado SAST para el resumen",
+        'obtengo estado "<status>" y resumen exacto "<resumen>"',
+    ]
+    assert outline["examples"] == [
+        {
+            "required": "src/a.py;tools/b.py;tests/c.py",
+            "scanned": "src/a.py",
+            "payload": "finding-valido",
+            "exit": "1",
+            "status": "FAIL",
+            "resumen": (
+                "governance.semgrep.wct-io-in-domain src/a.py:3 (omitidas: tests/c.py, tools/b.py)"
+            ),
+        },
+        {
+            "required": "src/a.py;tools/b.py;tests/c.py",
+            "scanned": "src/a.py",
+            "payload": "limpio-valido",
+            "exit": "0",
+            "status": "ERROR",
+            "resumen": "falta tests/c.py, tools/b.py",
+        },
+    ]
+    for row in outline["examples"]:
+        required = [item for item in row["required"].split(";") if item]
+        scanned = [item for item in row["scanned"].split(";") if item]
+        verdict = classify(required, _payload(row["payload"], scanned), int(row["exit"]))
+
+        assert verdict.status is Status[row["status"]]
+        assert verdict.summary == row["resumen"]
 
 
 def test_binding_fuente_ignorada(tmp_path: Path) -> None:

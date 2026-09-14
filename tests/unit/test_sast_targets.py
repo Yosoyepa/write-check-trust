@@ -31,6 +31,7 @@ RULE = "governance.semgrep.wct-io-in-domain"
 VICTIM = "src/a.py"
 OUTLINE = "Clasificar una respuesta Semgrep por rutas normalizadas"
 OUTLINE_OMITIDAS = "Los resumenes SAST conservan las fuentes omitidas"
+OUTLINE_ALCANCE = "Los errores de alcance identifican la causa del rechazo"
 APPROVED_SCENARIOS = (
     OUTLINE,
     "Una fuente ignorada sigue siendo exigible",
@@ -40,6 +41,7 @@ APPROVED_SCENARIOS = (
     "El aislamiento Git restaura el entorno en el mismo proceso",
     "La gobernanza del fixture adversarial es cargable por el lector productivo",
     OUTLINE_OMITIDAS,
+    OUTLINE_ALCANCE,
 )
 
 
@@ -524,6 +526,121 @@ def test_binding_los_resumenes_conservan_las_omitidas() -> None:
 
         assert verdict.status is Status[row["status"]]
         assert verdict.summary == row["resumen"]
+
+
+def _politica_de_alcance(raiz: Path, caso: str) -> dict[str, Any]:
+    """Raiz y politica de alcance para cada sitio de rechazo del outline."""
+    (raiz / "src").mkdir()
+    (raiz / "src/a.py").write_text("value = 1\n", encoding="utf-8")
+    policy: dict[str, Any] = {"schema_version": 1, "paths": {"source": ["src"]}}
+    if caso == "paths-no-mapa":
+        policy["paths"] = "no-es-un-mapa"
+    elif caso == "source-string":
+        policy["paths"]["source"] = "src"
+    elif caso == "build-mapa":
+        policy["paths"]["build"] = {"a": 1}
+    elif caso == "build-no-normalizable":
+        policy["paths"]["build"] = ["."]
+    elif caso == "declarada-no-normalizable":
+        policy["paths"]["source"] = ["../afuera"]
+    elif caso == "declarada-ambigua":
+        policy["paths"]["source"] = ["src", "./src"]
+    elif caso in {"fuente-escapa", "declarada-escapa"}:
+        afuera = raiz.parent / "afuera-cierre"
+        afuera.mkdir(exist_ok=True)
+        if caso == "fuente-escapa":
+            (raiz / "src/sub").mkdir()
+            (afuera / "real.py").write_text("value = 2\n", encoding="utf-8")
+            (raiz / "src/sub/enlace.py").symlink_to(afuera / "real.py")
+        else:
+            (afuera / "mod.py").write_text("value = 2\n", encoding="utf-8")
+            (raiz / "enlace").symlink_to(afuera, target_is_directory=True)
+            policy["paths"]["source"] = ["enlace"]
+    return policy
+
+
+def test_binding_los_errores_de_alcance_identifican_la_causa(tmp_path: Path) -> None:
+    """Contrato aprobado: los errores de alcance identifican la causa del rechazo.
+
+    Los prefijos de los ocho sitios son estables; los valores variables
+    posteriores no quedan fijados.
+    """
+    ir = parse_feature(FEATURE)
+    outline = next(scenario for scenario in ir["scenarios"] if scenario["name"] == OUTLINE_ALCANCE)
+
+    assert outline["outline"] is True
+    assert [step["text"] for step in outline["steps"]] == [
+        'una raiz temporal con la politica de alcance "<caso>"',
+        'la condicion invalida "<invalido>"',
+        "determino el alcance exigible de la raiz",
+        'el rechazo es de tipo "<tipo>" con prefijo "<prefijo>"',
+    ]
+    assert outline["examples"] == [
+        {
+            "caso": "paths-no-mapa",
+            "invalido": "policy sin mapa paths",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "policy.paths debe ser un mapa para determinar el alcance",
+        },
+        {
+            "caso": "source-string",
+            "invalido": "source como string no lista",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "policy.paths.source debe ser una lista de rutas string",
+        },
+        {
+            "caso": "build-mapa",
+            "invalido": "build como mapa no lista",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "policy.paths.build debe ser una ruta string o una lista de rutas string",
+        },
+        {
+            "caso": "build-no-normalizable",
+            "invalido": "build que no normaliza bajo la raiz",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "ruta de construcción no normalizable bajo la raíz",
+        },
+        {
+            "caso": "fuente-escapa",
+            "invalido": "fuente cuyo enlace resuelve fuera de la raiz",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "fuente declarada escapa de la raíz",
+        },
+        {
+            "caso": "declarada-no-normalizable",
+            "invalido": "declarada con salto de directorio",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "ruta de alcance no normalizable bajo la raíz",
+        },
+        {
+            "caso": "declarada-escapa",
+            "invalido": "declarada que resuelve fuera de la raiz",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "ruta de alcance escapa de la raíz",
+        },
+        {
+            "caso": "declarada-ambigua",
+            "invalido": "dos declaradas que resuelven a la misma",
+            "tipo": "SemgrepScopeError",
+            "prefijo": "ruta de política ambigua",
+        },
+    ]
+    for row in outline["examples"]:
+        raiz = tmp_path / row["caso"]
+        raiz.mkdir()
+        policy = _politica_de_alcance(raiz, row["caso"])
+
+        with pytest.raises(SemgrepScopeError) as excinfo:
+            required_sources(raiz, policy)
+
+        assert str(excinfo.value).startswith(row["prefijo"])
+
+
+def test_la_declarada_inexistente_no_aborta_las_posteriores(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/a.py").write_text("value = 1\n", encoding="utf-8")
+
+    assert required_sources(tmp_path, _policy(["no-existe", "src"])) == ["src/a.py"]
 
 
 def test_binding_fuente_ignorada(tmp_path: Path) -> None:

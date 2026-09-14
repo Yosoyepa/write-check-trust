@@ -63,3 +63,20 @@ Feature: Alcance verificable del analisis SAST
       | required                       | scanned  | payload        | exit | status | resumen |
       | src/a.py;tools/b.py;tests/c.py | src/a.py | finding-valido | 1    | FAIL   | governance.semgrep.wct-io-in-domain src/a.py:3 (omitidas: tests/c.py, tools/b.py) |
       | src/a.py;tools/b.py;tests/c.py | src/a.py | limpio-valido  | 0    | ERROR  | falta tests/c.py, tools/b.py |
+
+  Scenario Outline: Los errores de alcance identifican la causa del rechazo
+    Given una raiz temporal con la politica de alcance "<caso>"
+    And la condicion invalida "<invalido>"
+    When determino el alcance exigible de la raiz
+    Then el rechazo es de tipo "<tipo>" con prefijo "<prefijo>"
+
+    Examples:
+      | caso | invalido | tipo | prefijo |
+      | paths-no-mapa | policy sin mapa paths | SemgrepScopeError | policy.paths debe ser un mapa para determinar el alcance |
+      | source-string | source como string no lista | SemgrepScopeError | policy.paths.source debe ser una lista de rutas string |
+      | build-mapa | build como mapa no lista | SemgrepScopeError | policy.paths.build debe ser una ruta string o una lista de rutas string |
+      | build-no-normalizable | build que no normaliza bajo la raiz | SemgrepScopeError | ruta de construcción no normalizable bajo la raíz |
+      | fuente-escapa | fuente cuyo enlace resuelve fuera de la raiz | SemgrepScopeError | fuente declarada escapa de la raíz |
+      | declarada-no-normalizable | declarada con salto de directorio | SemgrepScopeError | ruta de alcance no normalizable bajo la raíz |
+      | declarada-escapa | declarada que resuelve fuera de la raiz | SemgrepScopeError | ruta de alcance escapa de la raíz |
+      | declarada-ambigua | dos declaradas que resuelven a la misma | SemgrepScopeError | ruta de política ambigua |

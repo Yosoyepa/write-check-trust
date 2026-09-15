@@ -5,6 +5,12 @@
 > (a) autorización humana explícita y (b) dictamen independiente previo de sólo
 > lectura (PROC-005) sobre la receta y las identidades congeladas.
 > No es bless, merge, bump, tag ni release; no acredita AC1 ni beta.3.
+>
+> **Nota sucesora (2026-09-15)**: GS-3 se ejecutó después con autorización
+> humana, verifier de puerta y corte `eec71fb1a1dc502b3ab7d557893fcdae4a33be2b`.
+> Resultado: FAIL-survivors-stop (74 killed + 34 survived de 108), sin PASS ni
+> reparaciones; ver `GS3-SEMGREP-RESULTADO-2026-09-15.md`. Las referencias de
+> este anexo afectadas por el nuevo corte quedaron actualizadas en §1 y §1.3.
 
 Este prompt es autosuficiente: incorpora el alcance confirmado por inspección
 estática, las precondiciones, la receta fail-closed derivada de las lecciones
@@ -29,13 +35,14 @@ el sellado, el presupuesto estimado y las condiciones de parada.
    casos dudosos quedan pendientes y declarados; no pasan por muestreo ni se
    convierten en equivalentes por omisión.
 
-## 1. Alcance confirmado (inspección estática; corte propuesto `bdb7db3…`)
+## 1. Alcance confirmado (inspección estática; corte ejecutado `eec71fb…`)
 
 Corte de referencia de este prompt:
-`bdb7db31e3ad5e68adb01fc2b62364fab5858db0` (HEAD de la PR #53 al 2026-09-15,
-en borrador). El incremento ejecutor debe **congelar su propio candidato** al
-autorizarse; si el SHA difiere, re-verifica los hashes de §1.3 y, si
-`semgrep.py` cambia, **BLOQUEA y re-planifica**.
+`eec71fb1a1dc502b3ab7d557893fcdae4a33be2b` (corte congelado y ejecutado de
+GS-3; antes de la ejecución la referencia era `bdb7db3…`). El incremento
+ejecutor congela su propio candidato al autorizarse; si el SHA difiere,
+re-verifica los hashes de §1.3 y, si `semgrep.py` cambia, **BLOQUEA y
+re-planifica**.
 
 ### 1.1 Módulo objetivo
 
@@ -63,7 +70,9 @@ ADENDA §5-5.c; no se convierte en cobertura).
 51 registrado en `ADENDA-PREPARACION-LOTE-GATE-SELFTEST-2026-09-13` §3.
 **No confirmado**: el número de mutantes mutmut (sólo lo fija el gen-only) y
 las asociaciones exactas (sólo las fija la fase de stats). Estimar ≈60–110
-mutantes es una hipótesis de presupuesto, no una medición.
+mutantes es una hipótesis de presupuesto, no una medición. *(Medido en la
+ejecución GS-3 sobre `eec71fb`: 108 mutantes generados y 108 asociaciones no
+vacías; la hipótesis queda superada por la medición.)*
 
 Identidad esperada de IDs (a confirmar en gen-only; no normalizar):
 `tools.wct.gate.semgrep.x__topology__mutmut_N`,
@@ -73,13 +82,13 @@ pública `x_`).
 
 ### 1.3 Inputs de congelación (hashes del corte, `git show <SHA>:<ruta>`)
 
-| Ruta | sha256 en `bdb7db3` |
+| Ruta | sha256 en `eec71fb` |
 |---|---|
 | `tools/wct/gate/semgrep.py` | `0126c4e1bdad3a445a3d3821b46cdd75d1ebec6e2d080ab299fd8d2ebd682657` |
 | `tests/unit/test_sast_targets.py` | `a042b6f8e70eff3e853dcbf0073fb7262cde2d0f06eca495296f49faea878f08` |
 | `tests/conftest.py` | `063f5dccefacdc5ed58f70fae6e5095394cd7a9d8af5d5d98536753a4fda6d73` |
-| `pyproject.toml` | `b10f99b8afc457663c7af28776305a38a572b92938d03eb807827dcf9092a7cd` |
-| `uv.lock` | `c484f92baf7e8ca73eaf6f14c5b10338d7d687e1baceb90cf1986ea502d360e9` |
+| `pyproject.toml` | `c3a1b3e7eaca4545eadb0c935750f199bef390c407f91863e3965b0fdd2c4509` |
+| `uv.lock` | `072b223b206c6a42fe97373b3b0c59a694b6f21383e0b8bf84b4a671625f3409` |
 | `features/wct-sast-targets-001.feature` | `bb69bdf7fcffd638fbd22e50bee1d86cdc520e6718875d3906f33af78a22373f` |
 | `tools/wct/gate/runner.py` (consumidor) | `6e568767066c10bd7bc1fde6a8410133a64e30c3dc6be7cbe27b71d09acd8943` |
 | `tools/wct/gate/semgrep_scope.py` (dependencia) | `0bf26c714de0c512ed76ecbd9008efe3a2be7199ca241273a802bc24279bb12e` |
@@ -282,6 +291,10 @@ con toda la evidencia bajo `$RUN/evidence/`.
 
 Los topes son **tope, no objetivo**. Ningún ahorro de presupuesto ni exit 0
 constituye PASS.
+
+*(Consumo real de la ejecución autorizada sobre `eec71fb`: sobre A ≈ 706.6 s
+de 3600; sobre B ≈ 524.5 s de 1800; parada por supervivientes (§7.5) con
+74 killed + 34 survived de 108. Ver `GS3-SEMGREP-RESULTADO-2026-09-15.md`.)*
 
 ## 7. Condiciones de parada (obligatorias)
 

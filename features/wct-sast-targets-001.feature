@@ -80,3 +80,49 @@ Feature: Alcance verificable del analisis SAST
       | declarada-no-normalizable | declarada con salto de directorio | SemgrepScopeError | ruta de alcance no normalizable bajo la raíz |
       | declarada-escapa | declarada que resuelve fuera de la raiz | SemgrepScopeError | ruta de alcance escapa de la raíz |
       | declarada-ambigua | dos declaradas que resuelven a la misma | SemgrepScopeError | ruta de política ambigua |
+
+  Scenario Outline: La herramienta ausente produce un SKIP visible del gate
+    Given una raiz de proyecto con politica de alcance valida
+    And la deteccion de "semgrep" no encuentra la herramienta
+    When ejecuto el gate SAST sobre la raiz sin herramienta
+    Then obtengo estado "<status>" con gate "<gate>" y resumen "<resumen>"
+
+    Examples:
+      | status | gate           | resumen                      |
+      | SKIP   | G-SAST-SEMGREP | herramienta ausente: semgrep |
+
+  Scenario Outline: El preflight tolera un Git no cero acotado y observa el resultado posterior
+    Given una raiz privada sin repositorio con frontera Git "<frontera>"
+    And una politica de alcance valida con fuente declarada
+    And un instrumento acotado que responde "<payload>" con exit "<exit>"
+    When ejecuto el gate SAST sobre la raiz privada
+    Then obtengo estado "<status>" y resumen "<resumen>"
+
+    Examples:
+      | frontera | payload       | exit | status | resumen                           |
+      | ceiling  | limpio-valido | 0    | PASS   | 1 fuentes analizadas, 0 hallazgos |
+      | ceiling  | limpio-valido | 2    | ERROR  | exit fuera de contrato            |
+
+  Scenario Outline: La rama de error expone la causa y la duracion medida
+    Given una raiz de proyecto con politica de alcance ilegible
+    And la deteccion de "semgrep" encuentra la herramienta
+    And un reloj controlado para la rama de error "<inicio>" seguido de "<fin>"
+    When ejecuto el gate SAST sobre la raiz con politica ilegible
+    Then obtengo estado "<status>" con gate "<gate>" y duracion de error ms "<duracion>"
+    And el resumen empieza por "<prefijo>" y conserva la causa "<causa>"
+
+    Examples:
+      | inicio | fin     | status | gate           | duracion | prefijo                          | causa                         |
+      | 3000.0 | 3001.25 | ERROR  | G-SAST-SEMGREP | 1250     | governance/policy.yaml ilegible: | causa determinista de lectura |
+
+  Scenario Outline: El retorno final expone duracion y comando informativo
+    Given una raiz Git propia con politica de alcance valida
+    And un instrumento controlado que responde "<payload>" con exit "<exit>"
+    And un reloj controlado para el retorno final "<inicio>" seguido de "<fin>"
+    When ejecuto el gate SAST sobre la raiz Git propia
+    Then obtengo estado "<status>" con gate "<gate>" y duracion final ms "<duracion>"
+    And el comando informado es "<comando>"
+
+    Examples:
+      | inicio | fin    | payload       | exit | status | gate           | duracion | comando |
+      | 1000.0 | 1002.5 | limpio-valido | 0    | PASS   | G-SAST-SEMGREP | 2500     | semgrep --quiet --error --severity ERROR --config governance/semgrep --json |

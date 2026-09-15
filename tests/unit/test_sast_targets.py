@@ -20,7 +20,7 @@ import pytest
 
 from tests.conftest import git_isolated
 from tools.wct.accept.parsing import parse_feature
-from tools.wct.config import load_config
+from tools.wct.config import ConfigError, load_config
 from tools.wct.gate.semgrep import SemgrepScopeError, classify, gate_sast_semgrep, required_sources
 from tools.wct.model import Status
 from tools.wct.selftest.fixtures_tools import SEMGREP_RULES, f9_a
@@ -32,6 +32,11 @@ VICTIM = "src/a.py"
 OUTLINE = "Clasificar una respuesta Semgrep por rutas normalizadas"
 OUTLINE_OMITIDAS = "Los resumenes SAST conservan las fuentes omitidas"
 OUTLINE_ALCANCE = "Los errores de alcance identifican la causa del rechazo"
+OUTLINE_SKIP = "La herramienta ausente produce un SKIP visible del gate"
+OUTLINE_GIT = "El preflight tolera un Git no cero acotado y observa el resultado posterior"
+OUTLINE_ERROR = "La rama de error expone la causa y la duracion medida"
+OUTLINE_FINAL = "El retorno final expone duracion y comando informativo"
+COMANDO = "semgrep --quiet --error --severity ERROR --config governance/semgrep --json"
 APPROVED_SCENARIOS = (
     OUTLINE,
     "Una fuente ignorada sigue siendo exigible",
@@ -42,6 +47,10 @@ APPROVED_SCENARIOS = (
     "La gobernanza del fixture adversarial es cargable por el lector productivo",
     OUTLINE_OMITIDAS,
     OUTLINE_ALCANCE,
+    OUTLINE_SKIP,
+    OUTLINE_GIT,
+    OUTLINE_ERROR,
+    OUTLINE_FINAL,
 )
 
 
@@ -723,3 +732,242 @@ def test_binding_gobernanza_del_fixture_cargable_por_load_config(tmp_path: Path)
     assert project == root
     assert isinstance(policy, dict)
     assert isinstance(thresholds, dict)
+
+
+def _raiz_con_politica(raiz: Path) -> None:
+    (raiz / "src").mkdir(parents=True)
+    (raiz / "src/a.py").write_text("value = 1\n", encoding="utf-8")
+    governance = raiz / "governance"
+    governance.mkdir()
+    (governance / "policy.yaml").write_text(
+        "schema_version: 1\npaths:\n  source: [src]\n", encoding="utf-8"
+    )
+
+
+def _raiz_git_con_politica(raiz: Path) -> None:
+    _raiz_con_politica(raiz)
+    subprocess.run(["git", "init", "-q"], cwd=raiz, check=True, capture_output=True)
+
+
+def _reloj(lecturas: list[float]) -> Any:
+    pendientes = iter(lecturas)
+
+    def monotonic() -> float:
+        return next(pendientes, lecturas[-1])
+
+    return monotonic
+
+
+def _toplevel_git(raiz: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=raiz,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def _instrumento_controlado(
+    monkeypatch: pytest.MonkeyPatch, respuesta: str, exit_code: int
+) -> list[list[str]]:
+    """Sustituye la ejecución del instrumento y preserva el resto de subprocess.run."""
+    real = subprocess.run
+    invocados: list[list[str]] = []
+
+    def fake(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        if argv and argv[0] == "semgrep":
+            invocados.append(list(argv))
+            return subprocess.CompletedProcess(argv, exit_code, stdout=respuesta, stderr="")
+        return real(argv, **kwargs)
+
+    monkeypatch.setattr("tools.wct.gate.semgrep.subprocess.run", fake)
+    return invocados
+
+
+def test_binding_la_herramienta_ausente_declara_skip_visible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D1: la detección ausente produce SKIP con identidad y resumen exacto."""
+    ir = parse_feature(FEATURE)
+    outline = next(scenario for scenario in ir["scenarios"] if scenario["name"] == OUTLINE_SKIP)
+
+    assert outline["outline"] is True
+    assert [step["text"] for step in outline["steps"]] == [
+        "una raiz de proyecto con politica de alcance valida",
+        'la deteccion de "semgrep" no encuentra la herramienta',
+        "ejecuto el gate SAST sobre la raiz sin herramienta",
+        'obtengo estado "<status>" con gate "<gate>" y resumen "<resumen>"',
+    ]
+    assert outline["examples"] == [
+        {
+            "status": "SKIP",
+            "gate": "G-SAST-SEMGREP",
+            "resumen": "herramienta ausente: semgrep",
+        }
+    ]
+    monkeypatch.setattr("tools.wct.gate.semgrep.shutil.which", lambda _name: None)
+    raiz = tmp_path / "raiz-sin-herramienta"
+    _raiz_con_politica(raiz)
+
+    for row in outline["examples"]:
+        result = gate_sast_semgrep(raiz)
+
+        assert result.status is Status[row["status"]]
+        assert result.gate_id == row["gate"]
+        assert result.summary == row["resumen"]
+
+
+def test_binding_el_preflight_tolera_git_no_cero_acotado(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D2: el fallo Git acotado no aborta ni oculta el resultado posterior."""
+    ir = parse_feature(FEATURE)
+    outline = next(scenario for scenario in ir["scenarios"] if scenario["name"] == OUTLINE_GIT)
+
+    assert outline["outline"] is True
+    assert [step["text"] for step in outline["steps"]] == [
+        'una raiz privada sin repositorio con frontera Git "<frontera>"',
+        "una politica de alcance valida con fuente declarada",
+        'un instrumento acotado que responde "<payload>" con exit "<exit>"',
+        "ejecuto el gate SAST sobre la raiz privada",
+        'obtengo estado "<status>" y resumen "<resumen>"',
+    ]
+    assert outline["examples"] == [
+        {
+            "frontera": "ceiling",
+            "payload": "limpio-valido",
+            "exit": "0",
+            "status": "PASS",
+            "resumen": "1 fuentes analizadas, 0 hallazgos",
+        },
+        {
+            "frontera": "ceiling",
+            "payload": "limpio-valido",
+            "exit": "2",
+            "status": "ERROR",
+            "resumen": "exit fuera de contrato",
+        },
+    ]
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    raiz = tmp_path / "raiz-privada"
+    _raiz_con_politica(raiz)
+    assert _toplevel_git(raiz).returncode != 0
+
+    for row in outline["examples"]:
+        assert row["frontera"] == "ceiling"
+        _instrumento_controlado(
+            monkeypatch, _payload(row["payload"], ["src/a.py"]), int(row["exit"])
+        )
+        result = gate_sast_semgrep(raiz)
+
+        assert result.status is Status[row["status"]]
+        assert result.summary == row["resumen"]
+
+
+def test_binding_la_rama_de_error_expone_causa_y_duracion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D3 (ERROR) y D5: duración medida y causa de policy conservada."""
+    ir = parse_feature(FEATURE)
+    outline = next(scenario for scenario in ir["scenarios"] if scenario["name"] == OUTLINE_ERROR)
+
+    assert outline["outline"] is True
+    assert [step["text"] for step in outline["steps"]] == [
+        "una raiz de proyecto con politica de alcance ilegible",
+        'la deteccion de "semgrep" encuentra la herramienta',
+        'un reloj controlado para la rama de error "<inicio>" seguido de "<fin>"',
+        "ejecuto el gate SAST sobre la raiz con politica ilegible",
+        'obtengo estado "<status>" con gate "<gate>" y duracion de error ms "<duracion>"',
+        'el resumen empieza por "<prefijo>" y conserva la causa "<causa>"',
+    ]
+    assert outline["examples"] == [
+        {
+            "inicio": "3000.0",
+            "fin": "3001.25",
+            "status": "ERROR",
+            "gate": "G-SAST-SEMGREP",
+            "duracion": "1250",
+            "prefijo": "governance/policy.yaml ilegible:",
+            "causa": "causa determinista de lectura",
+        }
+    ]
+    monkeypatch.setattr(
+        "tools.wct.gate.semgrep.shutil.which", lambda _name: "/instrumento/falso/semgrep"
+    )
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    raiz = tmp_path / "raiz-policy-ilegible"
+    raiz.mkdir()
+    assert _toplevel_git(raiz).returncode != 0
+
+    for row in outline["examples"]:
+
+        def _falla_al_cargar(_path: Path, causa: str = row["causa"]) -> dict[str, Any]:
+            raise ConfigError(causa)
+
+        monkeypatch.setattr("tools.wct.gate.semgrep.load_yaml", _falla_al_cargar)
+        monkeypatch.setattr(
+            "tools.wct.gate.semgrep.time.monotonic",
+            _reloj([float(row["inicio"]), float(row["fin"])]),
+        )
+
+        result = gate_sast_semgrep(raiz)
+
+        assert result.status is Status[row["status"]]
+        assert result.gate_id == row["gate"]
+        assert result.duration_ms == int(row["duracion"])
+        assert result.summary.startswith(row["prefijo"])
+        assert row["causa"] in result.summary
+
+
+def test_binding_el_retorno_final_expone_duracion_y_comando(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D3 (retorno final) y D4: duración medida y comando informativo independiente."""
+    ir = parse_feature(FEATURE)
+    outline = next(scenario for scenario in ir["scenarios"] if scenario["name"] == OUTLINE_FINAL)
+
+    assert outline["outline"] is True
+    assert [step["text"] for step in outline["steps"]] == [
+        "una raiz Git propia con politica de alcance valida",
+        'un instrumento controlado que responde "<payload>" con exit "<exit>"',
+        'un reloj controlado para el retorno final "<inicio>" seguido de "<fin>"',
+        "ejecuto el gate SAST sobre la raiz Git propia",
+        'obtengo estado "<status>" con gate "<gate>" y duracion final ms "<duracion>"',
+        'el comando informado es "<comando>"',
+    ]
+    assert outline["examples"] == [
+        {
+            "inicio": "1000.0",
+            "fin": "1002.5",
+            "payload": "limpio-valido",
+            "exit": "0",
+            "status": "PASS",
+            "gate": "G-SAST-SEMGREP",
+            "duracion": "2500",
+            "comando": COMANDO,
+        }
+    ]
+    raiz = tmp_path / "raiz-git-propia"
+    _raiz_git_con_politica(raiz)
+    assert _toplevel_git(raiz).stdout.strip() == str(raiz.resolve())
+
+    for row in outline["examples"]:
+        invocados = _instrumento_controlado(
+            monkeypatch, _payload(row["payload"], ["src/a.py"]), int(row["exit"])
+        )
+        monkeypatch.setattr(
+            "tools.wct.gate.semgrep.time.monotonic",
+            _reloj([float(row["inicio"]), float(row["fin"])]),
+        )
+
+        result = gate_sast_semgrep(raiz)
+
+        assert result.status is Status[row["status"]]
+        assert result.gate_id == row["gate"]
+        assert result.summary == "1 fuentes analizadas, 0 hallazgos"
+        assert result.duration_ms == int(row["duracion"])
+        assert isinstance(result.details, list)
+        assert result.details == []
+        assert result.command == row["comando"]
+        assert [" ".join(invocado) for invocado in invocados] == [row["comando"]]

@@ -3,8 +3,8 @@
 Registro del incremento autorizado que repara los dos rojos preexistentes del
 tier `commit` de la PR #53 y publica el candidato para la siguiente decisión
 (GS-3). **No ejecuta bless, merge, bump, tag ni release; no reabre GS-2; no
-ejecuta GS-3 ni campañas de mutación; no acredita AC1 ni beta.3.** La PR #53
-permanece en borrador.
+ejecuta GS-3 ni campañas completas de mutación (§10.1); no acredita AC1 ni
+beta.3.** La PR #53 permanece en borrador.
 
 Antecedentes de solo lectura: `GS2-REVALIDACION-Y-PREPARACION-CIERRE-2026-09-15.md`,
 `ANEXO-GDEPS-GDEAD-DIAGNOSTICO-2026-09-15.md`,
@@ -157,7 +157,7 @@ Requires-Dist: pytest>=8.3; extra == 'accept'
 | Instalación base | `venv-base` (uv venv + wheel; solo pyyaml) | `import tools.wct.cli` OK; `wct --version` → `wct 1.0.0b2`; `import pytest` → `ModuleNotFoundError`; `import tools.wct.accept.pytest_receipt` → `ModuleNotFoundError` (opcional, no se carga sin el extra); operación ajena a aceptación `wct archmetrics --json` → exit 0 |
 | Instalación con `[accept]` | `venv-accept` (`write-check-trust[accept] @ file://…whl`) | pytest 9.1.1 disponible; `import tools.wct.accept.pytest_receipt` desde `site-packages` OK |
 | Smoke productivo del plugin | `venv-accept` + pytest real con `WCT_ACCEPT_*` | receipt escrito (`cases: pass`), `receipt.events.json` presente, exit 0 |
-| Smoke de campaña productiva | `venv-accept`, `wct accept mutate features/example.feature` desde directorio sin `tools/` | baseline `pass` (exit 0), **6/6 mutaciones killed**, veredicto exit 0 — el plugin se cargó por `PYTEST_PLUGINS` desde el wheel instalado |
+| Smoke de campaña productiva (aceptación mutante; desviación de alcance, §10.1) | `venv-accept`, `wct accept mutate features/example.feature` desde directorio sin `tools/` | baseline `pass` (exit 0), **6/6 mutaciones killed**, veredicto exit 0 — el plugin se cargó por `PYTEST_PLUGINS` desde el wheel instalado |
 
 Versión medida: **pytest 9.1.1** (coincide con el runtime). No se afirma
 compatibilidad con todo `pytest>=8.3`: solo se probó 9.1.1.
@@ -180,7 +180,8 @@ Documento de instalación/aceptación elegido tras inspección: **`README.md`**
 (sección «Elige la verificación adecuada», donde ya se documenta la aceptación
 mutada). Se añadió una nota: la campaña de aceptación ejecuta pytest y la
 instalación del paquete sin los grupos de desarrollo debe pedir el extra
-`write-check-trust[accept]`; el resto del arnés no requiere pytest.
+`write-check-trust[accept]`; el resto del arnés no requiere pytest
+(afirmación corregida después de publicar: §10.2).
 
 ## 4. Excepciones justificadas (G-DEAD)
 
@@ -216,7 +217,8 @@ Regresiones de transporte ejecutadas (copia aislada, path productivo):
   Incluye el T5 vigente (`test_transport_reads_pending_output_after_leader_terminates`,
   doble de Popen + selector real), timeout con streams parciales y reaping,
   límite exacto y exceso de un byte, EOF, limpieza y `_terminate` idempotente.
-- Smoke de campaña productiva (§3): baseline + 6 mutantes por el transporte real.
+- Smoke de campaña productiva (§3): baseline + 6 mutantes por el transporte
+  real — aceptación mutante, desviación de alcance (§10.1).
 
 Evidencia histórica que sigue siendo referencia y **no** se reejecutó: series
 GS-1/GS-2 (incluida la revalidación de atribución y sus 35 sucesores), lote
@@ -224,7 +226,7 @@ r3 de `process.x__*`, actas de ratificación y los dictámenes de T5. Ninguno se
 traslada automáticamente al nuevo hash de `process.py`: el T5 aceptado en
 `fa3558d` es referencia de diseño, y la evidencia vigente de no-regresión es
 la corrida de esta sección. No se regeneró la campaña r3 ni se ejecutó mutación
-nueva.
+nueva fuera del smoke de aceptación de §3 (§10.1).
 
 ## 6. Resultados reales por control
 
@@ -247,7 +249,7 @@ en el expediente local `build/tmp/gdeps-gdead-r1.b4TNlw/evidence/`.
 | Tier `commit` | **20 PASS · 0 SKIP · 1 FAIL** (G-META-1) |
 | Focal transporte (`test_accept_*`) | 213 passed |
 | Empaquetado base / con extra | §3, ambos OK |
-| No ejecutado (fuera de autorización) | bless, merge, bump, tag, release, GS-3, mutación completa, aceptación mutada como gate |
+| No ejecutado (fuera de autorización) | bless, merge, bump, tag, release, GS-3, mutación de fuentes completa, aceptación mutada como gate; el smoke `wct accept mutate` de §3 sí se ejecutó como desviación de alcance (§10.1) |
 
 Nota de entorno verificada: la suite normativa exige el `bin` del venv en
 `PATH` (el test `test_capabilities_presence_with_real_which` usa `which` real);
@@ -302,13 +304,15 @@ cobertura); ningún hallazgo bloqueante.**
   **M-3** el verifier no reejecutó los números del tier `commit` ni la suite
   normativa/cobertura/ratchet de §6 (fuera de su mandato): se declaran como
   corridas del coder, no del verifier.
-- **Frontera de lo no verificado por el verifier**: no ejecutó mutación,
-  aceptación mutada como gate, tier `full`, bless, merge, bump ni release;
-  tampoco reejecutó GS-2 ni sus sondas, ni consultó checks remotos de CI.
+- **Frontera de lo no verificado por el verifier**: no ejecutó mutación de
+  fuentes (`wct mutate`) ni aceptación mutada como gate, tier `full`, bless,
+  merge, bump ni release; sí reprodujo el smoke `wct accept mutate` del
+  empaquetado (§10.1). Tampoco reejecutó GS-2 ni sus sondas, ni consultó
+  checks remotos de CI en ese momento (resultado real de CI: §10.3).
 
 La publicación en la rama destino se hará con este dictamen y el manifiesto
 congelado; al cierre de este registro la rama y la PR #53 siguen en `f122f79`
-sin commit del incremento.
+sin commit del incremento (publicación posterior: §10.3).
 
 ## 9. GS-2 y pendientes para GS-3 / cierre AC1
 
@@ -330,4 +334,68 @@ Pendientes que este incremento deja anotados (sin ejecutarlos):
 3. **AC1**: decisiones E1/E2 (destino de los 928), D-A/D-C/D-D, E6/E7 y E8
    siguen pendientes según la matriz; nada de este incremento las resuelve.
 4. **Publicación**: CI de la PR #53 se consulta tras el push; no se anticipa
-   verde mientras G-META-1 carezca de bless humano.
+   verde mientras G-META-1 carezca de bless humano (consultada: §10.3).
+
+## 10. Corrección documental (post-publicación)
+
+Publicado el incremento en `b4403c5ef7273c3c929b975ebdf866381db0b88e`, la
+revisión humana detectó dos imprecisiones documentales. Esta sección las
+corrige sin borrar la historia: los textos anteriores siguen visibles y se
+leen con la referencia a esta sección.
+
+### 10.1 Sí hubo mutación de aceptación (desviación de alcance)
+
+Las frases «no ejecuta … campañas de mutación» (§0) y «no se ejecutó
+mutación nueva» (§5) no describen bien una corrida real: **sí se ejecutó
+`wct accept mutate features/example.feature` como smoke de empaquetado**
+(§3, «Smoke de campaña productiva»): baseline `pass` y **6/6 mutaciones
+killed**, veredicto exit 0, con el plugin cargado desde el wheel instalado.
+Esa corrida **es mutación de aceptación** y no debe describirse como «sin
+mutación».
+
+El encargo pedía un smoke de empaquetado productivo, pero prohibía
+expresamente la aceptación mutante. Se registra como **desviación de
+alcance**, no como autorización implícita: no amplía el alcance autorizado
+ni habilita a repetirla.
+
+Hechos que no cambian:
+
+- No se repitieron las campañas completas GS-1/GS-2 ni la campaña r3, no se
+  reejecutaron sus sondas y sus expedientes sellados no se modificaron.
+- No se ejecutó GS-3, ni mutación de fuentes (`wct mutate`), ni la
+  aceptación mutada como gate: G-ACCEPT-MUT no se exigió.
+- El smoke no acredita por sí solo G-ACCEPT-MUT, AC1 ni beta.3: es una
+  corrida de empaquetado, no una calificación.
+
+Atribución de las corridas de aceptación mutante, según los registros:
+
+| Corrida | Actor | Registro |
+|---|---|---|
+| `wct accept mutate` sobre el wheel (`venv-accept`) | coder | §3 y expediente `build/tmp/gdeps-gdead-r1.b4TNlw/evidence/` |
+| Reproducción del smoke (6 planned / 6 killed / 0 survived / 0 errors / 0 not_run) sobre el wheel final | verifier | §8, «Empaquetado reproducido en entornos propios» |
+
+Ninguna de las dos es el gate G-ACCEPT-MUT ni una campaña de calificación.
+
+### 10.2 README: alcance de la instalación base
+
+La nota añadida al README (§3) afirmaba que «el resto del arnés no requiere
+pytest; sin el extra solo queda fuera de alcance la aceptación». Esa
+afirmación es demasiado amplia: el registro productivo también usa pytest
+para G-TEST, la cobertura, los property tests y el orden aleatorio. El
+párrafo se sustituyó por el texto vigente, que limita la instalación base al
+CLI y a las operaciones sin herramientas adicionales, y conserva el comando
+copiable `pip install 'write-check-trust[accept]'`.
+
+### 10.3 Publicación y CI real
+
+- Publicación: commit `b4403c5ef7273c3c929b975ebdf866381db0b88e`, push
+  normal `f122f79..b4403c5` a `codex/beta3-ac1-r2-integration`; PR #53
+  sigue OPEN y en borrador. Las frases de §0 y §8 que describían la
+  publicación como futura y la rama en `f122f79` quedan supersedidas por
+  este commit.
+- CI consultada tras el push (run `35006521104`, job `commit-gates`):
+  **FAILURE a los 11 s, detenido en `wct integrity check`** con las 23
+  rutas protegidas en drift (G-META-1 sin bless). Los pasos posteriores
+  —tier `commit`, tests, cobertura, ratchet y aceptación— **no se
+  ejecutaron**; no hay resultado de CI para ellos. La limitación se
+  conserva: la PR #53 sigue con `commit-gates: FAILURE` hasta el bless.

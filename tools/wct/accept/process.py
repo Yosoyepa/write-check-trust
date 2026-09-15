@@ -35,8 +35,8 @@ def _observe(
     process: subprocess.Popen[bytes], buffers: dict[str, bytearray], deadline: float
 ) -> str:
     with selectors.DefaultSelector() as selector:
-        selector.register(cast("BinaryIO", process.stdout), selectors.EVENT_READ, "stdout")
-        selector.register(cast("BinaryIO", process.stderr), selectors.EVENT_READ, "stderr")
+        selector.register(cast(BinaryIO, process.stdout), selectors.EVENT_READ, "stdout")
+        selector.register(cast(BinaryIO, process.stderr), selectors.EVENT_READ, "stderr")
         while selector.get_map() or process.poll() is None:
             if time.monotonic() >= deadline:
                 return "timeout"

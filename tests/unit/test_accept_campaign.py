@@ -944,3 +944,205 @@ def test_duration_is_a_measurement_not_an_accumulation(tmp_path: Path, monkeypat
     report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 0.5)
     assert report["exit"] == 0
     assert report["duration"] == 0.5
+
+
+class _OrderedSelector:
+    """Selector real cuyo orden de ronda es el de registro, con reloj simulado.
+
+    Delega la espera y la lectura en un DefaultSelector real sobre pipes reales;
+    solo fija el interleave de la ronda (el escenario: EOF de un stream antes de
+    otro legible en la MISMA selección) y hace avanzar el reloj simulado el
+    timeout de cada select, como el arnés de reloj controlado del archivo.
+    """
+
+    def __init__(self, clock: dict[str, float]) -> None:
+        self._real = selectors.DefaultSelector()
+        self._clock = clock
+        self._order: dict[Any, int] = {}
+        self._next = 0
+
+    def __enter__(self) -> "_OrderedSelector":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self._real.close()
+
+    def register(self, fileobj: Any, events: int, data: Any = None) -> None:
+        self._order[fileobj] = self._next
+        self._next += 1
+        self._real.register(fileobj, events, data)
+
+    def unregister(self, fileobj: Any) -> None:
+        self._real.unregister(fileobj)
+
+    def get_map(self) -> Any:
+        return self._real.get_map()
+
+    def select(self, timeout: float | None = None) -> Any:
+        events = self._real.select(timeout)
+        self._clock["now"] += timeout if timeout is not None else 0.0
+        return sorted(events, key=lambda item: self._order[item[0].fileobj])
+
+
+class _ExitedProcessDouble:
+    """Doble de Popen ya salido: killpg seguro sobre hijo propio y reap real.
+
+    El hijo real existe solo para poseer un pgid propio (killpg del SUT no
+    alcanza al test); poll() modela salida previa y wait() recolecta de verdad.
+    """
+
+    def __init__(self, pid: int, stdout: Any, stderr: Any) -> None:
+        self.pid = pid
+        self.stdout = stdout
+        self.stderr = stderr
+        self.reaped = False
+        self.status = 0
+
+    def poll(self) -> int:
+        return self.status
+
+    def wait(self, timeout: float | None = None) -> int:
+        del timeout  # ya salido: la espera no consume el presupuesto
+        if not self.reaped:
+            _result, self.status = os.waitpid(self.pid, 0)
+            self.reaped = True
+        return self.status
+
+
+def test_eof_on_one_stream_still_captures_sibling_output_in_same_round(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """EOF de un stream no abandona los bytes pendientes del otro en la ronda."""
+    clock = {"now": 0.0}
+    stdout_read, _stdout_write = os.pipe()
+    os.close(_stdout_write)
+    stderr_read, stderr_write = os.pipe()
+    os.write(stderr_write, b"late-data\n")
+    decoy = _sigtrap_decoy()
+    double = _ExitedProcessDouble(
+        decoy.pid,
+        os.fdopen(stdout_read, "rb", buffering=0),
+        os.fdopen(stderr_read, "rb", buffering=0),
+    )
+    monkeypatch.setattr(
+        process_transport, "time", types.SimpleNamespace(monotonic=lambda: clock["now"])
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "selectors",
+        types.SimpleNamespace(
+            DefaultSelector=lambda: _OrderedSelector(clock), EVENT_READ=selectors.EVENT_READ
+        ),
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "subprocess",
+        types.SimpleNamespace(
+            Popen=lambda *_args, **_kwargs: double,
+            DEVNULL=subprocess.DEVNULL,
+            PIPE=subprocess.PIPE,
+            SubprocessError=subprocess.SubprocessError,
+            TimeoutExpired=subprocess.TimeoutExpired,
+        ),
+    )
+    try:
+        report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 0.05)
+        assert report["reason"] == "timeout"
+        assert report["exit"] is not None
+        assert (tmp_path / "stdout.log").read_bytes() == b""
+        assert (tmp_path / "stderr.log").read_bytes() == b"late-data\n"
+        with pytest.raises(ChildProcessError):
+            os.waitpid(double.pid, os.WNOHANG)
+    finally:
+        os.close(stderr_write)
+        double.stdout.close()
+        double.stderr.close()
+        _reap_if_alive(decoy.pid)
+
+
+class _SlowReapDouble:
+    """Doble de Popen con hijo propio cuyo reap llega muy tarde (estado D).
+
+    El killpg del SUT es real sobre un hijo propio en su sesión; la espera
+    modela un hijo no recolectable dentro del plazo: wait(timeout) consume su
+    timeout simulado y cede con TimeoutExpired sin recolectar, wait(None)
+    bloquea hasta el reap tardío. El reloj es el simulado del archivo.
+    """
+
+    REAP_AT = 3600.0
+
+    def __init__(self, pid: int, clock: dict[str, float]) -> None:
+        self.pid = pid
+        self.clock = clock
+        self.stdout = None
+        self.stderr = None
+        self.reaped = False
+
+    def poll(self) -> int | None:
+        return 0 if self.reaped else None
+
+    def wait(self, timeout: float | None = None) -> int:
+        if timeout is None:
+            self.clock["now"] = self.REAP_AT
+            self.reaped = True
+            return 0
+        if self.clock["now"] + timeout < self.REAP_AT:
+            self.clock["now"] += timeout
+            raise subprocess.TimeoutExpired(cmd=["slow-reap"], timeout=timeout)
+        self.clock["now"] = self.REAP_AT
+        self.reaped = True
+        return 0
+
+
+def test_terminate_gives_up_on_slow_reap_within_bounded_budget(tmp_path: Path, monkeypatch) -> None:
+    """La espera del reap cede en el plazo: run_process retorna acotado."""
+    clock = {"now": 0.0}
+    decoy = _sigtrap_decoy()
+    double = _SlowReapDouble(decoy.pid, clock)
+
+    class _SilentSelector:
+        def __enter__(self) -> "_SilentSelector":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def register(self, *_args: object) -> None:
+            return None
+
+        def unregister(self, *_args: object) -> None:
+            return None
+
+        def select(self, timeout: float | None):
+            clock["now"] += timeout if timeout is not None else 0.0
+            return []
+
+        def get_map(self):
+            return {"still-registered": object()}
+
+    monkeypatch.setattr(
+        process_transport, "time", types.SimpleNamespace(monotonic=lambda: clock["now"])
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "selectors",
+        types.SimpleNamespace(DefaultSelector=_SilentSelector, EVENT_READ=selectors.EVENT_READ),
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "subprocess",
+        types.SimpleNamespace(
+            Popen=lambda *_args, **_kwargs: double,
+            DEVNULL=subprocess.DEVNULL,
+            PIPE=subprocess.PIPE,
+            SubprocessError=subprocess.SubprocessError,
+            TimeoutExpired=subprocess.TimeoutExpired,
+        ),
+    )
+    try:
+        report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 0.2)
+        assert report["reason"].startswith("process error:")
+        assert report["exit"] is None
+        assert report["duration"] <= 5.0
+    finally:
+        _reap_if_alive(decoy.pid)

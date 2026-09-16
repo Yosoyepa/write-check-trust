@@ -100,6 +100,48 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 | `G-DOC` | cobertura de docstrings ≥ piso ratchet | `interrogate src --fail-under <baseline>` (34 hoy; `wct ratchet record` lo sube) |
 | `G-REDTEAM` | el harness resiste a sus 30 adversarios (F1–F15) | `wct selftest redteam` |
 
+## Contrato de `G-SAST-SEMGREP`
+
+Decisiones contractuales registradas por la adjudicación GS-3. La fuente es
+`tools/wct/gate/semgrep.py`; los escenarios ejecutables viven en
+`features/wct-sast-targets-001.feature` y se enlazan desde
+`tests/unit/test_sast_targets.py`.
+
+### Semgrep ausente (D1)
+
+Si la detección (`shutil.which("semgrep")`) no encuentra la herramienta, el
+gate retorna `G-SAST-SEMGREP` con `Status.SKIP` y el resumen exacto
+`herramienta ausente: semgrep`. La decisión es específica de este gate y no
+acredita el despacho completo de `REGISTRY`.
+
+### Git no-cero acotado (D2)
+
+Cuando `git rev-parse --show-toplevel` termina no-cero, el preflight de
+topología continúa con las comprobaciones restantes. Esto no acredita
+aislamiento Git, no implica PASS y no oculta errores posteriores de
+configuración o del instrumento. El rechazo de una raíz absorbida por un
+ancestro Git no cambia.
+
+### `duration_ms` (D3)
+
+En las ramas de ERROR y de retorno final, `duration_ms` son los milisegundos
+transcurridos entre el inicio del gate y la construcción del resultado,
+truncados a entero. La rama SKIP inmediata de herramienta ausente queda fuera
+de esta obligación.
+
+### `command` (D4)
+
+En el retorno final tras la ejecución normal del instrumento, `command` es una
+representación informativa del comando ejecutado, con los argumentos de
+`COMMAND` separados por un espacio. No promete ser una cadena segura ni
+reutilizable por un shell.
+
+### Policy ilegible (D5)
+
+Si `governance/policy.yaml` no puede cargarse, el gate retorna ERROR con un
+`summary` que empieza por `governance/policy.yaml ilegible:` y conserva la
+causa. La redacción interna de la excepción de terceros no queda fijada.
+
 ## Gates de flujos específicos
 
 Registrados pero fuera de los tiers: los invoca un flujo concreto o quedan

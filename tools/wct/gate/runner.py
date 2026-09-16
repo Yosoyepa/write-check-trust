@@ -43,6 +43,7 @@ from tools.wct.gate.checks import (
 )
 from tools.wct.gate.exec import _captured
 from tools.wct.gate.mutation import gate_mutation
+from tools.wct.gate.semgrep import gate_sast_semgrep
 from tools.wct.model import GateResult, Status
 from tools.wct.mutate.engine import scan as scan_mutations
 from tools.wct.ratchet.engine import baseline
@@ -390,12 +391,7 @@ REGISTRY: dict[str, Gate] = {
         scope=("src", "tools/wct"),
     ),
     "G-SAST-BANDIT": external("G-SAST-BANDIT", ["bandit", "-q", "-r", "src"], scope=("src",)),
-    "G-SAST-SEMGREP": external(
-        "G-SAST-SEMGREP",
-        ["semgrep", "--quiet", "--error", "--severity", "ERROR", "--config", "governance/semgrep"],
-        optional=True,
-        scope=(".",),
-    ),
+    "G-SAST-SEMGREP": declares(gate_sast_semgrep, tools=("semgrep",), scope=(".",)),
     "G-AUDIT": declares(gate_audit, tools=("uv", "pip-audit")),
     "G-ARCHMETRICS": declares(gate_archmetrics, scope=("src/example",)),
     "G-DRY": declares(gate_dry, scope=("src",)),

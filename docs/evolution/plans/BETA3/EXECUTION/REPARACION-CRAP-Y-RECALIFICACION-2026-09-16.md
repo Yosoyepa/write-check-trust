@@ -138,10 +138,11 @@ reutiliza ese resultado como mutación de los nuevos helpers.
 
 `uv run wct integrity check` continúa en exit 1 con el drift preexistente de
 **37 rutas protegidas = 7 modificadas + 30 nuevas**. No se ejecutó bless. La
-La corrida de CI de la PR #53 para el SHA publicado (`35148504901`) falló en
+La corrida de CI del commit de código/documentación base (`35148504901`) y la
+corrida del seguimiento documental (`35148627039`) fallaron en
 `wct integrity check` por ese G-META-1; los pasos posteriores no corrieron.
-Tras el push del commit documental se debe observar la nueva corrida, sin
-interpretar el rojo de integridad como fallo de esta reparación.
+Ambas conservaron el mismo diagnóstico de 37 rutas, sin interpretar el rojo
+de integridad como fallo de esta reparación.
 
 Presupuesto consumido relevante: focal 10.74 s; colección 0.54 s; suite
 completa 161.53 s; `fast` 3.3 s; mutación bounded ≈3.2 s de ejecución de

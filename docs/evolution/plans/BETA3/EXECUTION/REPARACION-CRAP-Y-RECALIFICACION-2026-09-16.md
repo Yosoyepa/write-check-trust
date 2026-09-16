@@ -74,6 +74,12 @@ Runtime acreditado: Python 3.13.14, pytest 9.1.1, pytest-cov 7.1.0,
 coverage 7.15.4, diff-cover 10.5.1, crap4py 0.1.1 y mutmut 3.7.0, usando el
 entorno completo del worktree de integración.
 
+El primer intento de la suite completa usó por error la copia candidata con
+un entorno reducido: terminó en 57.16 s con `3 failed, 660 passed, 28
+skipped, 1 deselected` porque no encontraba `semgrep` y `detect-secrets`.
+Se clasificó como intento ambiental inválido y se repitió con el entorno
+completo; solo la segunda ejecución es la evidencia de cobertura publicada.
+
 | Comprobación | Resultado |
 |---|---|
 | Pruebas focales | **110 passed**, 10.74 s |

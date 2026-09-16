@@ -14,11 +14,115 @@ from typing import Any
 
 import pytest
 
+from tests.acceptance.campaign_steps import execute_step
 from tests.acceptance.steps import execute_scenario
 from tools.wct.accept import campaign, process as process_transport
 from tools.wct.accept.pipeline import accept_verdict, parse_feature, run_mutations
 from tools.wct.accept.process import _terminate, run_process
 from tools.wct.accept.semantic import SemanticMismatch
+
+PRIMARY_SCENARIO = "Distinguir comportamiento de fallos del ejecutor"
+ABORT_SCENARIO = "Abortar antes de lanzar mutantes si falla baseline"
+HISTORICAL_FIELDS = (
+    "baseline",
+    "mutation",
+    "planned",
+    "verdict",
+    "killed",
+    "errors",
+    "survived",
+    "not_run",
+)
+HISTORICAL_ROWS = (
+    ("pass", "mismatch", "1", "pass", "1", "0", "0", "0"),
+    ("mismatch", "mismatch", "1", "fail", "0", "0", "0", "1"),
+    ("pass", "pass", "1", "fail", "0", "0", "1", "0"),
+    ("pass", "missing_receipt", "1", "fail", "0", "1", "0", "0"),
+    ("pass", "wrong_identity", "1", "fail", "0", "1", "0", "0"),
+    ("pass", "mixed_error", "1", "fail", "0", "1", "0", "0"),
+)
+PRIMARY_STEPS = (
+    'un ejecutor con baseline "<baseline>" y mutante "<mutation>"',
+    'ejecuto una campana con "<planned>" mutacion',
+    'el veredicto es "<verdict>" con "<killed>" killed y "<errors>" errores',
+    'quedan "<survived>" supervivientes y "<not_run>" sin ejecutar',
+)
+ABORT_STEPS = (
+    'un ejecutor con baseline "<baseline>" y un mutante que no debe ejecutarse',
+    'ejecuto la campana abortada con "<planned>" mutacion',
+    'el veredicto del aborto es "<verdict>" con "<killed>" killed y "<errors>" errores',
+    'tras el aborto quedan "<survived>" supervivientes y "<not_run>" sin ejecutar',
+    "no se crea ningun intento mutante",
+)
+PRIMARY_ROWS = (
+    ("1", "0", "1", "1", "1", "0", "0", "0"),
+    ("1", "1", "1", "0", "0", "0", "1", "0"),
+    ("1", "2", "1", "0", "0", "1", "0", "0"),
+    ("1", "3", "1", "0", "0", "1", "0", "0"),
+    ("1", "4", "1", "0", "0", "1", "0", "0"),
+)
+ABORT_FIELDS = ("baseline", "planned", "verdict", "killed", "errors", "survived", "not_run")
+ABORT_ROWS = (("0", "1", "0", "0", "0", "0", "1"),)
+ABORT_SENTINEL = "mismatch"
+VALID_MUTATION_MODES = ("mismatch", "pass", "missing_receipt", "wrong_identity", "mixed_error")
+HISTORICAL_TO_PRIMARY = {1: 0, 3: 1, 4: 2, 5: 3, 6: 4}
+
+
+def _feature_path() -> Path:
+    return Path(__file__).parents[2] / "features/wct-acceptance-evidence-001.feature"
+
+
+def _protocol_runner() -> Path:
+    return Path(__file__).parents[1] / "acceptance/protocol_runner.py"
+
+
+def _historical_numeric(field: str, value: str) -> str:
+    """Translate the historical 48-cell table to the approved numeric selectors."""
+    codes = {
+        "baseline": {"pass": "1", "mismatch": "0"},
+        "mutation": {
+            "mismatch": "0",
+            "pass": "1",
+            "missing_receipt": "2",
+            "wrong_identity": "3",
+            "mixed_error": "4",
+        },
+        "verdict": {"pass": "1", "fail": "0"},
+    }
+    return codes.get(field, {}).get(value, value)
+
+
+def _expected_examples(
+    fields: tuple[str, ...], rows: tuple[tuple[str, ...], ...]
+) -> list[dict[str, str]]:
+    return [dict(zip(fields, row, strict=True)) for row in rows]
+
+
+def _inventory_violations(ir: dict) -> list[str]:
+    """Frozen oracle over the approved two-outline inventory, not the SUT."""
+    scenarios = ir.get("scenarios")
+    if not isinstance(scenarios, list) or [scenario.get("name") for scenario in scenarios] != [
+        PRIMARY_SCENARIO,
+        ABORT_SCENARIO,
+    ]:
+        return ["scenarios differ from the approved two-outline inventory"]
+    primary, abort = scenarios
+    violations = []
+    if primary.get("outline") is not True or abort.get("outline") is not True:
+        violations.append("scenario outlines differ")
+    if [step["text"] for step in primary["steps"]] != list(PRIMARY_STEPS):
+        violations.append("primary steps differ")
+    if [step["text"] for step in abort["steps"]] != list(ABORT_STEPS):
+        violations.append("abort steps differ")
+    if [dict(example) for example in primary["examples"]] != _expected_examples(
+        HISTORICAL_FIELDS, PRIMARY_ROWS
+    ):
+        violations.append("primary examples differ")
+    if [dict(example) for example in abort["examples"]] != _expected_examples(
+        ABORT_FIELDS, ABORT_ROWS
+    ):
+        violations.append("abort examples differ")
+    return violations
 
 
 def example_ir() -> dict:
@@ -36,15 +140,27 @@ def example_ir() -> dict:
 
 def test_ac1_feature_executes_real_campaigns(tmp_path: Path, monkeypatch) -> None:
 
-    feature = Path(__file__).parents[2] / "features/wct-acceptance-evidence-001.feature"
-    ir = parse_feature(feature)
+    ir = parse_feature(_feature_path())
     monkeypatch.chdir(tmp_path)
     assert execute_scenario(ir, 0) is None
+
+    primary = [
+        json.loads(path.read_text()) for path in tmp_path.glob("build/tmp/wct-accept-*/report.json")
+    ]
+    assert len(primary) == 5
+    assert all(report["baseline"]["status"] == "pass" for report in primary)
+
+    assert execute_scenario(ir, 1) is None
 
     reports = [
         json.loads(path.read_text()) for path in tmp_path.glob("build/tmp/wct-accept-*/report.json")
     ]
     assert len(reports) == 6
+    aborted = [report for report in reports if report["baseline"]["status"] != "pass"]
+    assert len(aborted) == 1
+    assert aborted[0]["baseline"]["status"] == "mismatch"
+    assert aborted[0]["not_run"] == 1
+    assert not list(Path(aborted[0]["evidence_dir"]).glob("mutation-*"))
     assert sorted((r["killed"], r["errors"], r["survived"], r["not_run"]) for r in reports) == [
         (0, 0, 0, 1),
         (0, 0, 1, 0),
@@ -53,14 +169,79 @@ def test_ac1_feature_executes_real_campaigns(tmp_path: Path, monkeypatch) -> Non
         (0, 1, 0, 0),
         (1, 0, 0, 0),
     ]
+    assert all("mutation" not in example for example in ir["scenarios"][1]["examples"])
+
+
+def test_ac1_feature_inventory_traces_the_48_historical_coordinates() -> None:
+    """The approved 40+7 inventory keeps every historical cell traceable."""
+    ir = parse_feature(_feature_path())
+
+    assert _inventory_violations(ir) == []
+    assert sum(len(scenario["examples"]) for scenario in ir["scenarios"]) == 6
+    assert sum(len(row) for scenario in ir["scenarios"] for row in scenario["examples"]) == 47
+
+    traced = 0
+    for historical_row, row in enumerate(HISTORICAL_ROWS, 1):
+        for field, value in zip(HISTORICAL_FIELDS, row, strict=True):
+            traced += 1
+            if historical_row == 2 and field == "mutation":
+                assert ABORT_SENTINEL in VALID_MUTATION_MODES
+                assert "mutation" not in ir["scenarios"][1]["examples"][0]
+                continue
+            if historical_row == 2:
+                destination = ir["scenarios"][1]["examples"][0][field]
+            else:
+                index = HISTORICAL_TO_PRIMARY[historical_row]
+                destination = ir["scenarios"][0]["examples"][index][field]
+            assert destination == _historical_numeric(field, value)
+    assert traced == 48
+
+
+def _empty_examples(ir: dict) -> None:
+    ir["scenarios"][0]["examples"] = []
+
+
+def _withdraw_row(ir: dict) -> None:
+    ir["scenarios"][0]["examples"].pop(0)
+
+
+def _duplicate_row(ir: dict) -> None:
+    ir["scenarios"][0]["examples"].append(dict(ir["scenarios"][0]["examples"][0]))
+
+
+def _alter_value(ir: dict) -> None:
+    ir["scenarios"][0]["examples"][0]["verdict"] = "0"
+
+
+@pytest.mark.parametrize(
+    "corrupt",
+    [_empty_examples, _withdraw_row, _duplicate_row, _alter_value],
+    ids=["examples-vacio", "retirada", "duplicacion", "alteracion"],
+)
+def test_ac1_inventory_oracle_rejects_corruption(corrupt) -> None:
+    """Empty, withdrawn, duplicated or altered examples cannot pass the frozen oracle."""
+    ir = parse_feature(_feature_path())
+    corrupt(ir)
+
+    assert _inventory_violations(ir) == ["primary examples differ"]
 
 
 def test_ac1_semantic_oracle_is_not_table_binding(tmp_path: Path, monkeypatch) -> None:
 
-    feature = Path(__file__).parents[2] / "features/wct-acceptance-evidence-001.feature"
-    ir = parse_feature(feature)
+    ir = parse_feature(_feature_path())
     ir["scenarios"][0]["examples"] = [ir["scenarios"][0]["examples"][0]]
     ir["scenarios"][0]["examples"][0]["killed"] = "2"
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SemanticMismatch, match="campaign verdict/counts"):
+        execute_scenario(ir, 0)
+
+
+def test_ac1_wrong_numeric_then_is_semantic_mismatch(tmp_path: Path, monkeypatch) -> None:
+    """An altered numeric verdict selector agrees with the SUT rather than the table."""
+    ir = parse_feature(_feature_path())
+    example = dict(ir["scenarios"][0]["examples"][0])
+    example["verdict"] = "0"
+    ir["scenarios"][0]["examples"] = [example]
     monkeypatch.chdir(tmp_path)
     with pytest.raises(SemanticMismatch, match="campaign verdict/counts"):
         execute_scenario(ir, 0)
@@ -83,6 +264,97 @@ def test_failed_original_does_not_launch_mutants(tmp_path: Path, monkeypatch) ->
         [f"baseline invalid: {report['baseline']['reason']}"],
     )
     assert not list(Path(report["evidence_dir"]).glob("mutation-*"))
+
+
+@pytest.mark.parametrize("mode", VALID_MUTATION_MODES)
+def test_ac1_failed_baseline_aborts_independently_of_every_valid_mode(
+    tmp_path: Path, monkeypatch, mode: str
+) -> None:
+    """The fixed abort sentinel holds for every approved mutation mode."""
+    runner = Path(__file__).parents[1] / "acceptance/protocol_runner.py"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    ir = example_ir()
+    report = run_mutations(ir, [sys.executable, str(runner), "mismatch", mode])
+
+    assert report["baseline"]["status"] == "mismatch"
+    assert report["planned"] == 1
+    assert report["results"][0]["status"] == "not_run"
+    assert (report["killed"], report["survived"], report["errors"], report["not_run"]) == (
+        0,
+        0,
+        0,
+        1,
+    )
+    assert not list(Path(report["evidence_dir"]).glob("mutation-*"))
+    assert accept_verdict(ir, report) == (
+        True,
+        [f"baseline mismatch: {report['baseline']['reason']}"],
+    )
+
+
+@pytest.mark.parametrize(
+    "given",
+    [
+        'un ejecutor con baseline "1" y mutante "0"',
+        'un ejecutor con baseline "0" y mutante "4"',
+        'un ejecutor con baseline "0" y un mutante que no debe ejecutarse',
+    ],
+)
+def test_ac1_numeric_selectors_map_to_the_protocol_runner_modes(
+    given: str, tmp_path: Path, monkeypatch
+) -> None:
+    """Numeric selectors resolve to modes the real supervisor accepts."""
+    context: dict[str, Any] = {}
+    monkeypatch.chdir(tmp_path)
+
+    assert execute_step(given, context) is True
+    report = run_mutations(
+        example_ir(),
+        [sys.executable, str(_protocol_runner()), context["baseline"], context["mutation"]],
+    )
+
+    assert report["baseline"]["status"] in {"pass", "mismatch"}
+    assert context["mutation"] in VALID_MUTATION_MODES
+
+
+def test_ac1_abort_sentinel_is_the_fixed_approved_mode(tmp_path: Path, monkeypatch) -> None:
+    """The abort Given keeps the sentinel mode accepted by the real supervisor."""
+    context: dict[str, Any] = {}
+    monkeypatch.chdir(tmp_path)
+
+    assert execute_step('un ejecutor con baseline "0" y un mutante que no debe ejecutarse', context)
+    report = run_mutations(
+        example_ir(),
+        [sys.executable, str(_protocol_runner()), context["baseline"], context["mutation"]],
+    )
+
+    assert context["mutation"] == ABORT_SENTINEL
+    assert report["baseline"]["status"] == "mismatch"
+    assert report["not_run"] == 1
+    assert not list(Path(report["evidence_dir"]).glob("mutation-*"))
+
+
+@pytest.mark.parametrize(
+    "given",
+    [
+        'un ejecutor con baseline "9" y mutante "0"',
+        'un ejecutor con baseline "1" y mutante "9"',
+        'un ejecutor con baseline "9" y un mutante que no debe ejecutarse',
+    ],
+)
+def test_ac1_unknown_selector_is_an_instrumental_error(given: str) -> None:
+    with pytest.raises(ValueError, match=r"unknown campaign \w+ selector") as error:
+        execute_step(given, {})
+
+    assert not isinstance(error.value, SemanticMismatch)
+
+
+def test_ac1_unknown_verdict_selector_is_an_instrumental_error() -> None:
+    context = {"verdict": "pass", "report": {"killed": 0, "errors": 0}}
+
+    with pytest.raises(ValueError, match="unknown campaign verdict selector"):
+        execute_step('el veredicto es "7" con "0" killed y "0" errores', context)
 
 
 def test_unknown_fixture_mode_is_not_a_success(tmp_path: Path, monkeypatch) -> None:

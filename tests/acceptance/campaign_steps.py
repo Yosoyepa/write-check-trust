@@ -9,6 +9,31 @@ from tests.acceptance.protocol_runner import MODES
 from tools.wct.accept.pipeline import accept_verdict, run_mutations
 from tools.wct.accept.semantic import SemanticMismatch
 
+BASELINE_SELECTORS = {"1": "pass", "0": "mismatch"}
+MUTATION_SELECTORS = {
+    "0": "mismatch",
+    "1": "pass",
+    "2": "missing_receipt",
+    "3": "wrong_identity",
+    "4": "mixed_error",
+}
+VERDICT_SELECTORS = {"1": "pass", "0": "fail"}
+ABORT_SENTINEL = "mismatch"
+
+
+def _selected(code: str, selectors: dict[str, str], kind: str) -> str:
+    """Translate an approved numeric selector; unknown codes are instrumental."""
+    if code not in selectors:
+        raise ValueError(f"unknown campaign {kind} selector")
+    return selectors[code]
+
+
+def _runner_mode(code: str, selectors: dict[str, str], kind: str) -> str:
+    mode = _selected(code, selectors, kind)
+    if mode not in MODES:
+        raise ValueError(f"campaign {kind} selector is outside the runner fixture")
+    return mode
+
 
 def _campaign(context: dict[str, Any], planned: int) -> None:
     ir = {
@@ -38,30 +63,57 @@ def execute_step(text: str, context: dict[str, Any]) -> bool:
     """Recognize only the approved campaign vocabulary and compare real results."""
     if match := re.fullmatch(r'un ejecutor con baseline "([^"]+)" y mutante "([^"]+)"', text):
         _modes(context, *match.groups())
-    elif match := re.fullmatch(r'ejecuto una campana con "(\d+)" mutacion', text):
-        _campaign(context, int(match.group(1)))
     elif match := re.fullmatch(
-        r'el veredicto es "([^"]+)" con "(\d+)" killed y "(\d+)" errores', text
+        r'un ejecutor con baseline "([^"]+)" y un mutante que no debe ejecutarse', text
+    ):
+        _abort(context, match.group(1))
+    elif (match := re.fullmatch(r'ejecuto una campana con "(\d+)" mutacion', text)) or (
+        match := re.fullmatch(r'ejecuto la campana abortada con "(\d+)" mutacion', text)
+    ):
+        _campaign(context, int(match.group(1)))
+    elif (
+        match := re.fullmatch(
+            r'el veredicto es "([^"]+)" con "(\d+)" killed y "(\d+)" errores', text
+        )
+    ) or (
+        match := re.fullmatch(
+            r'el veredicto del aborto es "([^"]+)" con "(\d+)" killed y "(\d+)" errores', text
+        )
     ):
         _verdict(context, match.group(1), int(match.group(2)), int(match.group(3)))
-    elif match := re.fullmatch(r'quedan "(\d+)" supervivientes y "(\d+)" sin ejecutar', text):
+    elif (match := re.fullmatch(r'quedan "(\d+)" supervivientes y "(\d+)" sin ejecutar', text)) or (
+        match := re.fullmatch(
+            r'tras el aborto quedan "(\d+)" supervivientes y "(\d+)" sin ejecutar', text
+        )
+    ):
         _remaining(context, int(match.group(1)), int(match.group(2)))
+    elif text == "no se crea ningun intento mutante":
+        _no_mutant_attempt(context)
     else:
         return False
     return True
 
 
 def _modes(context: dict[str, Any], baseline: str, mutation: str) -> None:
-    if baseline not in MODES or mutation not in MODES:
-        raise ValueError("unknown campaign runner mode")
-    context.update(baseline=baseline, mutation=mutation)
+    context.update(
+        baseline=_runner_mode(baseline, BASELINE_SELECTORS, "baseline"),
+        mutation=_runner_mode(mutation, MUTATION_SELECTORS, "mutation"),
+    )
+
+
+def _abort(context: dict[str, Any], baseline: str) -> None:
+    if ABORT_SENTINEL not in MODES:
+        raise ValueError("abort sentinel is outside the runner fixture")
+    context.update(
+        baseline=_runner_mode(baseline, BASELINE_SELECTORS, "baseline"),
+        mutation=ABORT_SENTINEL,
+    )
 
 
 def _verdict(context: dict[str, Any], verdict: str, killed: int, errors: int) -> None:
-    if verdict not in {"pass", "fail"}:
-        raise ValueError("unknown campaign verdict")
+    expected = _selected(verdict, VERDICT_SELECTORS, "verdict")
     actual = context["verdict"], context["report"]["killed"], context["report"]["errors"]
-    if actual != (verdict, killed, errors):
+    if actual != (expected, killed, errors):
         raise SemanticMismatch("campaign verdict/counts differ from expected")
 
 
@@ -69,3 +121,8 @@ def _remaining(context: dict[str, Any], survived: int, not_run: int) -> None:
     actual = context["report"]["survived"], context["report"]["not_run"]
     if actual != (survived, not_run):
         raise SemanticMismatch("campaign residual counts differ from expected")
+
+
+def _no_mutant_attempt(context: dict[str, Any]) -> None:
+    if list(Path(context["report"]["evidence_dir"]).glob("mutation-*")):
+        raise SemanticMismatch("aborted campaign launched a mutant attempt")

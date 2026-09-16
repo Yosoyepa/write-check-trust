@@ -6,9 +6,18 @@ Feature: Evidencia causal de mutacion de aceptacion
     And quedan "<survived>" supervivientes y "<not_run>" sin ejecutar
     Examples:
       | baseline | mutation | planned | verdict | killed | errors | survived | not_run |
-      | pass | mismatch | 1 | pass | 1 | 0 | 0 | 0 |
-      | mismatch | mismatch | 1 | fail | 0 | 0 | 0 | 1 |
-      | pass | pass | 1 | fail | 0 | 0 | 1 | 0 |
-      | pass | missing_receipt | 1 | fail | 0 | 1 | 0 | 0 |
-      | pass | wrong_identity | 1 | fail | 0 | 1 | 0 | 0 |
-      | pass | mixed_error | 1 | fail | 0 | 1 | 0 | 0 |
+      | 1 | 0 | 1 | 1 | 1 | 0 | 0 | 0 |
+      | 1 | 1 | 1 | 0 | 0 | 0 | 1 | 0 |
+      | 1 | 2 | 1 | 0 | 0 | 1 | 0 | 0 |
+      | 1 | 3 | 1 | 0 | 0 | 1 | 0 | 0 |
+      | 1 | 4 | 1 | 0 | 0 | 1 | 0 | 0 |
+
+  Scenario Outline: Abortar antes de lanzar mutantes si falla baseline
+    Given un ejecutor con baseline "<baseline>" y un mutante que no debe ejecutarse
+    When ejecuto la campana abortada con "<planned>" mutacion
+    Then el veredicto del aborto es "<verdict>" con "<killed>" killed y "<errors>" errores
+    And tras el aborto quedan "<survived>" supervivientes y "<not_run>" sin ejecutar
+    And no se crea ningun intento mutante
+    Examples:
+      | baseline | planned | verdict | killed | errors | survived | not_run |
+      | 0 | 1 | 0 | 0 | 0 | 0 | 1 |

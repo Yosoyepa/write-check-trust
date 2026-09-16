@@ -481,6 +481,132 @@ class _TerminatedProcessDouble:
             stream.close()
 
 
+def _sigtrap_decoy() -> subprocess.Popen[bytes]:
+    """Hijo real propio en su sesión: killpg(pid) lo mata sin tocar al test."""
+    return subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True
+    )
+
+
+def _partial_pipe(payload: bytes) -> Any:
+    read_fd, write_fd = os.pipe()
+    os.write(write_fd, payload)
+    os.close(write_fd)
+    return os.fdopen(read_fd, "rb", buffering=0)
+
+
+class _LiveProcessDouble:
+    """Doble de Popen vivo: hijo real en su sesión y streams con bytes pendientes.
+
+    poll() consulta waitpid(WNOHANG) y wait() recolecta de verdad: el oráculo
+    observa reaping real del hijo, no llamadas a _terminate.
+    """
+
+    def __init__(self, pid: int, stdout: Any, stderr: Any) -> None:
+        self.pid = pid
+        self.stdout = stdout
+        self.stderr = stderr
+        self.reaped = False
+
+    def poll(self) -> int | None:
+        if self.reaped:
+            return 0
+        result, status = os.waitpid(self.pid, os.WNOHANG)
+        if result == 0:
+            return None
+        self.reaped = True
+        return status
+
+    def wait(self, timeout: float | None = None) -> int:
+        del timeout  # el centinela ya recibió SIGKILL: la espera no cambia el oráculo
+        _result, status = os.waitpid(self.pid, 0)
+        self.reaped = True
+        return status
+
+
+class _FailingSelector:
+    """Selector real que falla en la segunda consulta tras leer salida parcial."""
+
+    def __init__(self) -> None:
+        self._real = selectors.DefaultSelector()
+        self._calls = 0
+
+    def __enter__(self) -> "_FailingSelector":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self._real.close()
+
+    def register(self, *args: object) -> None:
+        self._real.register(*args)
+
+    def unregister(self, *args: object) -> None:
+        self._real.unregister(*args)
+
+    def get_map(self) -> Any:
+        return self._real.get_map()
+
+    def select(self, timeout: float | None = None) -> Any:
+        self._calls += 1
+        if self._calls == 1:
+            return self._real.select(timeout)
+        raise OSError("deliberate selector failure")
+
+    def close(self) -> None:
+        self._real.close()
+
+
+def _reap_if_alive(pid: int) -> None:
+    try:
+        result, _status = os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        return
+    if result == 0:
+        with suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+        os.waitpid(pid, 0)
+
+
+def test_failed_observation_reports_reaps_and_closes_live_child(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Un fallo de observación conserva captura, recolecta el hijo y cierra streams."""
+    decoy = _sigtrap_decoy()
+    double = _LiveProcessDouble(
+        decoy.pid, _partial_pipe(b"partial-stdout\n"), _partial_pipe(b"partial-stderr\n")
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "selectors",
+        types.SimpleNamespace(DefaultSelector=_FailingSelector, EVENT_READ=selectors.EVENT_READ),
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "subprocess",
+        types.SimpleNamespace(
+            Popen=lambda *_args, **_kwargs: double,
+            DEVNULL=subprocess.DEVNULL,
+            PIPE=subprocess.PIPE,
+            SubprocessError=subprocess.SubprocessError,
+        ),
+    )
+    try:
+        report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 10.0)
+
+        assert report["exit"] is None
+        assert report["reason"] == "process error: deliberate selector failure"
+        assert (tmp_path / "stdout.log").read_bytes() == b"partial-stdout\n"
+        assert (tmp_path / "stderr.log").read_bytes() == b"partial-stderr\n"
+        with pytest.raises(ChildProcessError):
+            os.waitpid(decoy.pid, os.WNOHANG)
+        assert double.stdout.closed is True
+        assert double.stderr.closed is True
+    finally:
+        double.stdout.close()
+        double.stderr.close()
+        _reap_if_alive(decoy.pid)
+
+
 def test_silent_attempt_duration_tracks_budget_with_controlled_clock(
     tmp_path: Path, monkeypatch
 ) -> None:

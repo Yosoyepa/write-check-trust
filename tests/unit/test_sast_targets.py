@@ -21,6 +21,7 @@ import pytest
 from tests.conftest import git_isolated
 from tools.wct.accept.parsing import parse_feature
 from tools.wct.config import ConfigError, load_config
+from tools.wct.gate.runner import REGISTRY
 from tools.wct.gate.semgrep import SemgrepScopeError, classify, gate_sast_semgrep, required_sources
 from tools.wct.model import Status
 from tools.wct.selftest.fixtures_tools import SEMGREP_RULES, f9_a
@@ -971,3 +972,36 @@ def test_binding_el_retorno_final_expone_duracion_y_comando(
         assert result.details == []
         assert result.command == row["comando"]
         assert [" ".join(invocado) for invocado in invocados] == [row["comando"]]
+
+
+def test_dispatch_registry_observa_fuente_completa_y_omision_total(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """PX-REG: la entrada real del REGISTRY conserva PASS y el ERROR por omisión."""
+    raiz = tmp_path / "raiz-registry"
+    _raiz_git_con_politica(raiz)
+    assert _toplevel_git(raiz).stdout.strip() == str(raiz.resolve())
+    monkeypatch.setattr(
+        "tools.wct.gate.semgrep.shutil.which", lambda _name: "/instrumento/falso/semgrep"
+    )
+
+    invocados = _instrumento_controlado(monkeypatch, _payload("limpio-valido", []), 0)
+    result = REGISTRY["G-SAST-SEMGREP"](raiz)
+
+    assert result.status is Status.ERROR
+    assert result.gate_id == "G-SAST-SEMGREP"
+    assert result.summary == "0 de 1 fuentes"
+    assert isinstance(result.details, list)
+    assert any("omitida: src/a.py" in item for item in result.details)
+    assert result.command == COMANDO
+    assert [" ".join(invocado) for invocado in invocados] == [COMANDO]
+
+    invocados = _instrumento_controlado(monkeypatch, _payload("limpio-valido", ["src/a.py"]), 0)
+    result = REGISTRY["G-SAST-SEMGREP"](raiz)
+
+    assert result.status is Status.PASS
+    assert result.gate_id == "G-SAST-SEMGREP"
+    assert result.summary == "1 fuentes analizadas, 0 hallazgos"
+    assert result.details == []
+    assert result.command == COMANDO
+    assert [" ".join(invocado) for invocado in invocados] == [COMANDO]

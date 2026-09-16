@@ -80,20 +80,53 @@ def _unique_dirs(root: Path, declared: list[str]) -> list[str]:
     return sorted(normalized)
 
 
+def _is_under_build(path: Path, builds: list[Path]) -> bool:
+    """Indica si una ruta pertenece a un directorio de construcción."""
+    return any(path.is_relative_to(build) for build in builds)
+
+
+def _python_file(root: Path, candidate: Path, builds: list[Path]) -> str | None:
+    """Normaliza un candidato Python o devuelve None si queda excluido."""
+    resolved = candidate.resolve()
+    if not resolved.is_relative_to(root):
+        raise SemgrepScopeError(f"fuente declarada escapa de la raíz: {candidate}")
+    if _is_under_build(resolved, builds):
+        return None
+    relative = resolved.relative_to(root)
+    if _IGNORED_PARTS.intersection(relative.parts):
+        return None
+    if not candidate.is_file():
+        return None
+    return relative.as_posix()
+
+
 def _python_files(root: Path, base: Path, builds: list[Path]) -> set[str]:
+    """Recolecta fuentes Python válidas bajo una ruta declarada."""
     files: set[str] = set()
     for candidate in sorted(base.rglob("*.py")):
-        resolved = candidate.resolve()
-        if not resolved.is_relative_to(root):
-            raise SemgrepScopeError(f"fuente declarada escapa de la raíz: {candidate}")
-        if any(resolved.is_relative_to(build) for build in builds):
-            continue
-        relative = resolved.relative_to(root)
-        if _IGNORED_PARTS & set(relative.parts):
-            continue
-        if candidate.is_file():
-            files.add(relative.as_posix())
+        relative = _python_file(root, candidate, builds)
+        if relative is not None:
+            files.add(relative)
     return files
+
+
+def _build_values(raw: Any) -> list[str]:
+    """Valida la forma de paths.build y devuelve sus rutas crudas."""
+    if isinstance(raw, str):
+        return [raw]
+    if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
+        raise SemgrepScopeError(
+            "policy.paths.build debe ser una ruta string o una lista de rutas string"
+        )
+    return raw
+
+
+def _resolve_build(root: Path, item: str) -> Path:
+    """Resuelve una ruta de construcción bajo la raíz del candidato."""
+    pure = relative_path(item)
+    if pure is None:
+        raise SemgrepScopeError(f"ruta de construcción no normalizable bajo la raíz: {item!r}")
+    return (root / Path(*pure.parts)).resolve()
 
 
 def _build_dirs(root: Path, policy: dict[str, Any]) -> list[Path]:
@@ -104,18 +137,7 @@ def _build_dirs(root: Path, policy: dict[str, Any]) -> list[Path]:
     textual (un `builder.py` o un `build2/` vecinos siguen contando).
     """
     raw = policy["paths"].get("build", [])
-    values = [raw] if isinstance(raw, str) else raw
-    if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
-        raise SemgrepScopeError(
-            "policy.paths.build debe ser una ruta string o una lista de rutas string"
-        )
-    builds: list[Path] = []
-    for item in values:
-        pure = relative_path(item)
-        if pure is None:
-            raise SemgrepScopeError(f"ruta de construcción no normalizable bajo la raíz: {item!r}")
-        builds.append((root / Path(*pure.parts)).resolve())
-    return builds
+    return [_resolve_build(root, item) for item in _build_values(raw)]
 
 
 def required_sources(root: Path, policy: dict[str, Any]) -> list[str]:

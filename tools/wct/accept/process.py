@@ -47,6 +47,13 @@ def _observe(
     return ""
 
 
+def _close_streams(process: subprocess.Popen[bytes]) -> None:
+    """Close available child streams after observation finishes."""
+    for stream in (process.stdout, process.stderr):
+        if stream is not None:
+            stream.close()
+
+
 def _execute(
     command: list[str], env: dict[str, str], buffers: dict[str, bytearray], seconds: float
 ) -> tuple[int | None, str]:
@@ -68,9 +75,7 @@ def _execute(
     finally:
         if process.poll() is None:
             _terminate(process)
-        for stream in (process.stdout, process.stderr):
-            if stream is not None:
-                stream.close()
+        _close_streams(process)
 
 
 def run_process(

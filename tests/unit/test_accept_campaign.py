@@ -997,16 +997,65 @@ class _ExitedProcessDouble:
         self.stderr = stderr
         self.reaped = False
         self.status = 0
+        self.wait_timeouts: list[float | None] = []
 
     def poll(self) -> int:
         return self.status
 
     def wait(self, timeout: float | None = None) -> int:
-        del timeout  # ya salido: la espera no consume el presupuesto
+        self.wait_timeouts.append(timeout)
         if not self.reaped:
             _result, self.status = os.waitpid(self.pid, 0)
             self.reaped = True
         return self.status
+
+
+def test_process_with_unavailable_streams_still_returns_the_child_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """La limpieza tolera streams ausentes y conserva el resultado observable."""
+    double = _ExitedProcessDouble(-1, stdout=None, stderr=None)
+    double.reaped = True
+    captured: dict[str, Any] = {}
+
+    class _EmptySelector:
+        def __enter__(self) -> "_EmptySelector":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def register(self, *_args: object) -> None:
+            return None
+
+        def get_map(self) -> dict[str, object]:
+            return {}
+
+    monkeypatch.setattr(
+        process_transport,
+        "selectors",
+        types.SimpleNamespace(DefaultSelector=_EmptySelector, EVENT_READ=selectors.EVENT_READ),
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "subprocess",
+        types.SimpleNamespace(
+            Popen=lambda *_args, **kwargs: captured.update(kwargs) or double,
+            DEVNULL=subprocess.DEVNULL,
+            PIPE=subprocess.PIPE,
+            SubprocessError=subprocess.SubprocessError,
+        ),
+    )
+    report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 1.0)
+
+    assert report["exit"] == 0
+    assert report["reason"] == ""
+    assert (tmp_path / "stdout.log").read_bytes() == b""
+    assert (tmp_path / "stderr.log").read_bytes() == b""
+    assert captured["stdin"] is subprocess.DEVNULL
+    assert captured["stdout"] is subprocess.PIPE
+    assert captured["stderr"] is subprocess.PIPE
+    assert double.wait_timeouts == [1]
 
 
 def test_eof_on_one_stream_still_captures_sibling_output_in_same_round(

@@ -3,7 +3,10 @@
 Estado: consolidación de referencia para decisión humana. **Esta matriz no
 ratifica nada por sí misma**, no ejecuta campañas, no cambia producto ni
 gobernanza. Base vigente: `fa3558d` (T5 aceptado y congelado como referencia;
-sin nuevas modificaciones de ese test). Fuentes reutilizadas: matriz
+sin nuevas modificaciones de ese test). Revisión de decisiones ejecutables:
+`01c901dfdb6713de22ac8d60737c6ecf4b4a8d98`; recomendaciones NO APROBADAS en
+`PLAN-EJECUTABLE-CIERRE-AC1-BETA3-2026-09-15.md` §3–§9. El cambio de corte
+no traslada evidencia automáticamente. Fuentes reutilizadas: matriz
 `ADJUDICACION-SUPERVIVIENTES-AC1-R3-2026-09-13.{md,json}` (clasificaciones y
 sondas), `ADENDA-AC1-R3-DENOMINACION-ORACULOS-REGRESIONES-2026-09-13.md`
 (oráculos de hooks y regresa­ciones), `RESULTADO-AC1-LOTE-R3-2026-09-13.md`
@@ -65,12 +68,22 @@ acotado (precedente H-01) y el remanente sin decisión baja a 33 supervivientes
 clasificados; **no** se afirma «450/450 muertos» ni cierre del lote. Efecto de
 rechazar: quedan como huecos abiertos y el lote sigue FAIL.
 
+**Recomendación, no ratificación (plan §3):** separar A1 (falsy), A2
+(códec), A4–A11 (identidad de cast y transferencia explícita del hash r3
+bdbb5646… al vigente 84b9340f…). A3/A12/A13/A14 requieren comprobación
+causal acotada; no ratificar con las justificaciones vigentes. Las 213 pruebas
+de la reparación son evidencia histórica, no una nueva campaña. La adenda
+antigua también confunde `_12`: rige el diff autoritativo de esta tabla.
+
 ## B. Comportamiento no contratado — 15 IDs (decisión D-B, por familia)
 
 Decisión por familia: ¿es **contrato observable** (entonces aserciones
 normativas exactas en un incremento de tests) o **presentación** (queda sin
 test; opcionalmente simplificación futura revisable)? Sin decisión, ningún
-test se añade y ningún ID se convierte en equivalente por omisión.
+test se añade y ningún ID se convierte en equivalente por omisión. Recomendar
+JSON semántico para B1/B2, causa identificable sin grafía exacta para B3/B4 y
+nombre interno para B5 según consumidores revisados (plan §3). Estas decisiones
+no resuelven por sí solas TEST-002 ni la disposición de los 15 IDs.
 
 | # | Familia | IDs | Pregunta de contrato |
 |---|---|---|---|
@@ -82,7 +95,9 @@ test se añade y ningún ID se convierte en equivalente por omisión.
 
 ## C. Limitaciones instrumentales — 7 IDs (decisión D-C, por grupo)
 
-Primero decidir si el límite exacto es **contrato operativo**. Si lo es, la
+La terminación acotada, recolección del hijo y captura parcial ya son
+obligaciones del CONTRATO-AC1; no son opcionales. Decidir aparte si el límite
+interno exacto (p. ej. wait=1 s) debe ser **contrato operativo**. Si lo es, la
 vía prioritaria es un **doble por los puntos de sustitución existentes**
 (`process_transport.subprocess` / `selectors`, como en T5 y en la prueba de
 reloj controlado) — **sin cambio de producto**. Sólo si esos puntos
@@ -97,16 +112,18 @@ fabrican estados imposibles.
 | C2 | Deadline inclusivo | `process.x__observe__mutmut_33` | `>=` frente a `>` en la frontera de timeout |
 | C3 | Defensas de cleanup | `process.x__execute__mutmut_31/32` | `_terminate` en `finally` y cierre explícito de streams |
 
-## D. Hooks decorados no instrumentables — 2 IDs (decisión D-D)
+## D. Hooks decorados no instrumentables — 2 hooks (decisión D-D)
 
-`_Recorder.pytest_runtest_makereport` y `.pytest_sessionfinish` (mutmut excluye
-funciones decoradas). Decisión: **autorizar o no** la comprobación alternativa
-ya especificada (no ejecutada): copia del plugin + proyecto pytest mínimo bajo
-`build/tmp/ac1-r2-qualification/r3-hook-alternative/<run>/`; control +
-`makereport` sembrado + `sessionfinish` sembrado; oráulos definidos en la
-adenda §6 (`receipt.json`/`events` difieren y `validate_receipt` invalida);
-30 s de timeout exterior, grupo propio, limpieza en `finally`. No retira
-decoradores ni altera API; no es campaña.
+`_Recorder.pytest_runtest_makereport` y `.pytest_sessionfinish` son dos
+**hooks**, no dos IDs generados: mutmut omite funciones decoradas. Sigue
+pendiente autorizar comprobación alternativa. La receta heredada contiene
+una contradicción: JSON HOOK-MR-01 = mismatch→pass, adenda §6 espera error.
+Propuesta corregida, **NO APROBADA**, en plan §3: control con SemanticMismatch,
+exit1 y recibo mismatch válido; MR cambia caso/evento a pass y el validador
+rechaza por exit1; SF cambia receipt.exit a 0 conservando exit real1 y el
+validador rechaza. Exit no cero solo no es discriminante. Copias temporales,
+decoradores intactos, 30 s/corrida y 120 s total propuestos; sin campaña ni
+cambio de producto. Evidencia de casos y de fases se conserva por separado.
 
 ## E. Cadena restante de AC1 — decisiones de programa (decisión D-E)
 
@@ -124,15 +141,15 @@ ratificaciones.
 | # | Pendiente | Estado según fuente | Desbloquea |
 |---|---|---|---|
 | E1 | **Fase G** (generación y asociaciones del lote gate/selftest): 959 mutantes generados; subconjunto objetivo de 31 IDs de `checks._declared` y `fixtures_tools.f9_a`; **no ejecutó mutantes** | Registrado en la receta de Fase G | Fase E y siguientes |
-| E2 | **Fase E** (ejecución de los 31 IDs): bruto **27 killed + 4 survived** (intacto); los ocho kills por excepción **ratificados** y el contrato mínimo de `f9_a`/`load_config` **aprobado**; los cuatro no contratados **detectados** (killed-por-oráculo) en la micro-campaña posterior de exactamente esos 4 IDs; **los 928 restantes no fueron ejecutados** | Ejecución y ratificación en `EJECUCION-INCREMENTO-F9A-LOADCONFIG-2026-09-13` (evidencias de fase E y micro separadas); cierre previo en `CIERRE-ADJUDICACION-FASE-E` | Decidir el destino de los 928 no ejecutados (GS-4); TEST-007 separado |
+| E2 | **Fase E** (ejecución de los 31 IDs): bruto **27 killed + 4 survived** (intacto); los ocho kills por excepción **ratificados** y el contrato mínimo de `f9_a`/`load_config` **aprobado**; los cuatro no contratados **detectados** (killed-por-oráculo) en la micro-campaña posterior de exactamente esos 4 IDs; **los 928 restantes no fueron ejecutados** | Ejecución y ratificación en `EJECUCION-INCREMENTO-F9A-LOADCONFIG-2026-09-13` (evidencias de fase E y micro separadas); cierre previo en `CIERRE-ADJUDICACION-FASE-E` | Decisión propuesta por identidad/diff (plan §4): 928 = 649 de checks + 279 de fixtures, funciones preexistentes sin cambio; no excluir archivos completos ni trasladar veredictos. TEST-007 separado |
 | E3 | **GS-1**: `semgrep_schema.py` + `semgrep_verdict.py` | **CERRADO por evidencia sucesiva** (sin re-campaña conjunta): R2 midió **280 killed + 2 survived** con el refuerzo O1–O4; el residuo O5 (2 separadores) quedó **RECHAZADO-EVIDENCIADO** bajo el contrato de presentación aprobado e integrado en esta rama (`CIERRE-GS1-O1-O5-INTEGRACION-2026-09-14.md`, base `c6be7ee`). Históricos intactos por capas | Cobertura de mutación de esos módulos |
-| E4 | **GS-2**: `semgrep_scope.py` | **EJECUTADO; regresiones integradas; sensibilidad demostrada 16/16** (posterior, `ddb1b46`): bruto **102 killed + 16 survived** (base `ee1e878`); 16 supervivientes RECHAZADOS por regresiones. **Diagnóstico de activación** (`GS2-DIAGNOSTICO-ACTIVACION-SONDAS-2026-09-15.md`): defecto del lanzador sellado; hipótesis in-process retirada (mutmut 3.7.0 forkea por mutante). **Revalidación sucesora** (`GS2-REVALIDACION-Y-PREPARACION-CIERRE-2026-09-15.md`): 34/34 IDs abiertos con activación in-process acreditada, control original verde y causa del mutante en fase call; `x__unique_dirs__mutmut_7` promovido por evidencia sellada; 0 discrepancias, 0 timeouts; **atribución pendiente resuelta / sin residuos abiertos bajo evidencia sucesiva** (verifier independiente: APROBAR-EXPEDIENTE CON RESERVAS menores). Final: 63 histórico + 4 adenda + 35 sucesores + 16 supervivientes = 118. No es campaña completa ni PASS de G-MUT/AC1; el lote sigue NO aprobado como PASS. **Cierre acotado autorizado**: «GS-2: atribución pendiente y residuos resueltos mediante evidencia sucesiva; sin nueva campaña conjunta ni acreditación integral de AC1» | Decisión humana sobre el PASS del lote; GS-3 (E5) planificable tras autorización; presupuesto consumido 102.3 s de 600 s |
-| E5 | **GS-3**: `semgrep.py` | **EJECUTADO** sobre `eec71fb1…` (autorización humana + verifier de puerta APROBAR-CAMPAÑA): inventario 108 mutantes (26 `x__topology` + 8 `x__policy` + 74 `x_gate_sast_semgrep`; 51 sitios WCT, 3 funciones), campaña serial con IDs explícitos, activación acreditada 108/108, canario original verde/mutante rojo, 0 fallos instrumentales. Bruto **74 killed + 34 survived** → **FAIL-survivors-stop** conforme al anexo §7.5; 34 supervivientes conservados con ID, diff, selección y resultado (agrupados; sin reparaciones ni equivalencias ratificadas). Presupuestos: A ~706.6 s de 3600; B ~524.5 s de 1800. Verifier final: CONFORME CON RESERVAS (R1–R4 menores) sobre expediente sellado (`gs3.sha256`, digest `63c83bd2…`). No acredita AC1 ni beta.3. Ver `GS3-SEMGREP-RESULTADO-2026-09-15.md`. **Adjudicación 2026-09-15** (`ADENDA-GS3-ADJUDICACION-2026-09-15.md`): 34/34 clasificados — **13 A** (gap de oráculo), **14 B** (no contratado), **7 C** (equivalencia acotada; 5 medidas y 2 estructurales); sensibilidad medida 27/27 A+B; propuesta F1–F8; sin reparaciones ni equivalencias ratificadas. Verifier: CONFORME CON RESERVAS (R1–R6 menores, atendidas). **Contratos y regresiones 2026-09-15** (`GS3-CONTRATOS-REGRESIONES-Y-EQUIVALENCIAS-2026-09-15.md`): D1–D5 formalizados en `docs/gates.md` y trazados a 4 escenarios y 4 tests de binding; los **27 A+B** con regresión permanente y sensibilidad **27/27** sobre el árbol mutante real (sin campaña completa; 95 corridas/149.1 s de 900); **4 equivalencias ratificadas** en alcance (`mutmut_6/11/26/31`, check falsy; revisión obligatoria si cambia fuente/runtime/precondición); `mutmut_24/29/33`: **propuesta A de equivalencia acotada** (`GS3-DOMINIO-BYTES-STRING-2026-09-15.md`), dominio = salida JSON del binario Semgrep 1.174.0 sin BOM + decodificación UTF-8 del consumidor, respaldada por implementación del productor y observación empírica, con precondiciones, invalidantes y contraejemplos (BOM; locale no-UTF-8) declarados; **no ratificada** (la exclusión categórica previa del BOM queda corregida por nota sucesora). Fast 7/7; tier commit 20 PASS + G-META-1 pre-bless del incremento acumulado. **Cierre acotado 2026-09-15** (`ACTA-CIERRE-ACOTADO-GS3-2026-09-15.md`): el humano ratificó las equivalencias de `mutmut_24/29/33` (dictamen A) **exclusivamente bajo precondiciones explícitas** (Semgrep 1.174.0 y productor identificado; COMMAND exacto; stdout directo sin wrapper que altere los bytes; JSON UTF-8 sin BOM; decodificación efectiva UTF-8), con revisión obligatoria si cambia fuente, productor, comando, runtime o condiciones relevantes; mantuvo el tratamiento actual del decode error (el runner lo convierte en `ERROR` «guard crash» y el CLI bloquea; sin cambio de producto y sin presentarlo como garantía universal); y registró **GS-3 cerrado en su alcance medido** («mediante evidencia sucesiva y equivalencias ratificadas con precondiciones explícitas»). Se conservan: bruto **108 = 74 killed + 34 survived**, **27 regresiones** posteriores, **7 equivalencias ratificadas** en sus respectivos alcances (4 `check` + 3 bytes/string), sin campaña conjunta 108/108 y sin PASS automático de G-MUT, acreditación AC1 ni cierre beta.3. La comprobación de precondiciones de 24/29/33 se ejecuta al calificar el SHA final (acta §5). | Pendientes según el plan ejecutable (`PLAN-EJECUTABLE-CIERRE-AC1-BETA3-2026-09-15.md`): R3-DA/D-B/D-C/D-D y anclaje tras el descomillado de casts; destino de los 928; E6 REGISTRY y TEST-007; E4 (PASS del lote GS-2); aceptación/operador y E8; bless/re-lock de G-META-1 (**23 rutas** medidas) para merge |
-| E6 | **GS-4** (denominación original del pendiente sobre archivos preexistentes): el delta de REGISTRY en `runner.py` necesita su comprobación conductual **separada** | Pendiente; G/E sólo avanzaron la medición de `_declared` y `f9_a` | Cierre del alcance preexistente |
-| E7 | **TEST-007**: obligación de tamaño por sitios WCT de archivos cambiados | Abierta; **no** se resuelve seleccionando sólo 31 mutantes ni mediante su adjudicación | Conformidad de límites |
-| E8 | Puertas posteriores una vez cerrados los lotes: mutación de aceptación → cobertura/CRAP → DRY → tier full | No iniciadas | Calificación de integración |
+| E4 | **GS-2**: `semgrep_scope.py` | **EJECUTADO; regresiones integradas; sensibilidad demostrada 16/16** (posterior, `ddb1b46`): bruto **102 killed + 16 survived** (base `ee1e878`); 16 supervivientes RECHAZADOS por regresiones. **Diagnóstico de activación** (`GS2-DIAGNOSTICO-ACTIVACION-SONDAS-2026-09-15.md`): defecto del lanzador sellado; hipótesis in-process retirada (mutmut 3.7.0 forkea por mutante). **Revalidación sucesora** (`GS2-REVALIDACION-Y-PREPARACION-CIERRE-2026-09-15.md`): 34/34 IDs abiertos con activación in-process acreditada, control original verde y causa del mutante en fase call; `x__unique_dirs__mutmut_7` promovido por evidencia sellada; 0 discrepancias, 0 timeouts; **atribución pendiente resuelta / sin residuos abiertos bajo evidencia sucesiva** (verifier independiente: APROBAR-EXPEDIENTE CON RESERVAS menores). Final: 63 histórico + 4 adenda + 35 sucesores + 16 supervivientes = 118. No es campaña completa ni PASS de G-MUT/AC1. **Estado ya autorizado**: «GS-2 cerrado en su alcance mediante evidencia sucesiva; atribución pendiente y residuos resueltos, sin nueva campaña conjunta ni PASS automático de G-MUT o acreditación integral AC1» | Sin puerta nominal E4-PASS ni campaña para cambiar etiqueta; conserva presupuesto histórico consumido 102.3 s de 600 s |
+| E5 | **GS-3**: `semgrep.py` | **EJECUTADO** sobre `eec71fb1…` (autorización humana + verifier de puerta APROBAR-CAMPAÑA): inventario 108 mutantes (26 `x__topology` + 8 `x__policy` + 74 `x_gate_sast_semgrep`; 51 sitios WCT, 3 funciones), campaña serial con IDs explícitos, activación acreditada 108/108, canario original verde/mutante rojo, 0 fallos instrumentales. Bruto **74 killed + 34 survived** → **FAIL-survivors-stop** conforme al anexo §7.5; 34 supervivientes conservados con ID, diff, selección y resultado (agrupados; sin reparaciones ni equivalencias ratificadas). Presupuestos: A ~706.6 s de 3600; B ~524.5 s de 1800. Verifier final: CONFORME CON RESERVAS (R1–R4 menores) sobre expediente sellado (`gs3.sha256`, digest `63c83bd2…`). No acredita AC1 ni beta.3. Ver `GS3-SEMGREP-RESULTADO-2026-09-15.md`. **Adjudicación 2026-09-15** (`ADENDA-GS3-ADJUDICACION-2026-09-15.md`): 34/34 clasificados — **13 A** (gap de oráculo), **14 B** (no contratado), **7 C** (equivalencia acotada; 5 medidas y 2 estructurales); sensibilidad medida 27/27 A+B; propuesta F1–F8; sin reparaciones ni equivalencias ratificadas. Verifier: CONFORME CON RESERVAS (R1–R6 menores, atendidas). **Contratos y regresiones 2026-09-15** (`GS3-CONTRATOS-REGRESIONES-Y-EQUIVALENCIAS-2026-09-15.md`): D1–D5 formalizados en `docs/gates.md` y trazados a 4 escenarios y 4 tests de binding; los **27 A+B** con regresión permanente y sensibilidad **27/27** sobre el árbol mutante real (sin campaña completa; 95 corridas/149.1 s de 900); **4 equivalencias ratificadas** en alcance (`mutmut_6/11/26/31`, check falsy; revisión obligatoria si cambia fuente/runtime/precondición); `mutmut_24/29/33`: **propuesta A de equivalencia acotada** (`GS3-DOMINIO-BYTES-STRING-2026-09-15.md`), dominio = salida JSON del binario Semgrep 1.174.0 sin BOM + decodificación UTF-8 del consumidor, respaldada por implementación del productor y observación empírica, con precondiciones, invalidantes y contraejemplos (BOM; locale no-UTF-8) declarados; **no ratificada** (la exclusión categórica previa del BOM queda corregida por nota sucesora). Fast 7/7; tier commit 20 PASS + G-META-1 pre-bless del incremento acumulado. **Cierre acotado 2026-09-15** (`ACTA-CIERRE-ACOTADO-GS3-2026-09-15.md`): el humano ratificó las equivalencias de `mutmut_24/29/33` (dictamen A) **exclusivamente bajo precondiciones explícitas** (Semgrep 1.174.0 y productor identificado; COMMAND exacto; stdout directo sin wrapper que altere los bytes; JSON UTF-8 sin BOM; decodificación efectiva UTF-8), con revisión obligatoria si cambia fuente, productor, comando, runtime o condiciones relevantes; mantuvo el tratamiento actual del decode error (el runner lo convierte en `ERROR` «guard crash» y el CLI bloquea; sin cambio de producto y sin presentarlo como garantía universal); y registró **GS-3 cerrado en su alcance medido** («mediante evidencia sucesiva y equivalencias ratificadas con precondiciones explícitas»). Se conservan: bruto **108 = 74 killed + 34 survived**, **27 regresiones** posteriores, **7 equivalencias ratificadas** en sus respectivos alcances (4 `check` + 3 bytes/string), sin campaña conjunta 108/108 y sin PASS automático de G-MUT, acreditación AC1 ni cierre beta.3. La comprobación de precondiciones de 24/29/33 se ejecuta al calificar el SHA final (acta §5). | Pendientes según el plan ejecutable (`PLAN-EJECUTABLE-CIERRE-AC1-BETA3-2026-09-15.md`): R3-DA/D-B/D-C/D-D y anclaje tras el descomillado de casts; destino de los 928; E6 REGISTRY y TEST-007; aceptación/operador y E8; bless/re-lock de G-META-1 (**23 rutas** medidas) para merge |
+| E6 | **GS-4** (denominación original del pendiente sobre archivos preexistentes): el delta de REGISTRY en `runner.py` necesita su comprobación conductual **separada** | Pendiente de wiring; G/E midieron `_declared` y `f9_a`. SKIP y argv ya tienen pruebas directas GS3; falta llamar la entrada real REGISTRY con fuente completa/omitida (plan §5) | Test conductual y dos controles de sensibilidad acotados; no contrato nuevo |
+| E7 | **TEST-007**: obligación de tamaño por sitios WCT de archivos cambiados | Abierta: 258/442/191 sitios WCT por archivo. El gate habitual recorre solo src, no estos tools; para archivos incluidos usa total>100 y funciones cambiadas vs manifest. PASS no acredita TEST-007. No se localizó procedimiento de dispensa vigente (plan §4) | Partición acotada con rutas previamente aprobadas, o decisión humana previa de procedimiento de excepción; ninguna concedida |
+| E8 | Puertas posteriores una vez cerrados los lotes: mutación de aceptación → cobertura/CRAP → DRY → tier full | No iniciadas; operador/tabla requiere contrato: 18 celdas inválidas y fila 2/mutation no discriminante (propuesta concreta en plan §5). Full incluye G-META-1: conservar FAIL pre-bless y exigir verde post-bless, sin saltar gates | Calificación pre/post-bless con identidades T/B/M/V separadas (plan §2) |
 | E9 | Revisión humana del drift de integridad pre-bless declarado en la PR #53 | **23 rutas protegidas** en drift al candidato de `REPARACION-INTEGRACION-GDEPS-GDEAD-2026-09-15.md` (7 modificadas + 16 nuevas; la fórmula previa «20 rutas» queda superada por la medición). G-META-1 sigue siendo el único rojo del tier `commit`; el incremento sumó 3 modificadas (`pyproject.toml`, `uv.lock`, `governance/lint/vulture_whitelist.py`) sin bless. Pendiente | Cualquier bless futuro |
-| E10 | Convención de versión/tag de beta.3 (vigente `1.0.0-beta.2`) | Pendiente | Release, si llega a ser elegible |
+| E10 | Convención de versión/tag de beta.3 (vigente `1.0.0-beta.2`) | Pendiente; recomendar `1.0.0b3.dev1` sin claim beta.3 completa, sin dispensar obligaciones del incremento (plan §6) | Release, si llega a ser elegible; versión/custodia/SBOM/smokes/D3 no autorizados |
 | E11 | Revisión del diff completo y salida de borrador de la PR #53 | Pendiente | Merge, sólo con E1–E9 conformes |
 
 ## Registro de incidente de staging (punto 6 del cierre de T5)
@@ -146,9 +163,13 @@ como ausencia de publicación.
 
 ## Recomendación de orden
 
-D-B (definir contratos) antes que D-A (ratificar equivalencias) si se quiere
-decidir con la política de mensajes ya fijada; D-C y D-D son independientes y
-pueden resolverse en paralelo; el lote GS-1/2/3 puede
-planificarse en cuanto D-A/D-C tengan dictamen y el destino de los 928 no
-ejecutados de la Fase E esté decidido, para no arrastrar huecos abiertos. Ninguna decisión
-de esta matriz habilita por sí sola bless, merge, bump, tag ni release.
+Decisiones concretas y prompt técnico en plan ejecutable §3–§9; no crear otra
+oleada de dossiers. Decidir fundamentos r3 por separado, alcance por diff y
+vía TEST-007; aprobar contratos de tabla/arnés antes de implementación.
+REGISTRY y hooks pueden comprobarse en paralelo en copias independientes;
+las ediciones r3/aceptación del mismo test se integran de forma serial.
+GS-1/2/3 conservan cierres acotados y evidencia histórica, sin campaña nueva
+para cambiar etiquetas. Resolver fuentes antes de E8 y seguir PRE-BLESS /
+POST-BLESS del plan, con revisión protegida humana y verificación del SHA real
+integrado antes de publicación. Ninguna recomendación habilita por sí sola
+ratificación, excepción, bless, merge, bump, tag ni release.

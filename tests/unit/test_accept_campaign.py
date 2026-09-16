@@ -1146,3 +1146,137 @@ def test_terminate_gives_up_on_slow_reap_within_bounded_budget(tmp_path: Path, m
         assert report["duration"] <= 5.0
     finally:
         _reap_if_alive(decoy.pid)
+
+
+class _AliveProcessDouble:
+    """Doble de Popen vivo: hijo propio real para killpg y reap real único.
+
+    poll() modela vivo hasta la recolección; wait() recolecta de verdad una
+    sola vez y cachea el estado, como el returncode de Popen.
+    """
+
+    def __init__(self, pid: int, stdout: Any, stderr: Any) -> None:
+        self.pid = pid
+        self.stdout = stdout
+        self.stderr = stderr
+        self.reaped = False
+        self.status = 0
+
+    def poll(self) -> int | None:
+        return self.status if self.reaped else None
+
+    def wait(self, timeout: float | None = None) -> int:
+        del timeout  # killpg real ya mató al hijo propio: la espera recolecta
+        if not self.reaped:
+            _result, self.status = os.waitpid(self.pid, 0)
+            self.reaped = True
+        return self.status
+
+
+class _ScriptedClockSelector:
+    """Selector real con rondas guionizadas y reloj simulado por ronda.
+
+    Cada select fija el reloj al valor guionado de la ronda; si la ronda trae
+    carga, la escribe en el pipe real del hijo (modela la emisión del hijo
+    durante la espera) y devuelve los eventos realmente listos. Determinista:
+    sin esperas reales de sincronización.
+    """
+
+    def __init__(
+        self, clock: dict[str, float], guion: list[tuple[float, bytes | None]], escritor: int
+    ) -> None:
+        self._real = selectors.DefaultSelector()
+        self._clock = clock
+        self._rondas = iter(guion)
+        self._w = escritor
+
+    def __enter__(self) -> "_ScriptedClockSelector":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self._real.close()
+
+    def register(self, fileobj: Any, events: int, data: Any = None) -> None:
+        self._real.register(fileobj, events, data)
+
+    def unregister(self, fileobj: Any) -> None:
+        self._real.unregister(fileobj)
+
+    def get_map(self) -> Any:
+        return self._real.get_map()
+
+    def select(self, timeout: float | None = None) -> Any:
+        del timeout  # el guion fija el reloj de cada ronda
+        try:
+            self._clock["now"], carga = next(self._rondas)
+        except StopIteration:
+            self._clock["now"] += 0.05
+            return []
+        if carga:
+            os.write(self._w, carga)
+        return self._real.select(0)
+
+
+@pytest.mark.parametrize(
+    "caso",
+    ["antes", "exacto", "despues"],
+)
+def test_deadline_boundary_prevents_a_new_read_and_keeps_captured_bytes(
+    tmp_path: Path, monkeypatch, caso: str
+) -> None:
+    """Al alcanzar o superar el deadline no comienza otra lectura.
+
+    Prevalece el timeout y se conservan los bytes ya capturados
+    (frontera inclusiva del deadline, aclaración contractual C2).
+    """
+    clock = {"now": 0.0}
+    valor_ronda_2 = {"antes": 0.15, "exacto": 0.2, "despues": 0.25}[caso]
+    esperado = {
+        "antes": b"early\ntarde\nmas\n",
+        "exacto": b"early\ntarde\n",
+        "despues": b"early\ntarde\n",
+    }[caso]
+    stdout_read, stdout_write = os.pipe()
+    stderr_read, _stderr_write = os.pipe()
+    os.close(_stderr_write)
+    decoy = _sigtrap_decoy()
+    double = _AliveProcessDouble(
+        decoy.pid,
+        os.fdopen(stdout_read, "rb", buffering=0),
+        os.fdopen(stderr_read, "rb", buffering=0),
+    )
+    guion = [(0.1, b"early\n"), (valor_ronda_2, b"tarde\n"), (0.25, b"mas\n"), (0.3, None)]
+    monkeypatch.setattr(
+        process_transport, "time", types.SimpleNamespace(monotonic=lambda: clock["now"])
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "selectors",
+        types.SimpleNamespace(
+            DefaultSelector=lambda: _ScriptedClockSelector(clock, guion, stdout_write),
+            EVENT_READ=selectors.EVENT_READ,
+        ),
+    )
+    monkeypatch.setattr(
+        process_transport,
+        "subprocess",
+        types.SimpleNamespace(
+            Popen=lambda *_args, **_kwargs: double,
+            DEVNULL=subprocess.DEVNULL,
+            PIPE=subprocess.PIPE,
+            SubprocessError=subprocess.SubprocessError,
+            TimeoutExpired=subprocess.TimeoutExpired,
+        ),
+    )
+    try:
+        report = run_process([sys.executable, "-c", "pass"], dict(os.environ), tmp_path, 0.2)
+        assert report["reason"] == "timeout"
+        assert (tmp_path / "stdout.log").read_bytes() == esperado
+        assert (tmp_path / "stderr.log").read_bytes() == b""
+        with pytest.raises(ChildProcessError):
+            os.waitpid(decoy.pid, os.WNOHANG)
+    finally:
+        os.close(stdout_write)
+        double.stdout.close()
+        double.stderr.close()
+        _reap_if_alive(decoy.pid)

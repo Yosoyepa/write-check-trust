@@ -3245,6 +3245,11 @@ dependencies = [
     { name = "pyyaml" },
 ]
 
+[package.optional-dependencies]
+accept = [
+    { name = "pytest" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "hypothesis" },
@@ -3277,7 +3282,11 @@ quality = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pyyaml", specifier = ">=6.0.2" }]
+requires-dist = [
+    { name = "pytest", marker = "extra == 'accept'", specifier = ">=8.3" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+]
+provides-extras = ["accept"]
 
 [package.metadata.requires-dev]
 dev = [

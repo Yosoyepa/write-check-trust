@@ -137,6 +137,16 @@ El hook de pre-commit corre `fast`; la CI de calidad corre `commit` y sus
 pasos adicionales. Un resultado `SKIP` no acredita una comprobación
 ejecutada. Los errores del arnés bloquean: no son un permiso para continuar.
 
+La campaña de aceptación requiere pytest. Si instalas el paquete sin los
+grupos de desarrollo, instala el extra `write-check-trust[accept]`.
+La instalación base permite usar el CLI y las operaciones que no necesitan
+herramientas adicionales. Los gates de tests, cobertura y otras
+verificaciones requieren sus dependencias correspondientes.
+
+```bash
+pip install 'write-check-trust[accept]'
+```
+
 ### Ratchets con mediciones actuales
 
 Desde la raíz del proyecto, esta es la cadena de cobertura de beta.2:

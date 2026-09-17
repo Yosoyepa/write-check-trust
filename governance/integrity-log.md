@@ -284,3 +284,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: Aprobación humana del diff CND-74E0 y contratos v2; PR #45; HEAD 4666927
 - Commit: 46669278ece7e3b7cc8059a5eff9ae27c2735284
+
+## 2026-09-17T19:34:27.726122+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #53: D-A'/D-B'/D-E9'/D-BLESS' sobre 903f961 — 5 equivalencias sucesoras ratificadas (25/30/33 text; 27/32 check), desviacion aceptada puntualmente, 37 rutas E9 aprobadas (7 modificadas + 30 nuevas)
+- Commit: 903f96162ad349d8f4e9c4aacc721cd0397eadbd

@@ -94,7 +94,7 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 | `G-DRY-TOK` | cero clones por tokens a 70+ tokens (tolerancia cero con `--exit-code`) | `jscpd src tools --exit-code 1`; full-hardening instala jscpd@5.0.16 |
 | `G-DRY-TPL` | sin clones de plantilla AST (similitud anonimizada ≥ 0.90) sobre el ratchet | `wct dry --normalized` |
 | `G-LCOM` | cohesión LCOM4 de clases (componentes conexas < 2 o dentro del ratchet) | `wct lcom` |
-| `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` |
+| `G-SAST-SEMGREP` | cero findings ERROR de reglas semánticas | `semgrep --config governance/semgrep` sobre los archivos exigibles de `policy.paths` |
 | `G-AUDIT` | cero CVEs críticos/altos en dependencias desplegables | `pip-audit` (export del lock) |
 | `G-SBOM` | SBOM generado | `cyclonedx-py environment` |
 | `G-DOC` | cobertura de docstrings ≥ piso ratchet | `interrogate src --fail-under <baseline>` (34 hoy; `wct ratchet record` lo sube) |
@@ -102,10 +102,21 @@ paridad con CI. La base se resuelve en orden `origin/$GITHUB_BASE_REF` →
 
 ## Contrato de `G-SAST-SEMGREP`
 
-Decisiones contractuales registradas por la adjudicación GS-3. La fuente es
+Decisiones contractuales registradas por la adjudicación GS-3 (D1–D5) y por
+la reparación del hallazgo del full PRE-BLESS de 2026-09-16 (D6). La fuente es
 `tools/wct/gate/semgrep.py`; los escenarios ejecutables viven en
 `features/wct-sast-targets-001.feature` y se enlazan desde
 `tests/unit/test_sast_targets.py`.
+
+### Targets explícitos del exigible (D6 — reparación 2026-09-16)
+
+El gate calcula E con la política vigente (`policy.paths` source/tests/tools)
+y, si E no está vacío, invoca Semgrep con los archivos de E como targets
+explícitos, en el orden determinista de `required_sources` y sin shell: la
+lista de ignorados por defecto del motor —que omite directorios de pruebas—
+no define el alcance exigible. Una fuente exigible omitida sigue produciendo
+el resultado bloqueante contractual y un archivo extra no la compensa. Con E
+vacío la invocación conserva su forma histórica sin targets (nunca `.`).
 
 ### Semgrep ausente (D1)
 
@@ -132,9 +143,9 @@ de esta obligación.
 ### `command` (D4)
 
 En el retorno final tras la ejecución normal del instrumento, `command` es una
-representación informativa del comando ejecutado, con los argumentos de
-`COMMAND` separados por un espacio. No promete ser una cadena segura ni
-reutilizable por un shell.
+representación informativa del comando ejecutado: los argumentos de `COMMAND`
+seguidos de los targets exigibles, separados por un espacio. No promete ser
+una cadena segura ni reutilizable por un shell.
 
 ### Policy ilegible (D5)
 

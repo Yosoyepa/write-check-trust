@@ -10,6 +10,10 @@ required_sources, Verdict y classify se re-exportan para runner y tests.
 Política de herramienta ausente vigente: Semgrep ausente es SKIP visible.
 Orden de clasificación: preflight de topología (absorción por ancestro es
 ERROR), configuración de alcance, ejecución del instrumento y veredicto.
+El instrumento recibe los archivos exigibles como targets explícitos: la
+lista de ignorados por defecto del motor (que omite directorios de pruebas)
+no define el alcance exigible. Con E vacío la invocación queda sin targets,
+como históricamente.
 """
 
 from __future__ import annotations
@@ -80,9 +84,10 @@ def gate_sast_semgrep(root: Path) -> GateResult:
     try:
         _topology(root)
         required = required_sources(root, _policy(root))
-        completed = subprocess.run(
-            list(COMMAND), cwd=root, text=True, capture_output=True, check=False
-        )
+        # Targets explícitos de E: sin ellos, la lista de ignorados por
+        # defecto del motor omite directorios exigibles (p. ej. tests/).
+        argv = [*COMMAND, *required]
+        completed = subprocess.run(argv, cwd=root, text=True, capture_output=True, check=False)
         verdict = classify(required, completed.stdout, completed.returncode)
     except (SemgrepScopeError, OSError) as exc:
         return GateResult(GATE_ID, Status.ERROR, str(exc), int((time.monotonic() - started) * 1000))
@@ -92,5 +97,5 @@ def gate_sast_semgrep(root: Path) -> GateResult:
         verdict.summary,
         int((time.monotonic() - started) * 1000),
         list(verdict.details),
-        " ".join(COMMAND),
+        " ".join(argv),
     )

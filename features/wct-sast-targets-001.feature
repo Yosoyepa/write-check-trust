@@ -35,6 +35,12 @@ Feature: Alcance verificable del analisis SAST
     When se calcula el alcance SAST
     Then ese modulo pertenece a las fuentes exigibles
 
+  Scenario: Las exclusiones por defecto del motor no ocultan fuentes exigibles
+    Given una raiz Git propia con fuentes exigibles bajo src y tests
+    And un defecto de credencial plantado dentro de tests
+    When ejecuto el gate SAST sobre la raiz plantada
+    Then el hallazgo observa la regla y la fuente dentro de tests
+
   Scenario: El fixture adversarial usa una raiz Git propia
     Given un defecto IO plantado bajo el temporal permitido
     When el fixture inicializa su propio proyecto Git
@@ -125,4 +131,4 @@ Feature: Alcance verificable del analisis SAST
 
     Examples:
       | inicio | fin    | payload       | exit | status | gate           | duracion | comando |
-      | 1000.0 | 1002.5 | limpio-valido | 0    | PASS   | G-SAST-SEMGREP | 2500     | semgrep --quiet --error --severity ERROR --config governance/semgrep --json |
+      | 1000.0 | 1002.5 | limpio-valido | 0    | PASS   | G-SAST-SEMGREP | 2500     | semgrep --quiet --error --severity ERROR --config governance/semgrep --json src/a.py |

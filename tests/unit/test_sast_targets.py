@@ -37,12 +37,13 @@ OUTLINE_SKIP = "La herramienta ausente produce un SKIP visible del gate"
 OUTLINE_GIT = "El preflight tolera un Git no cero acotado y observa el resultado posterior"
 OUTLINE_ERROR = "La rama de error expone la causa y la duracion medida"
 OUTLINE_FINAL = "El retorno final expone duracion y comando informativo"
-COMANDO = "semgrep --quiet --error --severity ERROR --config governance/semgrep --json"
+COMANDO = "semgrep --quiet --error --severity ERROR --config governance/semgrep --json src/a.py"
 APPROVED_SCENARIOS = (
     OUTLINE,
     "Una fuente ignorada sigue siendo exigible",
     "Un temporal fuera de rutas declaradas no infla el denominador",
     "Un modulo no testeable sigue sujeto a seguridad",
+    "Las exclusiones por defecto del motor no ocultan fuentes exigibles",
     "El fixture adversarial usa una raiz Git propia",
     "El aislamiento Git restaura el entorno en el mismo proceso",
     "La gobernanza del fixture adversarial es cargable por el lector productivo",
@@ -378,6 +379,89 @@ def test_entrada_py_que_no_es_fichero_queda_fuera(tmp_path: Path) -> None:
     (tmp_path / "src/decoy.py").mkdir()
 
     assert required_sources(tmp_path, _policy(["src"])) == ["src/a.py"]
+
+
+_CLAVES_DE_RUTA = {"src": "source", "tests": "tests", "tools": "tools"}
+
+
+def _raiz_git_con_gobernanza(tmp_path: Path, fuentes: dict[str, str], rutas: list[str]) -> Path:
+    """Raíz Git propia con gobernanza declarada y fuentes plantadas."""
+    raiz = tmp_path / "raiz-sast"
+    for relativa, contenido in fuentes.items():
+        destino = raiz / relativa
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_text(contenido, encoding="utf-8")
+    governance = raiz / "governance"
+    (governance / "semgrep").mkdir(parents=True)
+    (governance / "policy.yaml").write_text(
+        "schema_version: 1\npaths:\n"
+        + "".join(f"  {_CLAVES_DE_RUTA[ruta]}: [{ruta}]\n" for ruta in rutas),
+        encoding="utf-8",
+    )
+    (governance / "semgrep" / "wct-architecture.yaml").write_text(SEMGREP_RULES, encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=raiz, check=True, capture_output=True)
+    return raiz
+
+
+def test_un_defecto_dentro_de_tests_es_observado_por_el_gate(tmp_path: Path) -> None:
+    """Las exclusiones por defecto del motor no pueden ocultar un hallazgo exigible.
+
+    Semgrep omite directorios de pruebas por su lista de ignorados por defecto
+    cuando no recibe targets; el gate debe observar el defecto plantado bajo
+    tests/, no solo bloquear por omisión de fuentes.
+    """
+    if shutil.which("semgrep") is None:
+        pytest.skip("herramienta ausente: semgrep")
+    raiz = _raiz_git_con_gobernanza(
+        tmp_path,
+        {
+            "src/a.py": "value = 1\n",
+            "tests/test_cred.py": 'password = "valor-de-secreto-ejemplo"\n',
+        },
+        ["src", "tests"],
+    )
+
+    result = gate_sast_semgrep(raiz)
+
+    assert result.status is Status.FAIL
+    assert "wct-hardcoded-credential-shape" in result.summary
+    assert "tests/test_cred.py" in result.summary
+
+
+def test_fuentes_de_src_tests_y_tools_se_analizan_completas(tmp_path: Path) -> None:
+    """Un árbol limpio con los tres directorios exigibles produce el PASS contractual."""
+    if shutil.which("semgrep") is None:
+        pytest.skip("herramienta ausente: semgrep")
+    raiz = _raiz_git_con_gobernanza(
+        tmp_path,
+        {
+            "src/a.py": "value = 1\n",
+            "tests/test_a.py": "def test_a() -> None:\n    assert True\n",
+            "tools/w.py": "value = 2\n",
+        },
+        ["src", "tests", "tools"],
+    )
+
+    result = gate_sast_semgrep(raiz)
+
+    assert result.status is Status.PASS
+    assert result.summary == "3 fuentes analizadas, 0 hallazgos"
+
+
+def test_rutas_con_espacios_llegan_como_argumentos_separados(tmp_path: Path) -> None:
+    """Un nombre de fuente con espacio viaja como un solo argumento, sin shell."""
+    if shutil.which("semgrep") is None:
+        pytest.skip("herramienta ausente: semgrep")
+    raiz = _raiz_git_con_gobernanza(
+        tmp_path,
+        {"src/a b.py": 'password = "valor-de-secreto-ejemplo"\n'},
+        ["src"],
+    )
+
+    result = gate_sast_semgrep(raiz)
+
+    assert result.status is Status.FAIL
+    assert "src/a b.py" in result.summary
 
 
 def test_modulo_no_testeable_sigue_sujeto_a_seguridad(tmp_path: Path) -> None:
@@ -1013,3 +1097,31 @@ def test_dispatch_registry_observa_fuente_completa_y_omision_total(
     assert result.details == []
     assert result.command == COMANDO
     assert [" ".join(invocado) for invocado in invocados] == [COMANDO]
+
+
+def test_e_vacio_conserva_la_invocacion_sin_targets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D6: E vacío mantiene la invocación histórica exacta; nunca un escaneo de "."."""
+    argv_historico = [
+        "semgrep",
+        "--quiet",
+        "--error",
+        "--severity",
+        "ERROR",
+        "--config",
+        "governance/semgrep",
+        "--json",
+    ]
+    raiz = tmp_path / "raiz-sin-fuentes"
+    _raiz_con_politica(raiz)
+    (raiz / "src" / "a.py").unlink()
+    invocados = _instrumento_controlado(monkeypatch, _payload("limpio-valido", []), 0)
+
+    result = gate_sast_semgrep(raiz)
+
+    assert result.status is Status.PASS
+    assert result.summary == "sin fuentes aplicables: 0"
+    assert invocados == [argv_historico]
+    assert result.command == " ".join(argv_historico)
+    assert "." not in invocados[0]

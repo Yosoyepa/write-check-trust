@@ -290,3 +290,9 @@ Eso actualiza `integrity.lock` y añade una entrada aquí.
 - Approved by: yosoyepa
 - Reason: aprobado en PR #53: D-A'/D-B'/D-E9'/D-BLESS' sobre 903f961 — 5 equivalencias sucesoras ratificadas (25/30/33 text; 27/32 check), desviacion aceptada puntualmente, 37 rutas E9 aprobadas (7 modificadas + 30 nuevas)
 - Commit: 903f96162ad349d8f4e9c4aacc721cd0397eadbd
+
+## 2026-09-17T21:54:25.482211+00:00
+
+- Approved by: yosoyepa
+- Reason: aprobado en PR #55: version 1.0.0b3.dev1 sobre f673a0a2b055257b8fe331cc978690a9a5ad1d02; pyproject.toml y uv.lock
+- Commit: f673a0a2b055257b8fe331cc978690a9a5ad1d02

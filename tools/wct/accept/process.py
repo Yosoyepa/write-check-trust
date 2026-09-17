@@ -48,10 +48,9 @@ def _observe(
 
 
 def _close_streams(process: subprocess.Popen[bytes]) -> None:
-    """Close available child streams after observation finishes."""
-    for stream in (process.stdout, process.stderr):
-        if stream is not None:
-            stream.close()
+    """Close the child streams requested with PIPE after observation finishes."""
+    for stream in (cast(BinaryIO, process.stdout), cast(BinaryIO, process.stderr)):
+        stream.close()
 
 
 def _execute(

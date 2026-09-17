@@ -372,6 +372,14 @@ def test_caches_y_entornos_anidados_quedan_fuera(tmp_path: Path) -> None:
     assert required_sources(tmp_path, _policy(["src"])) == ["src/a.py"]
 
 
+def test_entrada_py_que_no_es_fichero_queda_fuera(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/a.py").write_text("value = 1\n", encoding="utf-8")
+    (tmp_path / "src/decoy.py").mkdir()
+
+    assert required_sources(tmp_path, _policy(["src"])) == ["src/a.py"]
+
+
 def test_modulo_no_testeable_sigue_sujeto_a_seguridad(tmp_path: Path) -> None:
     (tmp_path / "src").mkdir()
     (tmp_path / "src/legacy.py").write_text("value = 1\n", encoding="utf-8")

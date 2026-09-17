@@ -79,7 +79,9 @@ Caracterización: **verde antes** (109 passed, 11.66 s) y **verde después** (10
 passed, 11.44 s) de los focales `tests/unit/test_sast_targets.py` +
 `tests/unit/test_accept_campaign.py`; no se fabricó ningún rojo TDD
 (refactorización con caracterización verde declarada). Cobertura focal (LCOV
-`690f60be…`): `_close_streams` queda en **2/2 arcos, 100% de rama con streams
+`690f60be…`, en
+`build/tmp/cierre-cleanup-20260916/candidate/build/tmp/evidencia/focal-process.lcov`):
+`_close_streams` queda en **2/2 arcos, 100% de rama con streams
 reales** (antes 3/4 = 75%); `_execute` conserva 6/6. No se añadió ningún test de
 streams `None`.
 
@@ -194,8 +196,8 @@ No se presenta el 47/47 como vigente para este candidato.
   ni se altera el denominador.
 - **Corrección del registro DRY (solicitada por el encargo):** DRY se ejecutó en
   el encargo anterior (`FIDELIDAD-TRANSPORTE-Y-FRONTERA-CRAP-2026-09-16.md` §7)
-  **anticipadamente**, mientras TEST-004 seguía pendiente, contra la parada
-  establecida en el encargo previo. La medición y sus resultados se conservan
+  **anticipadamente**, mientras TEST-004 seguía pendiente de disposición
+  humana (cláusula de rama y frontera de las 12 abiertas en el encargo previo). La medición y sus resultados se conservan
   como evidencia histórica de ese momento; **no** se usan para afirmar
   cumplimiento retrospectivo de PROC-004. La repetición de DRY sobre el
   candidato final **no se ejecutó** por la parada en mutación.

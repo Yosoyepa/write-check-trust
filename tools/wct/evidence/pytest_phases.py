@@ -22,17 +22,6 @@ from tools.wct.evidence.pytest_phase_pairs import (
 from tools.wct.evidence.pytest_types import PhaseObservation, ProtocolFinding, TestObservation
 
 
-@dataclass(frozen=True)
-class InstanceReport:
-    """Resultado de evaluar una instancia: fases, terminal y findings."""
-
-    phases: tuple[PhaseObservation, ...]
-    terminal: bool
-    call_disposition: str
-    pass_eligible: bool
-    findings: tuple[ProtocolFinding, ...]
-
-
 def _by_phase(events: tuple[PhaseEvent, ...], *, is_make: bool) -> dict[str, list[PhaseEvent]]:
     grouped: dict[str, list[PhaseEvent]] = {name: [] for name in PHASE_RANKS}
     for event in events:

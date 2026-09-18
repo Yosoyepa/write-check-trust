@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from types import ModuleType
 from typing import Any
 
 import pytest
@@ -427,14 +428,47 @@ def test_dispatcher_requires_the_exact_typed_feature_source() -> None:
         execute_scenario(similar, 0)
 
 
+def _foreign_engine_imports(engine_modules: list[ModuleType]) -> list[str]:
+    """Names of tests.*/tools.wct.evidence.* objects present in loaded engine modules.
+
+    Recorre el espacio de nombres real de cada módulo del motor: todo valor
+    importado queda como atributo (módulo, o función/clase cuyo ``__module__``
+    delata su origen). Es el estado observable del SUT cargado, no su texto.
+    """
+    foreign: set[str] = set()
+    for module in engine_modules:
+        for value in vars(module).values():
+            if isinstance(value, ModuleType):
+                origin = value.__name__
+            else:
+                origin = getattr(value, "__module__", None)
+            if origin and (
+                origin == "tests" or origin.startswith(("tests.", "tools.wct.evidence"))
+            ):
+                foreign.add(origin)
+    return sorted(foreign)
+
+
 def test_policy_and_operator_import_no_tests_or_evidence_modules() -> None:
-    """The production operator stays independent from test and evidence packages."""
-    modules = [
+    """The production operator stays independent from test and evidence packages.
+
+    O6 (VERIFICACION.md): oráculo observable sobre el SUT — los módulos del
+    motor, alcanzados desde sus funciones públicas ya cargadas, no exponen
+    ningún objeto importado de ``tests.*`` ni ``tools.wct.evidence.*``. La
+    inspección sintáctica se conserva porque cubre imports condicionales o
+    diferidos que no se ejecutan al importar el módulo.
+    """
+    engine_modules = [
+        sys.modules[public.__module__] for public in (load_policy, validate_policy, mutations)
+    ]
+    foreign = _foreign_engine_imports(engine_modules)
+    assert not foreign, f"the engine imports foreign packages: {foreign}"
+
+    imported: list[str] = []
+    for module in [
         ROOT / "tools/wct/accept/mutation_policy.py",
         ROOT / "tools/wct/accept/mutation_cases.py",
-    ]
-    imported: list[str] = []
-    for module in modules:
+    ]:
         tree = ast.parse(module.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):

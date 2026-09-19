@@ -109,6 +109,17 @@ un estado final por ID. El log corrobora: 426 veredictos 🎉 + 46 🙁 + 1 ⏰
 **BRUTO MEDIDO (L4, selección 140): 473 = 426 killed (exit 1) + 1 killed por
 no-terminación (exit −24) + 46 survived (exit 0).**
 
+> **Nota sucesora (REANCLAJE-13, 2026-09-19; sin reescribir resultados
+> sellados).** El BRUTO conserva el estado que emitió el instrumento: el ID
+> `x__consume_line__mutmut_22` queda registrado como **timeout** (exit −24),
+> no como killed. La frase «1 killed por no-terminación» de este registro
+> corresponde a la CAPA DE ATRIBUCIÓN CAUSAL (R12 §6), no al bruto: mutmut
+> clasifica −24 como timeout (límite `RLIMIT_CPU` del arnés), y la propuesta
+> de ADMISIÓN contractual como defecto detectado queda para decisión humana
+> (ver REANCLAJE-13-L4-ADJUDICACION.md §5). Capas separadas: A estado del
+> instrumento (timeout) · B causalidad (no-terminación demostrada por sonda)
+> · C admisión propuesta · D decisión humana pendiente.
+
 ## 6. Atribución causal (clasificación separada del bruto)
 
 | Clase | # | Base |

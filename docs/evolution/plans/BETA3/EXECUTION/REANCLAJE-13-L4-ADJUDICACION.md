@@ -210,3 +210,24 @@ Manifiesto R13 sin auto-hash, digest y verificación fuera de sus miembros.
 > humanas D-A' (10 equivalencias), D-B' (atribución 11), D-C' (admisión del
 > timeout) y D-D' (sitios de módulo), por ID, con diffs y fundamento de R13.
 > Prohibido: producto, binding, L3, Q-ACCMUT, bless, merge, release.
+
+## 13. Nota sucesora (REANCLAJE-14, 2026-09-19) — contabilidad y alcance de evidencia
+
+Sin reescribir lo anterior, tres precisiones que R14 dejó demostradas:
+
+1. **Custodia R12 (deriva del state también byte-exacta).** El desfase de los 2/93
+   miembros se explica por la única escritura PUB post-sello: el ledger menos sus 2
+   últimas filas reproduce el digest sellado (ya documentado arriba), y el
+   `guardian-state.json` sellado se re-deriva del actual restaurando `spent.PUB=0.0`
+   con la serialización exacta del guardián (`json.dumps(indent=2)`), verificando el
+   hash `6448412…`. Manifiesto sucesor con los bytes actuales (93/93):
+   `build/tmp/reanclaje14-20260919/custodia-r12/`. El histórico conserva 91/93.
+2. **Tope 20000 de declaraciones: SÍ contractual.** §6 de este registro buscó la
+   línea en §4 y no la encontró; la literal está en **§3 l.157** («índices desde0
+   contiguos, cada string único, máximo20 000 declaraciones»). La propuesta de
+   frontera real 20000/20001 queda como decisión D-D', no como contrato nuevo.
+3. **Atribución (los 11 de §4).** El análisis por camino alcanzable de R14 §7
+   muestra que el canal `finding.execution_id` es **inerte** en el original
+   (constantemente None; el consumidor `_decoder_blocks` bloquea hoy ambas
+   ejecuciones por igual). Propuesta de reclasificación 11 → equivalencia por canal
+   inerte, pendiente de decisión humana (D-B'): ver REANCLAJE-14 §7.

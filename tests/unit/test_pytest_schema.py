@@ -15,12 +15,15 @@ import json
 import pytest
 
 from tools.wct.evidence import (
+    pytest_decode_events as pdev,
     pytest_payloads as pp,
     pytest_schema as ps,
     pytest_sequence as pseq,
     pytest_types as pt,
 )
+from tools.wct.evidence.pytest_limits import SEQ_MAX
 from tools.wct.evidence.pytest_observation import decode_pytest_journal, reconcile_pytest
+from tools.wct.evidence.pytest_wire_framing import _DefectError
 
 RUN_ID = "0" * 32
 OTHER_RUN_ID = "1" * 32
@@ -1287,3 +1290,138 @@ def test_wire_decoder_binds_payload_positions_to_contract_fields() -> None:
     assert observation.findings == ()
     assert observation.events[-1].payload.argument_exit == 3
     assert observation.events[-1].payload.observed_exit == 7
+
+
+# --- Oráculos REANCLAJE-14 (L4): fronteras §2/§4 que la batería 293 no
+# discriminaba (registro R13, hueco-de-oráculo por ID). Cada test cita la
+# obligación, construye su entrada con el serializador propio y asevera el
+# código del catálogo §4. El de expected_seq es control de sitio de módulo no
+# instrumentado: no corresponde a ningún ID del inventario L4. ---
+
+
+def _wire(value: object) -> bytes:
+    """Línea de wire arbitraria (vector u objeto) serializada por el test."""
+    return _dump(value) + b"\n"
+
+
+def test_execution_index_non_integer_is_invalid_field() -> None:
+    """§2/§4: execution_index no-entero es invalid_field con prefijo, sin excepción.
+
+    §2: «El decoder no lanza excepciones por contenido de journal malformado
+    dentro del límite: devuelve prefijo y findings»; §4 precedencia 4 y
+    «Tipo/rango JSON errado invalid_field». ID PA03-bool-int ejercita un bool
+    en el payload, no en el índice: este es el caso ausente.
+    """
+    data = _wire_header() + _wire([1, "1", 1, 4, ["9.1.1", "1.6.0", "wct-pytest-observer/1", D64]])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.events == ()
+    assert len(observation.findings) == 1
+    assert observation.findings[0].code == "invalid_field"
+    assert observation.findings[0].offset == len(_wire_header())
+
+
+def test_resolve_field_nodeid_non_integer_index_is_invalid_field() -> None:
+    """§4 precedencia 4: índice de nodeid no-entero es invalid_field.
+
+    Caracterización del helper de resolución: por la API pública el coerce
+    _int_in del vector anticipa el mismo código, así que la frontera del
+    resolvedor solo es observable en su frontera de módulo.
+    """
+    state = pseq._DecodeState(executions=_executions())
+
+    with pytest.raises(_DefectError) as raised:
+        pdev._resolve_field_nodeid(pp.CollectedItem, {"nodeid": "0"}, state)
+
+    assert raised.value.code == "invalid_field"
+
+
+def test_sequence_zero_is_invalid_field_not_sequence_error() -> None:
+    """§2/§4: seq=0 está fuera de 1..SEQ_MAX: invalid_field, no sequence_error."""
+    data = _wire_header() + _wire([0, 0, None, 0, [0, "t"]])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "invalid_field"
+
+
+def test_seq_at_seq_max_boundary_stays_in_range() -> None:
+    """§2: SEQ_MAX es el tope INCLUSIVO de U; en la frontera el fallo es de orden."""
+    data = _wire_header() + _wire([SEQ_MAX, 0, None, 0, [0, "t"]])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "sequence_error"
+
+
+def test_local_seq_at_seq_max_boundary_stays_in_range() -> None:
+    """§2: local_seq=SEQ_MAX es válido; el diagnóstico es sequence_error, no rango.
+
+    Complementa test_local_seq_out_of_range (SEQ_MAX+1, fuera): la frontera
+    exacta pertenece al rango y solo puede fallar por orden.
+    """
+    session = ["9.1.1", "1.6.0", "wct-pytest-observer/1", D64]
+    data = _wire_header() + _wire([1, 0, SEQ_MAX, 4, session])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "sequence_error"
+
+
+def test_nodeid_index_above_seq_max_is_invalid_field() -> None:
+    """§4: precedencia 3 (rangos) antes que 4 (referencias) en el índice nodeid.
+
+    Un índice fuera de U es error de campo; foreign_reference queda para el
+    índice bien formado que apunta fuera de la tabla.
+    """
+    item = _wire([2, 0, 1, 8, [SEQ_MAX + 1, False]])
+    data = _wire_header() + _event(1, 0, None, 0, [0, "t"]) + item
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert len(observation.events) == 1
+    assert observation.findings[0].code == "invalid_field"
+
+
+def test_event_vector_shaped_as_object_is_invalid_field() -> None:
+    """§4 literal: «vector con objeto en lugar de array es invalid_field»."""
+    data = _wire_header() + _wire({"a": 1, "b": 2, "c": 3, "d": 4, "e": 5})
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.events == ()
+    assert observation.findings[0].code == "invalid_field"
+
+
+def test_header_execution_entry_shaped_as_object_is_invalid_field() -> None:
+    """§4: la entrada de ejecución como objeto es invalid_field en offset 0.
+
+    La cláusula de forma del §4 aplica al vector de la cabecera igual que al
+    de evento; el decoder debe devolver el finding, no una excepción.
+    """
+    header = _wire_header(
+        executions=[
+            {"collection-1": "collection", "role": "producer", "i": D64, "c": D64, "r": D64},
+            ["producer-1", "producer", D64, D64, D64],
+        ]
+    )
+
+    observation = decode_pytest_journal(**_decode_kwargs(header))
+
+    assert observation.events == ()
+    assert observation.findings[0].code == "invalid_field"
+    assert observation.findings[0].offset == 0
+
+
+def test_first_event_seq_not_one_is_sequence_error() -> None:
+    """§4: «seq global contiguo desde 1»; empezar en 2 es hueco de secuencia.
+
+    Control del estado inicial expected_seq=1 (sitio de módulo no
+    instrumentado): no corresponde a ningún ID del inventario L4.
+    """
+    data = _wire_header() + _wire([2, 0, None, 0, [0, "t"]])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "sequence_error"

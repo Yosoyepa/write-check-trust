@@ -44,6 +44,26 @@ Entradas:
   (no es falso positivo: campo interno _ScanState escrito y nunca leído,
   pendiente de disposición). InstanceReport NO se whitelistó: era código
   muerto real, eliminado en el mismo incremento.
+- REANCLAJE-5 (2026-09-18, autorización humana expresa del encargo): se
+  aceptan expresamente las 17 entradas anteriores y se añaden exactamente
+  tres. utc (evidence/pytest_payload_classes.py:54 ExecutionStart y :77
+  ExecutionEnd), distribution (:97 PluginClaim) y qualified (:100
+  PluginClaim): campos mandatorios del wire de PROPUESTA-P03 §3; el valor
+  crudo se valida en frontera (payload_validate.py: _is_utc /
+  _optional(_is_text) / _is_bool) y se construye vía kwargs
+  (pytest_builders.py:53/71/114/117); tras la construcción el kernel no
+  lee el campo: son claims del emisor conservados que la API retorna al
+  caller. ALCANCE REAL POR NOMBRE, ACEPTADO POR EL HUMANO: cada entrada
+  silencia el nombre GLOBALMENTE en su alcance de análisis (src+tools), no
+  por módulo ni clase — vulture 2.16 no ofrece formulación acotada
+  (demostrado R3 S1-S3 con cuatro formulaciones) —, de modo que un
+  símbolo muerto homónimo futuro quedaría invisible: riesgo reconocido y
+  aceptado en la autorización; homónimos actuales: 0 en src y 0 en tools
+  (medido R4). expectation NO se whitelistó: era código muerto real
+  (escrito una sola vez, jamás leído) y se eliminó del producto en este
+  mismo encargo. Esta whitelist no declara equivalencia de mutantes, no
+  acredita calificación y no convierte las referencias de tests en
+  consumidores productivos.
 """
 
 abstract_symbols  # noqa: B018, F821 — entrada de whitelist vulture (ADR-D-02): el nombre cuenta como usado, no es código ejecutable
@@ -71,3 +91,6 @@ pass_eligible  # noqa: B018, F821 — campo público TestObservation (PROPUESTA-
 deselected_property  # noqa: B018, F821 — campo público ExecutionObservation (PROPUESTA-P03 §2), inventario del productor (REANCLAJE-3)
 protocol_complete  # noqa: B018, F821 — campo público ExecutionObservation (PROPUESTA-P03 §2), 19 lecturas en tests R8 (REANCLAJE-3)
 preflight_identities  # noqa: B018, F821 — campo público PytestObservation (PROPUESTA-P03 §2), 2 lecturas en tests R8 (REANCLAJE-3)
+utc  # noqa: B018, F821 — campo wire contractual ExecutionStart/ExecutionEnd (PROPUESTA-P03 §3), claim del emisor conservado (REANCLAJE-5)
+distribution  # noqa: B018, F821 — campo wire contractual PluginClaim (PROPUESTA-P03 §3), claim del emisor conservado (REANCLAJE-5)
+qualified  # noqa: B018, F821 — campo wire contractual PluginClaim (PROPUESTA-P03 §3), leído en tests R8 (REANCLAJE-5)

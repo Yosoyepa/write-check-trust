@@ -1203,3 +1203,87 @@ def test_wire_digest_field_rejects_non_lowerhex(digest: object) -> None:
     observation = decode_pytest_journal(**_decode_kwargs(data))
 
     assert observation.findings[0].code == "invalid_field"
+
+
+# --- Oráculos REANCLAJE-10: la tabla WIRE_FIELDS se transcribe del contrato
+# §3 (tabla de clases + transformación de execution_start, que viaja sin role
+# ni digests) y el decoder se comprueba consumiendo posiciones. El literal
+# proviene SOLO del texto contractual: nunca de la tabla productiva, de las
+# dataclasses ni de los builders. ---
+
+CONTRACT_WIRE_FIELDS: dict[str, tuple[str, ...]] = {
+    "NodeDeclaration": ("index", "nodeid"),
+    "ExecutionStart": ("argv", "cwd", "log_start", "monotonic_ns", "utc"),
+    "ChannelEnd": ("eof", "tail_bytes", "tail_sha256", "defect"),
+    "ExecutionEnd": (
+        "exit_code",
+        "termination",
+        "signal",
+        "log_end",
+        "log_sha256",
+        "monotonic_ns",
+        "utc",
+        "log_truncated",
+    ),
+    "SessionStart": (
+        "pytest_version",
+        "pluggy_version",
+        "observer_version",
+        "runtime_profile_sha256",
+    ),
+    "PluginClaim": (
+        "name",
+        "module",
+        "distribution",
+        "version",
+        "source_sha256",
+        "qualified",
+    ),
+    "PluginsEnd": ("count",),
+    "OptionsClaim": ("effective_sha256", "profile_match"),
+    "CollectedItem": ("nodeid", "property"),
+    "CollectionReport": ("nodeid", "outcome"),
+    "DeselectedItem": ("nodeid", "property"),
+    "SelectedItem": ("nodeid",),
+    "CollectionEnd": ("selected_count", "deselected_count"),
+    "TestStart": ("nodeid",),
+    "PhaseMake": (
+        "nodeid",
+        "phase",
+        "outcome",
+        "exception_present",
+        "exception_type",
+        "wasxfail",
+        "xfail",
+    ),
+    "PhaseLog": ("nodeid", "phase", "outcome", "wasxfail"),
+    "TestEnd": ("nodeid",),
+    "InternalError": ("exception_type",),
+    "Interrupted": ("exception_type",),
+    "SessionEnd": ("argument_exit", "observed_exit"),
+    "SessionEndError": ("exception_type",),
+}
+
+
+def test_wire_fields_table_is_the_contract_transcription() -> None:
+    """§3: inventario exacto de clases y tuplas completas en orden contractual."""
+    productive = {cls.__name__: tuple(names) for cls, names in pp.WIRE_FIELDS.items()}
+
+    assert set(productive) == set(CONTRACT_WIRE_FIELDS)
+    for name, expected in CONTRACT_WIRE_FIELDS.items():
+        assert productive[name] == expected, name
+
+
+def test_wire_decoder_binds_payload_positions_to_contract_fields() -> None:
+    """§3: el decoder consume el vector por posición; valores distinguibles."""
+    data = (
+        _wire_header()
+        + _event(1, 0, None, 1, [["python"], "/r", 0, 1, _UTC])
+        + _event(2, 0, 1, 19, [3, 7])
+    )
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings == ()
+    assert observation.events[-1].payload.argument_exit == 3
+    assert observation.events[-1].payload.observed_exit == 7

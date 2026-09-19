@@ -1524,3 +1524,407 @@ def test_declaration_cap_at_the_real_boundary_20000() -> None:
     assert len(over.events) == 20_000
     assert over.consumed_bytes == len(exact_data)
     assert over.tail_sha256 == hashlib.sha256(extra).hexdigest()
+
+
+# --- Oráculos y controles de módulo REANCLAJE-19 (L3). Los 17 huecos de
+# R18 §4 se reparan por la frontera de observations MANUALES: validate_payload
+# público, §2 l.112-116 («comprobar campos/frozen/tuplas/schema de observation
+# antes de usar datos construidos manualmente... Esa entrada inconsistente →
+# invalid_observation»). El decoder NO es la frontera de estos oráculos: su
+# vía del wire rechaza antes estas entradas y la obligación vigente vive en
+# el reconcile (R17 §5). La matriz transcribe el contrato §3 (tabla de clases
+# y enumeraciones §3/§5); los literales provienen SOLO del texto contractual,
+# nunca de la tabla productiva _PAYLOAD_CHECKS ni de las dataclasses. ---
+
+CONTRACT_PAYLOAD_FIELDS: dict[str, tuple[str, ...]] = {
+    "NodeDeclaration": ("index", "nodeid"),
+    "ExecutionStart": (
+        "role",
+        "argv",
+        "cwd",
+        "input_sha256",
+        "context_sha256",
+        "recipe_sha256",
+        "log_start",
+        "monotonic_ns",
+        "utc",
+    ),
+    "ChannelEnd": ("eof", "tail_bytes", "tail_sha256", "defect"),
+    "ExecutionEnd": (
+        "exit_code",
+        "termination",
+        "signal",
+        "log_end",
+        "log_sha256",
+        "monotonic_ns",
+        "utc",
+        "log_truncated",
+    ),
+    "SessionStart": (
+        "pytest_version",
+        "pluggy_version",
+        "observer_version",
+        "runtime_profile_sha256",
+    ),
+    "PluginClaim": (
+        "name",
+        "module",
+        "distribution",
+        "version",
+        "source_sha256",
+        "qualified",
+    ),
+    "PluginsEnd": ("count",),
+    "OptionsClaim": ("effective_sha256", "profile_match"),
+    "CollectedItem": ("nodeid", "property"),
+    "CollectionReport": ("nodeid", "outcome"),
+    "DeselectedItem": ("nodeid", "property"),
+    "SelectedItem": ("nodeid",),
+    "CollectionEnd": ("selected_count", "deselected_count"),
+    "TestStart": ("nodeid",),
+    "PhaseMake": (
+        "nodeid",
+        "phase",
+        "outcome",
+        "exception_present",
+        "exception_type",
+        "wasxfail",
+        "xfail",
+    ),
+    "PhaseLog": ("nodeid", "phase", "outcome", "wasxfail"),
+    "TestEnd": ("nodeid",),
+    "InternalError": ("exception_type",),
+    "Interrupted": ("exception_type",),
+    "SessionEnd": ("argument_exit", "observed_exit"),
+    "SessionEndError": ("exception_type",),
+}
+
+CONTRACT_ENUMS: dict[str, tuple[str, ...]] = {
+    "ROLES": ("collection", "producer"),
+    "PHASES": ("setup", "call", "teardown"),
+    "OUTCOMES": ("passed", "failed", "skipped"),
+    "TERMINATIONS": (
+        "exited",
+        "signal",
+        "launch_error",
+        "timeout",
+        "cancelled",
+        "io_error",
+        "limit_exceeded",
+    ),
+    "CHANNEL_DEFECTS": (
+        "truncated_channel",
+        "io_error",
+        "timeout",
+        "cancelled",
+        "limit_exceeded",
+    ),
+}
+
+# Instancias válidas por clase con fronteras contractales deliberadas: U en
+# SEQ_MAX exacto (is_u_6), exit 255 exacto (within_6), espacio 0x20 en un S
+# (clean_string_8: C0 es <0x20), vacío solo donde §3 lo admite (broad-text).
+_VALID_PAYLOAD_KWARGS: dict[type, dict[str, object]] = {
+    pp.NodeDeclaration: {"index": SEQ_MAX, "nodeid": "t"},
+    pp.ExecutionStart: {
+        "role": "collection",
+        "argv": ("python",),
+        "cwd": "/",
+        "input_sha256": D64,
+        "context_sha256": D64,
+        "recipe_sha256": D64,
+        "log_start": 0,
+        "monotonic_ns": 1,
+        "utc": _UTC,
+    },
+    pp.ChannelEnd: {"eof": True, "tail_bytes": 0, "tail_sha256": None, "defect": None},
+    pp.ExecutionEnd: {
+        "exit_code": 255,
+        "termination": "exited",
+        "signal": None,
+        "log_end": 1,
+        "log_sha256": D64,
+        "monotonic_ns": 2,
+        "utc": _UTC,
+        "log_truncated": False,
+    },
+    pp.SessionStart: {
+        "pytest_version": "9.1.1",
+        "pluggy_version": "1.6.0",
+        "observer_version": "wct-pytest-observer/1",
+        "runtime_profile_sha256": D64,
+    },
+    pp.PluginClaim: {
+        "name": "cov",
+        "module": "covmod",
+        "distribution": None,
+        "version": None,
+        "source_sha256": None,
+        "qualified": False,
+    },
+    pp.PluginsEnd: {"count": 0},
+    pp.OptionsClaim: {"effective_sha256": D64, "profile_match": False},
+    pp.CollectedItem: {"nodeid": "t", "property": False},
+    pp.CollectionReport: {"nodeid": "", "outcome": "passed"},
+    pp.DeselectedItem: {"nodeid": "t", "property": True},
+    pp.SelectedItem: {"nodeid": "t"},
+    pp.CollectionEnd: {"selected_count": SEQ_MAX, "deselected_count": 0},
+    pp.TestStart: {"nodeid": "a b"},
+    pp.PhaseMake: {
+        "nodeid": "t",
+        "phase": "setup",
+        "outcome": "passed",
+        "exception_present": False,
+        "exception_type": None,
+        "wasxfail": False,
+        "xfail": None,
+    },
+    pp.PhaseLog: {"nodeid": "t", "phase": "call", "outcome": "failed", "wasxfail": True},
+    pp.TestEnd: {"nodeid": "t"},
+    pp.InternalError: {"exception_type": "ValueError"},
+    pp.Interrupted: {"exception_type": "KeyboardInterrupt"},
+    pp.SessionEnd: {"argument_exit": 255, "observed_exit": 0},
+    pp.SessionEndError: {"exception_type": "RuntimeError"},
+}
+
+# Variantes válidas que ejercen el otro lado de los campos opcionales (H o N,
+# S o N) y la amplitud de las enumeraciones: optionales presentes con valor,
+# optionales ausentes, y declares de canal/terminación del catálogo §5.
+_VALID_PAYLOAD_VARIANTS: list[tuple[type, dict[str, object]]] = [
+    (pp.NodeDeclaration, {"index": 0, "nodeid": ""}),
+    (pp.ChannelEnd, {"eof": False, "tail_bytes": 5, "tail_sha256": D64, "defect": "io_error"}),
+    (pp.ExecutionEnd, {"exit_code": None, "termination": "launch_error", "signal": None}),
+    (
+        pp.PluginClaim,
+        {"distribution": "d", "version": "v", "source_sha256": D64, "qualified": True},
+    ),
+    (pp.CollectionReport, {"nodeid": "t", "outcome": "failed"}),
+    (
+        pp.PhaseMake,
+        {
+            "phase": "call",
+            "outcome": "failed",
+            "exception_present": True,
+            "exception_type": "ValueError",
+            "wasxfail": True,
+            "xfail": pt.XfailObservation(True, True, False),
+        },
+    ),
+    (pp.SessionEnd, {"argument_exit": 1, "observed_exit": 255}),
+]
+
+# Una sola violación por fila, sobre la instancia válida de su clase: el
+# campo nominado es el único contractualmente roto y el diagnóstico debe
+# señalarlo a él (field exacto), con los demás campos válidos para que otro
+# error no tape el defecto.
+_INVALID_PAYLOAD_ROWS: list[pytest.Param] = [
+    pytest.param(pp.NodeDeclaration, "index", -1, id="node-decl-index-negativo"),
+    pytest.param(pp.NodeDeclaration, "index", True, id="node-decl-index-bool"),
+    pytest.param(pp.NodeDeclaration, "nodeid", "\x01", id="node-decl-nodeid-c0"),
+    pytest.param(pp.ExecutionStart, "role", "other", id="exec-start-role-ajeno"),
+    pytest.param(pp.ExecutionStart, "argv", (), id="exec-start-argv-vacio"),
+    pytest.param(pp.ExecutionStart, "argv", ("python", ""), id="exec-start-argv-item-vacio"),
+    pytest.param(pp.ExecutionStart, "cwd", "/a/./b", id="exec-start-cwd-segmento-punto"),
+    pytest.param(pp.ExecutionStart, "cwd", "/a/../b", id="exec-start-cwd-segmento-dotdot"),
+    pytest.param(pp.ExecutionStart, "input_sha256", "z" * 64, id="exec-start-input-digest-sucio"),
+    pytest.param(
+        pp.ExecutionStart, "context_sha256", "z" * 64, id="exec-start-context-digest-sucio"
+    ),
+    pytest.param(pp.ExecutionStart, "recipe_sha256", "z" * 64, id="exec-start-recipe-digest-sucio"),
+    pytest.param(pp.ExecutionStart, "log_start", -1, id="exec-start-log-start-negativo"),
+    pytest.param(pp.ExecutionStart, "monotonic_ns", True, id="exec-start-monotonic-bool"),
+    pytest.param(
+        pp.ExecutionStart, "utc", "2026-13-40T00:00:00.000000+00:00", id="exec-start-utc-invalida"
+    ),
+    pytest.param(pp.ChannelEnd, "eof", 1, id="channel-end-eof-int"),
+    pytest.param(pp.ChannelEnd, "tail_bytes", -1, id="channel-end-tail-bytes-negativo"),
+    pytest.param(pp.ChannelEnd, "tail_sha256", "z" * 64, id="channel-end-tail-digest-sucio"),
+    pytest.param(pp.ChannelEnd, "defect", "other", id="channel-end-defect-ajeno"),
+    pytest.param(pp.ExecutionEnd, "exit_code", -256, id="exec-end-exit-fuera-de-rango"),
+    pytest.param(pp.ExecutionEnd, "exit_code", True, id="exec-end-exit-bool"),
+    pytest.param(
+        pp.ExecutionEnd, "termination", "unobserved", id="exec-end-termination-unobserved"
+    ),
+    pytest.param(pp.ExecutionEnd, "signal", 0, id="exec-end-signal-cero"),
+    pytest.param(pp.ExecutionEnd, "signal", True, id="exec-end-signal-bool"),
+    pytest.param(pp.ExecutionEnd, "log_end", -1, id="exec-end-log-end-negativo"),
+    pytest.param(pp.ExecutionEnd, "log_sha256", "z" * 64, id="exec-end-log-digest-sucio"),
+    pytest.param(pp.ExecutionEnd, "monotonic_ns", True, id="exec-end-monotonic-bool"),
+    pytest.param(
+        pp.ExecutionEnd, "utc", "2026-09-08 00:00:00.000000+00:00", id="exec-end-utc-mal-formato"
+    ),
+    pytest.param(pp.ExecutionEnd, "log_truncated", 1, id="exec-end-log-truncated-int"),
+    pytest.param(pp.SessionStart, "pytest_version", "", id="session-start-pytest-vacia"),
+    pytest.param(pp.SessionStart, "pluggy_version", "a\x7fb", id="session-start-pluggy-del"),
+    pytest.param(pp.SessionStart, "observer_version", "", id="session-start-observer-vacia"),
+    pytest.param(
+        pp.SessionStart, "runtime_profile_sha256", "z" * 64, id="session-start-profile-digest"
+    ),
+    pytest.param(pp.PluginClaim, "name", "", id="plugin-claim-name-vacio"),
+    pytest.param(pp.PluginClaim, "module", "\x01", id="plugin-claim-module-c0"),
+    pytest.param(pp.PluginClaim, "distribution", "", id="plugin-claim-distribution-vacio"),
+    pytest.param(pp.PluginClaim, "version", "a\rb", id="plugin-claim-version-cr"),
+    pytest.param(pp.PluginClaim, "source_sha256", "z" * 64, id="plugin-claim-source-digest"),
+    pytest.param(pp.PluginClaim, "qualified", 1, id="plugin-claim-qualified-int"),
+    pytest.param(pp.PluginsEnd, "count", -1, id="plugins-end-count-negativo"),
+    pytest.param(pp.PluginsEnd, "count", True, id="plugins-end-count-bool"),
+    pytest.param(pp.OptionsClaim, "effective_sha256", "z" * 64, id="options-claim-digest-sucio"),
+    pytest.param(pp.OptionsClaim, "profile_match", 1, id="options-claim-profile-int"),
+    pytest.param(pp.CollectedItem, "nodeid", "", id="collected-item-nodeid-vacio"),
+    pytest.param(pp.CollectedItem, "nodeid", "x" * 4097, id="collected-item-nodeid-4097"),
+    pytest.param(pp.CollectedItem, "nodeid", "a\x7fb", id="collected-item-nodeid-del"),
+    pytest.param(pp.CollectedItem, "property", 0, id="collected-item-property-int"),
+    pytest.param(pp.CollectionReport, "nodeid", "a\x01b", id="collection-report-nodeid-c0"),
+    pytest.param(pp.CollectionReport, "outcome", "error", id="collection-report-outcome-ajeno"),
+    pytest.param(pp.DeselectedItem, "nodeid", "", id="deselected-item-nodeid-vacio"),
+    pytest.param(pp.DeselectedItem, "property", "yes", id="deselected-item-property-str"),
+    pytest.param(pp.SelectedItem, "nodeid", "", id="selected-item-nodeid-vacio"),
+    pytest.param(pp.CollectionEnd, "selected_count", -1, id="collection-end-selected-negativo"),
+    pytest.param(pp.CollectionEnd, "deselected_count", True, id="collection-end-deselected-bool"),
+    pytest.param(pp.TestStart, "nodeid", "", id="test-start-nodeid-vacio"),
+    pytest.param(pp.PhaseMake, "nodeid", "", id="phase-make-nodeid-vacio"),
+    pytest.param(pp.PhaseMake, "phase", "run", id="phase-make-phase-ajena"),
+    pytest.param(pp.PhaseMake, "outcome", "error", id="phase-make-outcome-ajeno"),
+    pytest.param(pp.PhaseMake, "exception_present", 1, id="phase-make-exception-present-int"),
+    pytest.param(pp.PhaseMake, "exception_type", "", id="phase-make-exception-type-vacio"),
+    pytest.param(pp.PhaseMake, "wasxfail", 0, id="phase-make-wasxfail-int"),
+    pytest.param(
+        pp.PhaseMake,
+        "xfail",
+        pt.XfailObservation(1, False, False),
+        id="phase-make-xfail-run-int",
+    ),
+    pytest.param(
+        pp.PhaseMake,
+        "xfail",
+        pt.XfailObservation(False, 1, False),
+        id="phase-make-xfail-strict-int",
+    ),
+    pytest.param(
+        pp.PhaseMake,
+        "xfail",
+        pt.XfailObservation(False, False, 1),
+        id="phase-make-xfail-raises-int",
+    ),
+    pytest.param(pp.PhaseLog, "nodeid", "", id="phase-log-nodeid-vacio"),
+    pytest.param(pp.PhaseLog, "phase", "x", id="phase-log-phase-ajena"),
+    pytest.param(pp.PhaseLog, "outcome", "pass", id="phase-log-outcome-ajeno"),
+    pytest.param(pp.PhaseLog, "wasxfail", None, id="phase-log-wasxfail-none"),
+    pytest.param(pp.TestEnd, "nodeid", "", id="test-end-nodeid-vacio"),
+    pytest.param(pp.InternalError, "exception_type", "", id="internal-error-type-vacio"),
+    pytest.param(pp.Interrupted, "exception_type", "", id="interrupted-type-vacio"),
+    pytest.param(pp.Interrupted, "exception_type", None, id="interrupted-type-none"),
+    pytest.param(pp.SessionEnd, "argument_exit", True, id="session-end-argument-exit-bool"),
+    pytest.param(pp.SessionEnd, "argument_exit", 256, id="session-end-argument-exit-256"),
+    pytest.param(pp.SessionEnd, "observed_exit", True, id="session-end-observed-exit-bool"),
+    pytest.param(pp.SessionEnd, "observed_exit", 256, id="session-end-observed-exit-256"),
+    pytest.param(pp.SessionEndError, "exception_type", "", id="session-end-error-type-vacio"),
+]
+
+_ALL_PAYLOAD_CLASSES = sorted(_VALID_PAYLOAD_KWARGS, key=lambda kind: kind.__name__)
+
+
+def _manual_payload(kind: type, overrides: dict[str, object]) -> object:
+    """Observation manual válida salvo los campos sobreescritos (§2 l.112-116)."""
+    kwargs = dict(_VALID_PAYLOAD_KWARGS[kind])
+    kwargs.update(overrides)
+    return kind(**kwargs)
+
+
+def test_payload_matrix_covers_exactly_the_21_contract_classes() -> None:
+    """Anti-vacuo: la matriz es el inventario determinado de §3, ni más ni menos.
+
+    Traza al SUT por el catálogo productivo (21 códigos) además del ancla
+    contractual: retirar clases o filas de la matriz rompe la igualdad.
+    """
+    sut_classes = {cls.__name__ for _code, _origin, _kind, cls in ps.EVENT_CATALOG}
+    matrix_classes = {kind.__name__ for kind in _VALID_PAYLOAD_KWARGS}
+    assert sut_classes == set(CONTRACT_PAYLOAD_FIELDS) == matrix_classes
+    assert len(_VALID_PAYLOAD_KWARGS) == 21
+    assert _INVALID_PAYLOAD_ROWS
+
+
+@pytest.mark.parametrize(
+    "kind", _ALL_PAYLOAD_CLASSES, ids=[k.__name__ for k in _ALL_PAYLOAD_CLASSES]
+)
+def test_manual_payload_boundary_instances_are_accepted(kind: type) -> None:
+    """§2/§3: instancia válida con fronteras exactas pasa por validate_payload.
+
+    Aceptaciones que son oráculos por sí mismas: SEQ_MAX exacto en U, exit 255
+    exacto en 0..255, espacio 0x20 en un S (C0 es <0x20), vacío solo en
+    broad-text. El original verde acredita que la obligación ya se cumple.
+    """
+    assert ps.validate_payload(kind(**_VALID_PAYLOAD_KWARGS[kind])) is None
+
+
+@pytest.mark.parametrize(
+    ("kind", "overrides"),
+    _VALID_PAYLOAD_VARIANTS,
+    ids=[f"{kind.__name__}-{i}" for i, (kind, _o) in enumerate(_VALID_PAYLOAD_VARIANTS)],
+)
+def test_manual_payload_optional_and_enum_variants_are_accepted(
+    kind: type, overrides: dict[str, object]
+) -> None:
+    """§3/§5: H o N, S o N y las enumeraciones completas son entrada legítima."""
+    assert ps.validate_payload(_manual_payload(kind, overrides)) is None
+
+
+@pytest.mark.parametrize(
+    ("kind", "field", "value"),
+    _INVALID_PAYLOAD_ROWS,
+)
+def test_manual_payload_single_field_violation_names_the_field(
+    kind: type, field: str, value: object
+) -> None:
+    """§2 l.112-116: una sola violación por payload → invalid_observation con campo.
+
+    La instancia base es válida y el resto de los campos se conserva válido:
+    el diagnóstico debe caer en el campo roto exacto, no en cualquier error
+    casual. Rechazos que son oráculos por sí mismos: >4096 bytes, DEL/C0,
+    argv vacío, cwd con «.»/«..», digest no lowerhex64, texto vacío donde se
+    exige no vacío, xfail con campo no bool exacto, exit bool/256.
+    """
+    with pytest.raises(pt.ObservationError) as raised:
+        ps.validate_payload(_manual_payload(kind, {field: value}))
+
+    assert (raised.value.code, raised.value.field) == ("invalid_observation", field)
+
+
+def test_contract_enums_are_transcribed_exactly() -> None:
+    """§3/§5: enumeraciones literales del contrato, sin alias ni reorden."""
+    for name, expected in CONTRACT_ENUMS.items():
+        assert getattr(pp, name) == expected, name
+
+
+def test_payload_classes_keep_contract_field_inventory_and_order() -> None:
+    """§3: cada clase conserva exactamente los campos de su fila, en orden.
+
+    Inventario y orden provienen de la tabla §3 (ExecutionStart íntegro con
+    role y digests: el wire los omite, la clase no); la correspondencia con
+    WIRE_FIELDS del subconjunto que viaja ya está controlada aparte.
+    """
+    for name, expected in CONTRACT_PAYLOAD_FIELDS.items():
+        kind = getattr(pp, name)
+        assert tuple(field.name for field in dataclass_fields(kind)) == expected, name
+
+
+@pytest.mark.parametrize(
+    "kind", _ALL_PAYLOAD_CLASSES, ids=[k.__name__ for k in _ALL_PAYLOAD_CLASSES]
+)
+def test_payload_classes_are_behaviorally_frozen_and_conserve_values(kind: type) -> None:
+    """§2 l.60-61: las 21 clases de payload son frozen y el valor sobrevive al intento.
+
+    No basta la bandera de metadata: se asigna sobre una instancia real válida
+    y se observa FrozenInstanceError más la conservación del valor original.
+    La clase se resuelve por la fachada y se coteja su identidad con la matriz.
+    """
+    klass = getattr(pp, kind.__name__)
+    assert klass is kind
+    payload = klass(**_VALID_PAYLOAD_KWARGS[kind])
+    field_name = next(iter(_VALID_PAYLOAD_KWARGS[kind]))
+    original = getattr(payload, field_name)
+
+    assert klass.__dataclass_params__.frozen is True
+    with pytest.raises(FrozenInstanceError):
+        setattr(payload, field_name, original)
+    assert getattr(payload, field_name) is original

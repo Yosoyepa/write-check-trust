@@ -15,7 +15,6 @@ import json
 import pytest
 
 from tools.wct.evidence import (
-    pytest_decode_events as pdev,
     pytest_payloads as pp,
     pytest_schema as ps,
     pytest_sequence as pseq,
@@ -23,7 +22,6 @@ from tools.wct.evidence import (
 )
 from tools.wct.evidence.pytest_limits import SEQ_MAX
 from tools.wct.evidence.pytest_observation import decode_pytest_journal, reconcile_pytest
-from tools.wct.evidence.pytest_wire_framing import _DefectError
 
 RUN_ID = "0" * 32
 OTHER_RUN_ID = "1" * 32
@@ -1322,19 +1320,20 @@ def test_execution_index_non_integer_is_invalid_field() -> None:
     assert observation.findings[0].offset == len(_wire_header())
 
 
-def test_resolve_field_nodeid_non_integer_index_is_invalid_field() -> None:
-    """§4 precedencia 4: índice de nodeid no-entero es invalid_field.
+def test_nodeid_index_non_integer_is_invalid_field() -> None:
+    """§3/§4: el índice de nodeid viaja como entero; no-entero es invalid_field.
 
-    Caracterización del helper de resolución: por la API pública el coerce
-    _int_in del vector anticipa el mismo código, así que la frontera del
-    resolvedor solo es observable en su frontera de módulo.
+    Caracterización por API pública del coerce del vector (precedencia 3): el
+    valor no entero se rechaza en el vector y nunca llega al resolvedor. No
+    sustituye la sensibilidad de la guardia interna retirada en REANCLAJE-15
+    (rama inalcanzable bajo los llamadores admitidos).
     """
-    state = pseq._DecodeState(executions=_executions())
+    data = _wire_header() + _event(1, 0, None, 0, [0, "t"]) + _event(2, 0, 1, 8, ["0", False])
 
-    with pytest.raises(_DefectError) as raised:
-        pdev._resolve_field_nodeid(pp.CollectedItem, {"nodeid": "0"}, state)
+    observation = decode_pytest_journal(**_decode_kwargs(data))
 
-    assert raised.value.code == "invalid_field"
+    assert len(observation.events) == 1
+    assert observation.findings[0].code == "invalid_field"
 
 
 def test_sequence_zero_is_invalid_field_not_sequence_error() -> None:

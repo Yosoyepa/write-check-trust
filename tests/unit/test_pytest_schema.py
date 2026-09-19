@@ -1059,3 +1059,147 @@ def test_wire_inventory_cap_at_the_real_boundary(count: int, code: str | None) -
     else:
         assert observation.findings[0].code == "limit_exceeded"
         assert observation.consumed_bytes < len(data)
+
+
+# --- Oráculos REANCLAJE-9: fronteras §3/§4 que la selección L2 no ejercitaba.
+# Cada caso fija el observable exacto del contrato (código del catálogo §4 o
+# aceptación con preservación del valor), nunca texto interno del SUT. ---
+
+
+def test_wire_plugin_claim_optionals_accept_one_char_and_reject_empty() -> None:
+    """§3 PluginClaim: distribution/version S no vacío o N; source_sha256 H o N."""
+    base = _wire_header() + _event(1, 0, None, 1, [["python"], "/r", 0, 1, _UTC])
+    claim = decode_pytest_journal(
+        **_decode_kwargs(base + _event(2, 0, 1, 5, ["cov", "covmod", "d", "v", D64, True]))
+    )
+    assert claim.findings == ()
+    assert claim.events[-1].payload.distribution == "d"
+    assert claim.events[-1].payload.version == "v"
+    assert claim.events[-1].payload.source_sha256 == D64
+
+    empty_distribution = decode_pytest_journal(
+        **_decode_kwargs(base + _event(2, 0, 1, 5, ["cov", "covmod", "", None, None, True]))
+    )
+    assert empty_distribution.findings[0].code == "invalid_field"
+
+
+def test_wire_argv_items_reject_empty_and_accept_one_char() -> None:
+    """§3 ExecutionStart: argv es tupla no vacía de S no vacíos."""
+    accepted = decode_pytest_journal(
+        **_decode_kwargs(_wire_header() + _event(1, 0, None, 1, [["x"], "/r", 0, 1, _UTC]))
+    )
+    assert accepted.findings == ()
+    assert accepted.events[0].payload.argv == ("x",)
+
+    with_empty_item = decode_pytest_journal(
+        **_decode_kwargs(_wire_header() + _event(1, 0, None, 1, [["x", ""], "/r", 0, 1, _UTC]))
+    )
+    assert with_empty_item.findings[0].code == "invalid_field"
+
+
+def test_wire_cwd_accepts_root_and_rejects_single_dot_component() -> None:
+    """§3: cwd absoluto POSIX; «/» es el mínimo válido y «.» también se rechaza."""
+    root = decode_pytest_journal(
+        **_decode_kwargs(_wire_header() + _event(1, 0, None, 1, [["python"], "/", 0, 1, _UTC]))
+    )
+    assert root.findings == ()
+    assert root.events[0].payload.cwd == "/"
+
+    with_dot = decode_pytest_journal(
+        **_decode_kwargs(_wire_header() + _event(1, 0, None, 1, [["python"], "/a/./b", 0, 1, _UTC]))
+    )
+    assert with_dot.findings[0].code == "invalid_field"
+
+
+def test_wire_phase_make_keeps_short_exception_type_and_rejects_empty() -> None:
+    """§3: exception_present true exige exception_type no vacío (1 char válido)."""
+    base = (
+        _wire_header()
+        + _event(1, 0, None, 1, [["python"], "/r", 0, 1, _UTC])
+        + _event(2, 0, None, 0, [0, "t"])
+        + _event(3, 0, 1, 13, [0])
+    )
+    with_type = decode_pytest_journal(
+        **_decode_kwargs(base + _event(4, 0, 2, 14, [0, 1, 1, True, "E", False, None]))
+    )
+    assert with_type.findings == ()
+    assert with_type.events[-1].payload.exception_type == "E"
+
+    empty_type = decode_pytest_journal(
+        **_decode_kwargs(base + _event(4, 0, 2, 14, [0, 1, 1, True, "", False, None]))
+    )
+    assert empty_type.findings[0].code == "invalid_field"
+
+
+@pytest.mark.parametrize("literal", [b"NaN", b"Infinity"], ids=["nan", "infinity"])
+def test_wire_constant_literals_are_invalid_json(literal: bytes) -> None:
+    """§2/§4: JSON estricto; NaN/Infinity se observan como invalid_json, sin crash."""
+    data = _wire_header() + b"[2,0,1,7,[" + literal + b",true]]\n"
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "invalid_json"
+
+
+def _nested_payload(bottom: object, wrappers: int) -> list[object]:
+    """Cadena de arreglos anidados de la profundidad pedida sobre la hoja dada."""
+    value: list[object] = [bottom]
+    for _ in range(wrappers):
+        value = [value]
+    return value
+
+
+@pytest.mark.parametrize(
+    ("bottom", "wrappers"),
+    [
+        pytest.param("x", 6, id="hoja-escalar"),
+        pytest.param([], 5, id="hoja-vacia"),
+    ],
+)
+def test_wire_depth_at_eight_is_not_invalid_json(bottom: object, wrappers: int) -> None:
+    """§2: 8 niveles contando el exterior es válido; el defecto baja a la forma."""
+    payload = _nested_payload(bottom, wrappers)
+    data = _wire_header() + _event(1, 0, None, 0, payload)
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "invalid_field"
+
+
+def test_wire_control_char_inside_list_item_is_invalid_encoding() -> None:
+    """§2: strings sin C0 también dentro de elementos de listas del payload."""
+    data = _wire_header() + _event(1, 0, None, 1, [["python", "\u0001"], "/r", 0, 1, _UTC])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "invalid_encoding"
+
+
+def test_wire_canonical_utf8_accepts_accented_and_rejects_surrogate_escape() -> None:
+    """§3/§4: canónico UTF-8 sin escapes; el surrogate escapado es defecto de línea."""
+    accented = decode_pytest_journal(
+        **_decode_kwargs(_wire_header() + _event(1, 0, None, 0, [0, "café"]))
+    )
+    assert accented.findings == ()
+    assert accented.events[0].payload.nodeid == "café"
+
+    surrogate = decode_pytest_journal(
+        **_decode_kwargs(_wire_header() + b'[1,0,null,0,[0,"\\ud800"]]\n')
+    )
+    assert surrogate.findings[0].code == "invalid_encoding"
+
+
+@pytest.mark.parametrize(
+    "digest",
+    [
+        pytest.param("z" * 64, id="hex-invalido"),
+        pytest.param(5, id="numerico"),
+    ],
+)
+def test_wire_digest_field_rejects_non_lowerhex(digest: object) -> None:
+    """§3: H es digest lowerhex64; el rechazo es invalid_field exacto, sin crash."""
+    data = _wire_header() + _event(1, 0, 1, 4, ["9.1.1", "1.6.0", "obs/1", digest])
+
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+
+    assert observation.findings[0].code == "invalid_field"

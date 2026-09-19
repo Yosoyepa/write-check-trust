@@ -15,6 +15,7 @@ import json
 import pytest
 
 from tools.wct.evidence import (
+    pytest_decode_events as pdev,
     pytest_payloads as pp,
     pytest_schema as ps,
     pytest_sequence as pseq,
@@ -123,6 +124,38 @@ VALUE_TYPES = [
     ("PytestObservation", pt.PytestObservation),
 ]
 
+CONTRACT_EVENT_CATALOG: dict[int, tuple[str, str, type]] = {
+    0: ("supervisor", "node_declaration", pp.NodeDeclaration),
+    1: ("supervisor", "execution_start", pp.ExecutionStart),
+    2: ("supervisor", "channel_end", pp.ChannelEnd),
+    3: ("supervisor", "execution_end", pp.ExecutionEnd),
+    4: ("pytest", "session_start", pp.SessionStart),
+    5: ("pytest", "plugin", pp.PluginClaim),
+    6: ("pytest", "plugins_end", pp.PluginsEnd),
+    7: ("pytest", "options", pp.OptionsClaim),
+    8: ("pytest", "item", pp.CollectedItem),
+    9: ("pytest", "collect_report", pp.CollectionReport),
+    10: ("pytest", "deselected", pp.DeselectedItem),
+    11: ("pytest", "selected", pp.SelectedItem),
+    12: ("pytest", "collection_end", pp.CollectionEnd),
+    13: ("pytest", "test_start", pp.TestStart),
+    14: ("pytest", "phase_make", pp.PhaseMake),
+    15: ("pytest", "phase_log", pp.PhaseLog),
+    16: ("pytest", "test_end", pp.TestEnd),
+    17: ("pytest", "internal_error", pp.InternalError),
+    18: ("pytest", "interrupted", pp.Interrupted),
+    19: ("pytest", "session_end", pp.SessionEnd),
+    20: ("pytest", "session_end_error", pp.SessionEndError),
+}
+
+CONTRACT_CAPPED: dict[type, str] = {
+    pp.CollectedItem: "item",
+    pp.DeselectedItem: "deselected",
+    pp.SelectedItem: "selected",
+    pp.TestStart: "test_start",
+    pp.TestEnd: "test_end",
+}
+
 
 @pytest.mark.parametrize(("name", "kind"), VALUE_TYPES, ids=[name for name, _ in VALUE_TYPES])
 def test_value_types_are_frozen_with_normative_fields(name: str, kind: type) -> None:
@@ -222,31 +255,8 @@ def test_observation_error_is_plain_exception_with_code_and_field() -> None:
 
 def test_event_catalog_is_the_closed_table_of_the_contract() -> None:
     """Los 21 códigos 0..20 mapean exactos a origen/kind/clase, sin alias."""
-    expected = {
-        0: ("supervisor", "node_declaration", pp.NodeDeclaration),
-        1: ("supervisor", "execution_start", pp.ExecutionStart),
-        2: ("supervisor", "channel_end", pp.ChannelEnd),
-        3: ("supervisor", "execution_end", pp.ExecutionEnd),
-        4: ("pytest", "session_start", pp.SessionStart),
-        5: ("pytest", "plugin", pp.PluginClaim),
-        6: ("pytest", "plugins_end", pp.PluginsEnd),
-        7: ("pytest", "options", pp.OptionsClaim),
-        8: ("pytest", "item", pp.CollectedItem),
-        9: ("pytest", "collect_report", pp.CollectionReport),
-        10: ("pytest", "deselected", pp.DeselectedItem),
-        11: ("pytest", "selected", pp.SelectedItem),
-        12: ("pytest", "collection_end", pp.CollectionEnd),
-        13: ("pytest", "test_start", pp.TestStart),
-        14: ("pytest", "phase_make", pp.PhaseMake),
-        15: ("pytest", "phase_log", pp.PhaseLog),
-        16: ("pytest", "test_end", pp.TestEnd),
-        17: ("pytest", "internal_error", pp.InternalError),
-        18: ("pytest", "interrupted", pp.Interrupted),
-        19: ("pytest", "session_end", pp.SessionEnd),
-        20: ("pytest", "session_end_error", pp.SessionEndError),
-    }
     catalog = {code: (origin, kind, cls) for code, origin, kind, cls in ps.EVENT_CATALOG}
-    assert catalog == expected
+    assert catalog == CONTRACT_EVENT_CATALOG
     assert sorted(catalog) == list(range(21))
 
 
@@ -1424,3 +1434,93 @@ def test_first_event_seq_not_one_is_sequence_error() -> None:
     observation = decode_pytest_journal(**_decode_kwargs(data))
 
     assert observation.findings[0].code == "sequence_error"
+
+
+# --- Controles de sitios de módulo REANCLAJE-16 (D-D): transcripción del
+# catálogo derivado, tabla de inventarios con tope y frontera REAL 20000.
+# El esperado proviene de la especificación (literales de contrato del
+# módulo), no de las tablas productivas; las perturbaciones de sensibilidad
+# viven en copias desechables del expediente, no aquí. ---
+
+
+def test_event_catalog_derivation_is_exact_and_consumption_positional() -> None:
+    """§3: _CATALOG deriva 1:1 de los 21 códigos y el consumo es posicional.
+
+    El dict derivado debe coincidir con la transcripción del contrato
+    (CONTRACT_EVENT_CATALOG, ancla independiente del catálogo sellado) en
+    inventario y correspondencia; el consumo se observa por código con
+    origin/kind distinguibles.
+    """
+    assert pdev._CATALOG == CONTRACT_EVENT_CATALOG
+
+    observation = decode_pytest_journal(**_decode_kwargs(_minimal_journal()))
+
+    assert [event.kind for event in observation.events] == [
+        "execution_start",
+        "session_start",
+        "options",
+        "node_declaration",
+    ]
+    assert [event.origin for event in observation.events] == [
+        "supervisor",
+        "pytest",
+        "pytest",
+        "supervisor",
+    ]
+
+
+def test_capped_table_transcribes_contract_and_membership_separates_counters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """§2: cinco inventarios con tope por ejecución; la pertenencia separa contadores.
+
+    La tabla productiva coincide con la transcripción contractual; dos
+    clases distintas no comparten contador (ambas pasan con tope 1) y la
+    misma clase sí (el segundo item se rechaza como limit_exceeded).
+    """
+    assert dict(pseq._CAPPED) == CONTRACT_CAPPED
+    monkeypatch.setattr(pseq, "MAX_INVENTORY_ENTRIES", 1)
+    base = (
+        _wire_header()
+        + _event(1, 0, None, 1, [["python"], "/r", 0, 1, _UTC])
+        + _event(2, 0, None, 0, [0, "t"])
+    )
+    one_of_each = base + _event(3, 0, 1, 8, [0, False]) + _event(4, 0, 2, 13, [0])
+
+    exact = decode_pytest_journal(**_decode_kwargs(one_of_each))
+    assert exact.findings == ()
+    assert [event.kind for event in exact.events[-2:]] == ["item", "test_start"]
+
+    second_item = _event(5, 0, 3, 8, [0, False])
+    over = decode_pytest_journal(**_decode_kwargs(one_of_each + second_item))
+    assert over.findings[0].code == "limit_exceeded"
+    assert len(over.events) == 4
+
+
+def test_declaration_cap_at_the_real_boundary_20000() -> None:
+    """§3 l.157: máximo 20000 declaraciones; exacto pasa, +1 limit_exceeded.
+
+    Frontera REAL por API pública, sin constantes reducidas: 20000
+    declaraciones válidas y contiguas (ningún otro límite o defecto
+    interviene), y la 20001 con diagnóstico contractual y prefijo
+    conservado.
+    """
+    lines = [_event(i, 0, None, 0, [i - 1, f"n{i}"]) for i in range(1, 20_001)]
+    exact_data = _wire_header() + b"".join(lines)
+
+    exact = decode_pytest_journal(**_decode_kwargs(exact_data, max_bytes=len(exact_data)))
+
+    assert exact.findings == ()
+    assert len(exact.events) == 20_000
+    assert exact.consumed_bytes == len(exact_data)
+    assert exact.tail_sha256 is None
+
+    extra = _event(20_001, 0, None, 0, [20_000, "extra"])
+    over = decode_pytest_journal(
+        **_decode_kwargs(exact_data + extra, max_bytes=len(exact_data + extra))
+    )
+
+    assert over.findings[0].code == "limit_exceeded"
+    assert len(over.events) == 20_000
+    assert over.consumed_bytes == len(exact_data)
+    assert over.tail_sha256 == hashlib.sha256(extra).hexdigest()

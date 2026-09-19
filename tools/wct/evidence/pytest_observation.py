@@ -162,8 +162,7 @@ def execution_view(
 def _reconcile_scans(checked: JournalObservation) -> list[_ScanState]:
     """Barrido FSM y cierre de cada ejecución esperada, en orden."""
     scans = [
-        _ScanState(expectation=item, execution_id=item.execution_id, role=item.role)
-        for item in checked.executions
+        _ScanState(execution_id=item.execution_id, role=item.role) for item in checked.executions
     ]
     for scan in scans:
         for event in checked.events:

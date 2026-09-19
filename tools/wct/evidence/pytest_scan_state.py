@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from tools.wct.evidence.pytest_disposition import PhaseEvent
 from tools.wct.evidence.pytest_inventory import ExecutionInventory
 from tools.wct.evidence.pytest_payloads import ExecutionEnd, ExecutionStart, SessionEnd
-from tools.wct.evidence.pytest_types import ExecutionExpectation, ProtocolFinding, TestObservation
+from tools.wct.evidence.pytest_types import ProtocolFinding, TestObservation
 
 _SESSION_SCOPED = frozenset(
     {
@@ -44,7 +44,6 @@ _COLLECTION_KINDS = frozenset(
 class _ScanState:
     """Estado mutable del barrido FSM de una ejecución esperada (§5)."""
 
-    expectation: ExecutionExpectation
     execution_id: str
     role: str
     findings: list[ProtocolFinding] = field(default_factory=list)

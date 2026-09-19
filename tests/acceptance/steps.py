@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib import import_module
 import re
 from typing import Any
 
@@ -22,6 +23,10 @@ def _reserve(context: dict[str, Any], quantity: int) -> None:
 
 
 def execute_scenario(ir: dict[str, Any], scenario_index: int) -> None:
+    if ir.get("source") == "features/wct-typed-mutation-001.feature":
+        typed_operator = import_module("tests.acceptance.typed_operator_steps")
+        typed_operator.execute_scenario(ir, scenario_index)
+        return
     scenario = ir["scenarios"][scenario_index]
     rows = scenario.get("examples") or [{}]
     for row in rows:

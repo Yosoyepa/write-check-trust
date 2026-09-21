@@ -1928,3 +1928,305 @@ def test_payload_classes_are_behaviorally_frozen_and_conserve_values(kind: type)
     with pytest.raises(FrozenInstanceError):
         setattr(payload, field_name, original)
     assert getattr(payload, field_name) is original
+
+
+_CONTRACT_HEADER_BYTES = HEADER_LITERAL.encode("utf-8")
+
+
+def _padded_header(total_with_lf: int) -> bytes:
+    """Cabecera canónica con relleno no canónico de longitud TOTAL exacta (LF incluido).
+
+    El relleno se inserta antes del cierre: el documento sigue siendo JSON
+    válido pero no canónico (espacios), que es el observable del §4.
+    """
+    literal = _CONTRACT_HEADER_BYTES
+    if not literal.endswith(b"\n"):
+        raise AssertionError("literal de cabecera sin LF final")
+    relleno = total_with_lf - len(literal)
+    if relleno < 0:
+        raise AssertionError(f"cabecera canónica {len(literal)} > total {total_with_lf}")
+    padded = literal[:-2] + b" " * relleno + b"}\n"
+    assert len(padded) == total_with_lf
+    return padded
+
+
+def test_header_64kib_boundary_admits_exact_and_limits_excess_before_json() -> None:
+    """§2 l.97 + §4 l.253: 65536 exactos se admiten y clasifican por JSON; +1 es límite.
+
+    La longitud efectiva del objeto enviado se comprueba sobre los bytes con
+    su LF (no sobre el nombre del escenario ni un contador previo): 65536
+    exactos pasan el tope y aflora el defecto JSON; 65537 se clasifican como
+    `limit_exceeded` ANTES de cualquier defecto de JSON.
+    """
+    assert _wire_header() == _CONTRACT_HEADER_BYTES
+    body = _minimal_journal()[len(_CONTRACT_HEADER_BYTES) :]
+    exact = _padded_header(65536)
+    over = _padded_header(65537)
+    assert len(exact) == 65536
+    assert exact.count(b"\n") == 1
+    assert len(over) == 65537
+    assert over.count(b"\n") == 1
+
+    at_limit = decode_pytest_journal(**_decode_kwargs(exact + body))
+    assert at_limit.consumed_bytes == 0
+    assert at_limit.events == ()
+    assert at_limit.tail_sha256 == hashlib.sha256(exact + body).hexdigest()
+    assert [(finding.code, finding.offset) for finding in at_limit.findings] == [
+        ("noncanonical_json", 0)
+    ]
+
+    exceeded = decode_pytest_journal(**_decode_kwargs(over + body))
+    assert exceeded.consumed_bytes == 0
+    assert exceeded.events == ()
+    assert exceeded.tail_sha256 == hashlib.sha256(over + body).hexdigest()
+    assert [(finding.code, finding.offset) for finding in exceeded.findings] == [
+        ("limit_exceeded", 0)
+    ]
+
+
+def _execution_end_bundle(
+    *, exit_code: int | None, termination: str, signal: int | None
+) -> tuple[bytes, int]:
+    """Journal válido con un único execution_end cuyo campo discriminante varía.
+
+    El resto de las líneas es un run de colección cerrado y coherente: si la
+    frontera del campo objetivo no falla, no hay ningún otro defecto que
+    pueda atribuirse al rango.
+    """
+    lines = [
+        _event(1, 0, None, 1, [["python", "-m", "pytest"], "/r", 0, 1, _UTC]),
+        _event(2, 0, 1, 4, ["9.1.1", "1.6.0", "wct-pytest-observer/1", D64]),
+        _event(3, 0, 2, 7, [D64, True]),
+        _event(4, 0, 3, 12, [1, 0]),
+        _event(5, 0, None, 2, [True, 0, None, None]),
+        _event(6, 0, None, 3, [exit_code, termination, signal, 0, D64, 1, _UTC, False]),
+    ]
+    data = _wire_header() + b"".join(lines)
+    offset = len(_wire_header()) + sum(len(line) for line in lines[:-1])
+    return data, offset
+
+
+def test_wire_execution_end_bounds_are_exact_at_the_boundary() -> None:
+    """§3 l.211 y §5: exit -255..255 y signal 1..64 por la vía WIRE del decoder.
+
+    Aceptación y rechazo adyacentes sobre el mismo journal válido: el
+    discriminante es el campo objetivo y el rechazo conserva el offset bruto
+    del evento causante con su prefijo intacto.
+    """
+    for exit_code in (-255, 255):
+        data, _ = _execution_end_bundle(exit_code=exit_code, termination="exited", signal=None)
+        observation = decode_pytest_journal(**_decode_kwargs(data))
+        assert observation.findings == ()
+        assert observation.consumed_bytes == len(data)
+        assert observation.events[-1].payload.exit_code == exit_code
+
+    for exit_code in (-256, 256):
+        data, offset = _execution_end_bundle(exit_code=exit_code, termination="exited", signal=None)
+        observation = decode_pytest_journal(**_decode_kwargs(data))
+        assert [(finding.code, finding.offset) for finding in observation.findings] == [
+            ("invalid_field", offset)
+        ]
+        assert observation.consumed_bytes == offset
+
+    for signal in (1, 2, 64):
+        data, _ = _execution_end_bundle(exit_code=None, termination="signal", signal=signal)
+        observation = decode_pytest_journal(**_decode_kwargs(data))
+        assert observation.findings == ()
+        assert observation.consumed_bytes == len(data)
+        assert observation.events[-1].payload.signal == signal
+
+    data, offset = _execution_end_bundle(exit_code=None, termination="signal", signal=65)
+    observation = decode_pytest_journal(**_decode_kwargs(data))
+    assert [(finding.code, finding.offset) for finding in observation.findings] == [
+        ("invalid_field", offset)
+    ]
+    assert observation.consumed_bytes == offset
+
+
+BUILDER_WIRE_ROWS: list[tuple[str, int, bool, list[object], str, dict[str, object]]] = [
+    ("node-declaration", 0, False, [0, "t"], "NodeDeclaration", {"index": 0, "nodeid": "t"}),
+    (
+        "execution-start",
+        1,
+        False,
+        [["pythön", "-m", "pytest"], "/r", 5, 7, _UTC],
+        "ExecutionStart",
+        {
+            "role": "collection",
+            "argv": ("pythön", "-m", "pytest"),
+            "cwd": "/r",
+            "input_sha256": D64,
+            "context_sha256": D64,
+            "recipe_sha256": D64,
+            "log_start": 5,
+            "monotonic_ns": 7,
+            "utc": _UTC,
+        },
+    ),
+    (
+        "channel-end",
+        2,
+        False,
+        [False, 9, None, "io_error"],
+        "ChannelEnd",
+        {"eof": False, "tail_bytes": 9, "tail_sha256": None, "defect": "io_error"},
+    ),
+    (
+        "execution-end",
+        3,
+        False,
+        [-7, "signal", 9, 11, D64, 13, _UTC, True],
+        "ExecutionEnd",
+        {
+            "exit_code": -7,
+            "termination": "signal",
+            "signal": 9,
+            "log_end": 11,
+            "log_sha256": D64,
+            "monotonic_ns": 13,
+            "utc": _UTC,
+            "log_truncated": True,
+        },
+    ),
+    (
+        "session-start",
+        4,
+        False,
+        ["9.1.1", "1.6.0", "wct-pytest-observer/1", D64],
+        "SessionStart",
+        {
+            "pytest_version": "9.1.1",
+            "pluggy_version": "1.6.0",
+            "observer_version": "wct-pytest-observer/1",
+            "runtime_profile_sha256": D64,
+        },
+    ),
+    (
+        "plugin-claim",
+        5,
+        False,
+        ["cov", "pytest_cov", "pytest-cov", "7.1.0", None, False],
+        "PluginClaim",
+        {
+            "name": "cov",
+            "module": "pytest_cov",
+            "distribution": "pytest-cov",
+            "version": "7.1.0",
+            "source_sha256": None,
+            "qualified": False,
+        },
+    ),
+    ("plugins-end", 6, False, [3], "PluginsEnd", {"count": 3}),
+    (
+        "options-claim",
+        7,
+        False,
+        [D64, False],
+        "OptionsClaim",
+        {"effective_sha256": D64, "profile_match": False},
+    ),
+    ("collected-item", 8, True, [0, True], "CollectedItem", {"nodeid": "t", "property": True}),
+    (
+        "collection-report",
+        9,
+        True,
+        [0, 1],
+        "CollectionReport",
+        {"nodeid": "t", "outcome": "failed"},
+    ),
+    ("deselected-item", 10, True, [0, True], "DeselectedItem", {"nodeid": "t", "property": True}),
+    ("selected-item", 11, True, [0], "SelectedItem", {"nodeid": "t"}),
+    (
+        "collection-end",
+        12,
+        True,
+        [3, 2],
+        "CollectionEnd",
+        {"selected_count": 3, "deselected_count": 2},
+    ),
+    ("test-start", 13, True, [0], "TestStart", {"nodeid": "t"}),
+    (
+        "phase-make",
+        14,
+        True,
+        [0, 1, 1, True, "AssertionError", True, [True, False, True]],
+        "PhaseMake",
+        {
+            "nodeid": "t",
+            "phase": "call",
+            "outcome": "failed",
+            "exception_present": True,
+            "exception_type": "AssertionError",
+            "wasxfail": True,
+            "xfail": pt.XfailObservation(run=True, strict=False, raises_present=True),
+        },
+    ),
+    (
+        "phase-log",
+        15,
+        True,
+        [0, 1, 2, True],
+        "PhaseLog",
+        {"nodeid": "t", "phase": "call", "outcome": "skipped", "wasxfail": True},
+    ),
+    ("test-end", 16, True, [0], "TestEnd", {"nodeid": "t"}),
+    (
+        "internal-error",
+        17,
+        False,
+        ["RuntimeError"],
+        "InternalError",
+        {"exception_type": "RuntimeError"},
+    ),
+    (
+        "interrupted",
+        18,
+        False,
+        ["KeyboardInterrupt"],
+        "Interrupted",
+        {"exception_type": "KeyboardInterrupt"},
+    ),
+    ("session-end", 19, False, [3, 5], "SessionEnd", {"argument_exit": 3, "observed_exit": 5}),
+    (
+        "session-end-error",
+        20,
+        False,
+        ["KeyboardInterrupt"],
+        "SessionEndError",
+        {"exception_type": "KeyboardInterrupt"},
+    ),
+]
+
+
+@pytest.mark.parametrize("row", BUILDER_WIRE_ROWS, ids=[row[0] for row in BUILDER_WIRE_ROWS])
+def test_wire_builder_matrix_yields_contractual_payload(row: tuple[object, ...]) -> None:
+    """D-D: las 17 lambdas de _BUILDERS observadas por la vía de decodificación.
+
+    Los esperados son literales del contrato y de la entrada construida; los
+    campos susceptibles de intercambio usan valores distintos entre sí y el
+    tipo exacto del payload se coteja contra la matriz. No se llama al builder,
+    coercer ni tabla productiva para calcular lo esperado.
+    """
+    _case_id, code, needs_declaration, wire, class_name, expected_fields = row
+    assert isinstance(code, int)
+    assert isinstance(needs_declaration, bool)
+    assert isinstance(wire, list)
+    assert isinstance(class_name, str)
+    assert isinstance(expected_fields, dict)
+    origin = "supervisor" if code <= 3 else "pytest"
+    lines: list[bytes] = []
+    seq = 0
+    if needs_declaration:
+        seq += 1
+        lines.append(_event(seq, 0, None, 0, [0, "t"]))
+    seq += 1
+    local = None if origin == "supervisor" else 1
+    lines.append(_event(seq, 0, local, code, wire))
+
+    observation = decode_pytest_journal(**_decode_kwargs(_wire_header() + b"".join(lines)))
+
+    assert observation.findings == ()
+    assert len(observation.events) == len(lines)
+    payload = observation.events[-1].payload
+    assert type(payload) is getattr(pp, class_name)
+    assert {name: getattr(payload, name) for name in expected_fields} == expected_fields

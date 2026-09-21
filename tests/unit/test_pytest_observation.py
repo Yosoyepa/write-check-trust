@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from tools.wct.accept.pipeline import ir_dry, parse_feature
-from tools.wct.evidence import pytest_sequence as pseq
+from tools.wct.evidence import pytest_inventory as pinv, pytest_sequence as pseq
 from tools.wct.evidence.pytest_observation import decode_pytest_journal, reconcile_pytest
 from tools.wct.evidence.pytest_payloads import ExecutionStart, NodeDeclaration, SessionStart
 from tools.wct.evidence.pytest_types import (
@@ -441,6 +441,10 @@ class Case:
     identity_codes: tuple[str, ...] | None = None
     property_codes: tuple[str, ...] | None = None
     assert_that: Callable[[JournalObservation, object], None] | None = None
+    findings_exact: tuple[tuple[str, str | None, str | None, int | None], ...] | None = None
+    property_findings_exact: tuple[tuple[str, str | None, str | None, int | None], ...] | None = (
+        None
+    )
 
 
 def test_golden_bytes_are_the_approved_literal() -> None:
@@ -1511,6 +1515,14 @@ def _pa06_cases() -> list[Case]:
             data=duplicated_item.bytes(),
             codes_include=("selection_mismatch",),
             complete=(True, True),
+            findings_exact=(
+                (
+                    "selection_mismatch",
+                    "producer-1",
+                    None,
+                    _offset_of_code(duplicated_item, 12, ex=1),
+                ),
+            ),
         ),
         Case(
             "PA06-duplicate-selected",
@@ -1555,18 +1567,24 @@ def _pa06_cases() -> list[Case]:
             identity_codes=("duplicate_identity",),
             codes_exclude=("duplicate_phase", "test_order"),
         ),
-        Case("PA06-valid-control", data=_standard(), identity="match", preflight="match"),
+        Case(
+            "PA06-valid-control",
+            data=_standard(),
+            identity="match",
+            preflight="match",
+            findings_exact=(),
+        ),
     ]
 
 
-def _pa07_property_run(
+def _pa07_property_journal(
     producer: Callable[[Journal], None],
     *,
     selected: int,
     deselected: int,
     extra_declares: tuple[str, ...] = (),
-) -> bytes:
-    """Run con property p deseleccionada y variante aplicada al productor."""
+) -> Journal:
+    """Journal del run con property p deseleccionada y variante en el productor."""
     j = Journal()
     nodes = ("t", "p", *extra_declares)
     _collection(
@@ -1590,7 +1608,20 @@ def _pa07_property_run(
     j.session_end(1)
     j.channel(1)
     j.execution_end(1)
-    return j.bytes()
+    return j
+
+
+def _pa07_property_run(
+    producer: Callable[[Journal], None],
+    *,
+    selected: int,
+    deselected: int,
+    extra_declares: tuple[str, ...] = (),
+) -> bytes:
+    """Run con property p deseleccionada y variante aplicada al productor."""
+    return _pa07_property_journal(
+        producer, selected=selected, deselected=deselected, extra_declares=extra_declares
+    ).bytes()
 
 
 def _pa07_ok(j: Journal) -> None:
@@ -1632,30 +1663,78 @@ def _pa07_marker_change(j: Journal) -> None:
 
 
 def _pa07_cases() -> list[Case]:
+    valid = _pa07_property_journal(_pa07_ok, selected=1, deselected=1)
+    normal = _pa07_property_journal(
+        _pa07_normal_deselected, selected=1, deselected=1, extra_declares=("n",)
+    )
+    selected = _pa07_property_journal(_pa07_property_selected, selected=2, deselected=1)
+    extra = _pa07_property_journal(
+        _pa07_property_extra, selected=1, deselected=1, extra_declares=("q",)
+    )
+    duplicate = _pa07_property_journal(_pa07_duplicate_property, selected=1, deselected=2)
+    marker = _pa07_property_journal(_pa07_marker_change, selected=1, deselected=1)
     return [
         Case(
             "PA07-valid-property",
-            data=_pa07_property_run(_pa07_ok, selected=1, deselected=1),
+            data=valid.bytes(),
             property_ids=("p",),
             property_codes=(),
             identity="match",
             preflight="match",
             complete=(True, True),
+            codes_exclude=("selection_mismatch",),
+            findings_exact=(),
+            property_findings_exact=(),
         ),
         Case(
             "PA07-normal-deselected",
-            data=_pa07_property_run(
-                _pa07_normal_deselected, selected=1, deselected=2, extra_declares=("n",)
-            ),
+            data=normal.bytes(),
             property_ids=("p",),
             property_codes=("unauthorized_deselection", "missing_property"),
+            findings_exact=(
+                ("selection_mismatch", "collection-1", None, _offset_of_code(normal, 12, ex=0)),
+                (
+                    "unauthorized_deselection",
+                    "producer-1",
+                    "n",
+                    _offset_of_code(normal, 10, ex=1, item=2),
+                ),
+                ("selection_mismatch", "producer-1", None, _offset_of_code(normal, 12, ex=1)),
+                ("missing_property", "producer-1", "p", None),
+            ),
+            property_findings_exact=(
+                (
+                    "unauthorized_deselection",
+                    "producer-1",
+                    "n",
+                    _offset_of_code(normal, 10, ex=1, item=2),
+                ),
+                ("missing_property", "producer-1", "p", None),
+            ),
         ),
         Case(
             "PA07-property-selected",
-            data=_pa07_property_run(_pa07_property_selected, selected=2, deselected=1),
+            data=selected.bytes(),
             property_ids=("p",),
             property_codes=("unauthorized_selection",),
             identity="mismatch",
+            findings_exact=(
+                (
+                    "unauthorized_selection",
+                    "producer-1",
+                    "p",
+                    _offset_of_code(selected, 11, ex=1, item=1),
+                ),
+                ("selection_mismatch", "producer-1", None, _offset_of_code(selected, 12, ex=1)),
+            ),
+            property_findings_exact=(
+                (
+                    "unauthorized_selection",
+                    "producer-1",
+                    "p",
+                    _offset_of_code(selected, 11, ex=1, item=1),
+                ),
+            ),
         ),
         Case(
             "PA07-property-missing",
@@ -1666,25 +1745,82 @@ def _pa07_cases() -> list[Case]:
         ),
         Case(
             "PA07-property-extra",
-            data=_pa07_property_run(
-                _pa07_property_extra, selected=1, deselected=2, extra_declares=("q",)
-            ),
+            data=extra.bytes(),
             property_ids=("p",),
             property_codes=("unexpected_property", "missing_property"),
+            findings_exact=(
+                ("selection_mismatch", "collection-1", None, _offset_of_code(extra, 12, ex=0)),
+                (
+                    "unexpected_property",
+                    "producer-1",
+                    "q",
+                    _offset_of_code(extra, 10, ex=1, item=2),
+                ),
+                ("selection_mismatch", "producer-1", None, _offset_of_code(extra, 12, ex=1)),
+                ("missing_property", "producer-1", "p", None),
+            ),
+            property_findings_exact=(
+                (
+                    "unexpected_property",
+                    "producer-1",
+                    "q",
+                    _offset_of_code(extra, 10, ex=1, item=2),
+                ),
+                ("missing_property", "producer-1", "p", None),
+            ),
         ),
         Case(
             "PA07-property-duplicate",
-            data=_pa07_property_run(_pa07_duplicate_property, selected=1, deselected=2),
+            data=duplicate.bytes(),
             property_ids=("p",),
             property_codes=("duplicate_property",),
+            findings_exact=(
+                ("selection_mismatch", "producer-1", None, _offset_of_code(duplicate, 12, ex=1)),
+                ("duplicate_property", "producer-1", "p", None),
+            ),
+            property_findings_exact=(("duplicate_property", "producer-1", "p", None),),
         ),
         Case(
             "PA07-property-marker-change",
-            data=_pa07_property_run(_pa07_marker_change, selected=1, deselected=1),
+            data=marker.bytes(),
             property_ids=("p",),
             property_codes=("property_marker_changed", "unauthorized_deselection"),
+            findings_exact=(
+                (
+                    "property_marker_changed",
+                    "producer-1",
+                    "p",
+                    _offset_of_code(marker, 10, ex=1, item=1),
+                ),
+                (
+                    "unauthorized_deselection",
+                    "producer-1",
+                    "p",
+                    _offset_of_code(marker, 10, ex=1, item=1),
+                ),
+            ),
+            property_findings_exact=(
+                (
+                    "property_marker_changed",
+                    "producer-1",
+                    "p",
+                    _offset_of_code(marker, 10, ex=1, item=1),
+                ),
+                (
+                    "unauthorized_deselection",
+                    "producer-1",
+                    "p",
+                    _offset_of_code(marker, 10, ex=1, item=1),
+                ),
+            ),
         ),
-        Case("PA07-valid-control", data=_standard(), property_ids=(), property_codes=()),
+        Case(
+            "PA07-valid-control",
+            data=_standard(),
+            property_ids=(),
+            property_codes=(),
+            findings_exact=(),
+        ),
     ]
 
 
@@ -2202,6 +2338,28 @@ def _two_nodes_prefix(j: Journal, *, nodes: tuple[str, ...]) -> None:
 def _offset_of(lines: list[bytes], index: int) -> int:
     """Byte de inicio de la línea index, calculado desde el propio test."""
     return len(_header()) + sum(len(line) for line in lines[:index])
+
+
+def _offset_of_code(
+    j: Journal, code: int, *, ex: int | None = None, item: int | None = None, nth: int = 1
+) -> int:
+    """Offset del propio test para la n-ésima línea construida con ese event_code.
+
+    Filtra opcionalmente por ejecución (`ex`) y por el primer elemento del
+    vector (`item`, el índice referido por el evento). No consulta al SUT:
+    lee las líneas que el test acaba de construir.
+    """
+    seen = 0
+    for index, line in enumerate(j.lines):
+        row = json.loads(line)
+        if row[3] != code or (ex is not None and row[1] != ex):
+            continue
+        if item is not None and row[4][0] != item:
+            continue
+        seen += 1
+        if seen == nth:
+            return _offset_of(j.lines, index)
+    raise AssertionError(f"event_code {code} ex={ex} item={item} nth={nth} ausente")
 
 
 def _third_item_bundle() -> tuple[bytes, int, int]:
@@ -2750,7 +2908,12 @@ def _assert_decode(case: Case, observation: JournalObservation) -> None:
 
 
 def _assert_reconciled_codes(case: Case, result: object) -> None:
-    """Códigos de findings incluidos/excluidos, propiedades e identidades."""
+    """Códigos de findings incluidos/excluidos, propiedades e identidades.
+
+    ``findings_exact``/``property_findings_exact`` afirman la tupla completa
+    (code, execution_id, nodeid, offset) en el orden contractual del §7; los
+    esperados se derivan del contrato y de la entrada construida.
+    """
     codes = [item.code for item in result.findings]
     for code in case.codes_include:
         assert code in codes, (case.id, codes)
@@ -2758,6 +2921,21 @@ def _assert_reconciled_codes(case: Case, result: object) -> None:
         assert code not in codes, (case.id, codes)
     if case.property_codes is not None:
         assert tuple(item.code for item in result.property_findings) == (case.property_codes)
+    if case.findings_exact is not None:
+        assert (
+            tuple(
+                (item.code, item.execution_id, item.nodeid, item.offset) for item in result.findings
+            )
+            == case.findings_exact
+        )
+    if case.property_findings_exact is not None:
+        assert (
+            tuple(
+                (item.code, item.execution_id, item.nodeid, item.offset)
+                for item in result.property_findings
+            )
+            == case.property_findings_exact
+        )
     if case.identity is not None:
         assert result.identities.status == case.identity
     if case.identity_codes is not None:
@@ -2826,6 +3004,60 @@ def test_observation_case(case: Case, monkeypatch: pytest.MonkeyPatch) -> None:
     if case.assert_that is not None:
         case.assert_that(observation, result)
     assert result.provenance == "caller-supplied-unverified"
+
+
+CONTRACT_PROPERTY_FINDING_CODES = (
+    "unauthorized_deselection",
+    "unauthorized_selection",
+    "property_marker_changed",
+    "missing_property",
+    "unexpected_property",
+    "duplicate_property",
+)
+
+CONTRACT_NON_BLOCKING_CODES = (
+    *CONTRACT_PROPERTY_FINDING_CODES,
+    "selection_mismatch",
+    "unexpected_test",
+)
+
+
+def test_inventory_catalog_matches_the_contract_literal() -> None:
+    """§7 l.470-476: transcripción literal del catálogo de findings de inventory.
+
+    No se compara contra otra constante del andamiaje: los seis códigos
+    property y los dos no bloqueantes se transcriben del contrato y el
+    conjunto del módulo debe coincidir exactamente (ni alias ni extras).
+    """
+    assert tuple(sorted(pinv.PROPERTY_FINDING_CODES)) == tuple(
+        sorted(CONTRACT_PROPERTY_FINDING_CODES)
+    )
+    assert frozenset(CONTRACT_NON_BLOCKING_CODES) == pinv.NON_BLOCKING_CODES
+
+
+def test_inventory_catalog_effect_on_emission_and_completeness() -> None:
+    """Efecto del catálogo: emisión/orden property y pertenencia no bloqueante.
+
+    Un run con deselección legítima más selección de property produce un
+    finding property y un selection_mismatch: solo el primero se emite como
+    property (pertenencia) y ninguno de los dos impide el cierre del
+    protocolo (clasificación no bloqueante).
+    """
+    j = _pa07_property_journal(_pa07_property_selected, selected=2, deselected=1)
+    observation = decode_pytest_journal(
+        j.bytes(), run_id=RUN_ID, executions=_executions(), max_bytes=4096
+    )
+    result = reconcile_pytest(observation, expected=("t",), property_ids=("p",))
+
+    property_codes = [finding.code for finding in result.property_findings]
+    assert property_codes == ["unauthorized_selection"]
+    assert "selection_mismatch" not in property_codes
+    assert [finding.code for finding in result.findings] == [
+        "unauthorized_selection",
+        "selection_mismatch",
+    ]
+    assert result.executions[0].protocol_complete is True
+    assert result.executions[1].protocol_complete is True
 
 
 def _manual_event(
